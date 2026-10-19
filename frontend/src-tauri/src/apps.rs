@@ -115,6 +115,10 @@ impl AppIndex {
     }
 }
 
+impl Default for AppIndex {
+    fn default() -> Self { Self::new() }
+}
+
 mod dirs {
     use std::path::PathBuf;
     pub fn data_dir() -> Option<PathBuf> {

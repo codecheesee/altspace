@@ -67,11 +67,13 @@ pub fn get_target_snap_window(altspace_hwnd: HWND) -> Option<HWND> {
     // 2. Fallback: scan z-order below AltSpace
     unsafe {
         let mut candidate = GetWindow(altspace_hwnd, GW_HWNDNEXT).unwrap_or_default();
-        while !candidate.0.is_null() {
+        let mut depth = 0usize;
+        while !candidate.0.is_null() && depth < 64 {
             if is_valid_user_window(candidate) {
                 return Some(candidate);
             }
             candidate = GetWindow(candidate, GW_HWNDNEXT).unwrap_or_default();
+            depth += 1;
         }
     }
 

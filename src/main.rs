@@ -18,6 +18,27 @@ fn main() -> Result<(), slint::PlatformError> {
     let app_window = AppWindow::new()?;
     let window_handle = app_window.as_weak();
 
+    // Background Global Alt+Space Hotkey Listener
+    let hotkey_window_weak = window_handle.clone();
+    std::thread::spawn(move || {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{GetMessageW, MSG, WM_HOTKEY};
+
+        let mut hotkey_manager = hotkey::HotkeyManager::new();
+        if hotkey_manager.register(HWND(std::ptr::null_mut())) {
+            let mut msg = MSG::default();
+            unsafe {
+                while GetMessageW(&mut msg, HWND(std::ptr::null_mut()), 0, 0).as_bool() {
+                    if msg.message == WM_HOTKEY && msg.wParam.0 as i32 == hotkey::HOTKEY_ID {
+                        let _ = hotkey_window_weak.upgrade_in_event_loop(|window| {
+                            let _ = window.show();
+                        });
+                    }
+                }
+            }
+        }
+    });
+
     // Initialize subsystems
     let app_index = Rc::new(RefCell::new(AppIndex::new()));
     let everything_client = Rc::new(EverythingClient::new());

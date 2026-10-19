@@ -6,6 +6,111 @@ export interface CalcResult {
   systemAction?: string;
 }
 
+function safeEvalArithmetic(expr: string): number | null {
+  // Replace ^ with ** and strip commas/spaces
+  const src = expr.replace(/\s+/g, '').replace(/\^/g, '**').replace(/,/g, '');
+  let pos = 0;
+
+  const peek = () => src[pos] ?? '';
+  const consume = () => src[pos++] ?? '';
+
+  function parseNumber(): number | null {
+    let s = '';
+    if (peek() === '-' || peek() === '+') s += consume();
+    while (pos < src.length && /[\d.]/.test(src[pos])) s += consume();
+    if (!s || s === '-' || s === '+') return null;
+    const n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+
+  function parsePrimary(): number | null {
+    if (peek() === '(') {
+      consume();
+      const val = parseExpr();
+      if (peek() !== ')') return null;
+      consume();
+      return val;
+    }
+    return parseNumber();
+  }
+
+  function parsePower(): number | null {
+    let base = parsePrimary();
+    if (base === null) return null;
+    while (src.startsWith('**', pos)) {
+      pos += 2;
+      const exp = parsePrimary();
+      if (exp === null) return null;
+      base = Math.pow(base, exp);
+      if (!isFinite(base)) return null;
+    }
+    return base;
+  }
+
+  function parseTerm(): number | null {
+    let left = parsePower();
+    if (left === null) return null;
+    while (pos < src.length && (peek() === '*' || peek() === '/' || peek() === '%')) {
+      // Check for ** (already handled by parsePower)
+      if (peek() === '*' && src[pos + 1] === '*') break;
+      const op = consume();
+      const right = parsePower();
+      if (right === null) return null;
+      if (op === '*') left *= right;
+      else if (op === '/') { if (right === 0) return null; left /= right; }
+      else left %= right;
+    }
+    return left;
+  }
+
+  function parseExpr(): number | null {
+    let left = parseTerm();
+    if (left === null) return null;
+    while (pos < src.length && (peek() === '+' || peek() === '-')) {
+      const op = consume();
+      const right = parseTerm();
+      if (right === null) return null;
+      left = op === '+' ? left + right : left - right;
+    }
+    return left;
+  }
+
+  try {
+    const result = parseExpr();
+    if (pos !== src.length) return null; // unconsumed input = parse error
+    if (result === null || !isFinite(result)) return null;
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function getCachedCurrencyRates(): Record<string, number> | null {
+  try {
+    const raw = localStorage.getItem('altspace_fx_rates_v1');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; rates: Record<string, number> };
+    // 4-hour TTL
+    if (Date.now() - parsed.ts < 4 * 60 * 60 * 1000) return parsed.rates;
+  } catch { /* ignore */ }
+  return null;
+}
+
+export async function refreshCurrencyRates(): Promise<void> {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (!res.ok) return;
+    const data = await res.json() as { rates: Record<string, number> };
+    const supported = ['USD','EUR','GBP','INR','JPY','CAD','AUD','CHF'];
+    const rates: Record<string, number> = { usd: 1.0 };
+    for (const k of supported) {
+      const v = data.rates[k];
+      if (typeof v === 'number') rates[k.toLowerCase()] = v;
+    }
+    localStorage.setItem('altspace_fx_rates_v1', JSON.stringify({ ts: Date.now(), rates }));
+  } catch { /* offline — use cached fallback */ }
+}
+
 export function evaluateSmartQuery(query: string): CalcResult | null {
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return null;
@@ -152,15 +257,9 @@ export function evaluateSmartQuery(query: string): CalcResult | null {
   }
 
   // 3. Currency Conversion (Standard baseline rates)
-  const currencyRates: Record<string, number> = {
-    usd: 1.0,
-    eur: 0.92,
-    gbp: 0.77,
-    inr: 84.1,
-    jpy: 152.4,
-    cad: 1.38,
-    aud: 1.51,
-    chf: 0.86,
+  const currencyRates: Record<string, number> = getCachedCurrencyRates() || {
+    usd: 1.0, eur: 0.92, gbp: 0.77, inr: 84.1,
+    jpy: 152.4, cad: 1.38, aud: 1.51, chf: 0.86,
   };
 
   const currencySymbols: Record<string, string> = {
@@ -360,22 +459,17 @@ export function evaluateSmartQuery(query: string): CalcResult | null {
     };
   }
 
-  // 9. Mathematical Arithmetic Expression: e.g. "25 * 40", "144 / 12 + 8", "2^16", "sqrt(144)"
+  // 9. Mathematical Arithmetic Expression: safe recursive descent parser
   if (/^[\d\s\+\-\*\/\^\(\)\.\,\%]+$/.test(trimmed) && /[+\-*\/^%]/.test(trimmed)) {
-    try {
-      const sanitized = trimmed.replace(/\^/g, "**").replace(/,/g, "");
-      if (/^[0-9+\-*/().\s*]+$/.test(sanitized)) {
-        const val = Function(`"use strict"; return (${sanitized})`)();
-        if (typeof val === "number" && !isNaN(val) && isFinite(val)) {
-          return {
-            expression: trimmed,
-            result: val.toLocaleString("en-US", { maximumFractionDigits: 6 }),
-            type: "math",
-            actionLabel: "Copy Result (Enter)",
-          };
-        }
-      }
-    } catch (_) {}
+    const val = safeEvalArithmetic(trimmed);
+    if (val !== null) {
+      return {
+        expression: trimmed,
+        result: val.toLocaleString("en-US", { maximumFractionDigits: 6 }),
+        type: "math",
+        actionLabel: "Copy Result (Enter)",
+      };
+    }
   }
 
   // 10. Math functions like sqrt(1024), abs(-42), round(3.14159)

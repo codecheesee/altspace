@@ -602,6 +602,21 @@ fn open_settings_uri(uri: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_installed_games() -> Vec<games::GameItem> {
+    games::scan_all_installed_games()
+}
+
+#[tauri::command]
+fn launch_game(launch_uri: String) -> Result<(), String> {
+    games::launch_game(&launch_uri)
+}
+
+#[tauri::command]
+fn get_game_mode_status() -> games::GameModeStatus {
+    games::get_game_mode_status()
+}
+
 fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
     std::thread::spawn(move || {
         unsafe {
@@ -658,20 +673,6 @@ pub fn run() {
         }
     }
 
-#[tauri::command]
-fn get_installed_games() -> Vec<games::GameItem> {
-    games::scan_all_installed_games()
-}
-
-#[tauri::command]
-fn launch_game(launch_uri: String) -> Result<(), String> {
-    games::launch_game(&launch_uri)
-}
-
-#[tauri::command]
-fn get_game_mode_status() -> games::GameModeStatus {
-    games::get_game_mode_status()
-}
 
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())

@@ -3,12 +3,15 @@ use std::collections::HashMap;
 use std::process::Command;
 use windows::Win32::Foundation::{CloseHandle, NO_ERROR};
 use windows::Win32::NetworkManagement::IpHelper::{
-    GetExtendedTcpTable, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+    GetExtendedTcpTable, MIB_TCP6TABLE_OWNER_PID, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
 };
-use windows::Win32::Networking::WinSock::AF_INET;
+use windows::Win32::Networking::WinSock::{AF_INET, AF_INET6};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
 };
+
+/// TCP_STATE_LISTEN = 2 per iphlpapi.h / MIB_TCP_STATE_LISTEN
+const TCP_STATE_LISTEN: u32 = 2;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PortProcess {
@@ -84,7 +87,7 @@ pub fn get_listening_ports() -> Vec<PortProcess> {
             for i in 0..num_entries {
                 let row = &*rows_ptr.add(i);
                 // dwState 2 is MIB_TCP_STATE_LISTEN (Listening)
-                if row.dwState == 2 {
+                if row.dwState == TCP_STATE_LISTEN {
                     // dwLocalPort is stored in network byte order (big endian)
                     let port = u16::from_be((row.dwLocalPort & 0xFFFF) as u16);
                     let pid = row.dwOwningPid;
@@ -99,6 +102,59 @@ pub fn get_listening_ports() -> Vec<PortProcess> {
                         process_name,
                         state: "LISTENING".into(),
                     });
+                }
+            }
+        }
+    }
+
+    ports.sort_by_key(|p| p.port);
+    ports.dedup_by_key(|p| (p.port, p.pid));
+
+    // Step 2: IPv6 listening ports scan
+    unsafe {
+        let mut size6 = 0u32;
+        let _ = GetExtendedTcpTable(
+            None,
+            &mut size6,
+            true,
+            AF_INET6.0 as u32,
+            TCP_TABLE_OWNER_PID_ALL,
+            0,
+        );
+
+        if size6 > 0 {
+            let mut buffer6 = vec![0u8; size6 as usize];
+            let res6 = GetExtendedTcpTable(
+                Some(buffer6.as_mut_ptr() as *mut _),
+                &mut size6,
+                true,
+                AF_INET6.0 as u32,
+                TCP_TABLE_OWNER_PID_ALL,
+                0,
+            );
+
+            if res6 == NO_ERROR.0 {
+                let table6 = &*(buffer6.as_ptr() as *const MIB_TCP6TABLE_OWNER_PID);
+                let num_entries = table6.dwNumEntries as usize;
+                let rows_ptr = table6.table.as_ptr();
+
+                for i in 0..num_entries {
+                    let row = &*rows_ptr.add(i);
+                    if row.dwState == TCP_STATE_LISTEN {
+                        let port = u16::from_be((row.dwLocalPort & 0xFFFF) as u16);
+                        let pid = row.dwOwningPid;
+                        let process_name = process_map
+                            .get(&pid)
+                            .cloned()
+                            .unwrap_or_else(|| format!("PID {}", pid));
+
+                        ports.push(PortProcess {
+                            port,
+                            pid,
+                            process_name,
+                            state: "LISTENING".into(),
+                        });
+                    }
                 }
             }
         }

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 use std::time::Duration;
-use windows::Win32::Foundation::{HANDLE, HGLOBAL, HWND};
+use windows::Win32::Foundation::{GlobalFree, HANDLE, HGLOBAL, HWND};
 use windows::Win32::System::DataExchange::{
     CloseClipboard, EmptyClipboard, GetClipboardData, GetClipboardSequenceNumber, OpenClipboard,
     SetClipboardData,
@@ -133,8 +133,9 @@ impl ClipboardManager {
         }
 
         let content_type = self.detect_type(trimmed);
-        let preview = if trimmed.len() > 120 {
-            format!("{}...", &trimmed[..120])
+        let preview = if trimmed.chars().count() > 120 {
+            let truncated: String = trimmed.chars().take(120).collect();
+            format!("{}...", truncated)
         } else {
             trimmed.to_string()
         };
@@ -228,6 +229,8 @@ pub fn set_system_clipboard_text(text: &str) -> Result<(), String> {
 
         let ptr = GlobalLock(h_mem) as *mut u16;
         if ptr.is_null() {
+            // Free the allocation before returning — OS does not own it yet
+            let _ = GlobalFree(h_mem);
             let _ = CloseClipboard();
             return Err("GlobalLock failed".into());
         }
@@ -238,10 +241,13 @@ pub fn set_system_clipboard_text(text: &str) -> Result<(), String> {
         let res = SetClipboardData(CF_UNICODETEXT, HANDLE(h_mem.0));
         let _ = CloseClipboard();
 
-        if res.is_err() {
-            return Err("SetClipboardData failed".into());
+        if let Err(e) = res {
+            // SetClipboardData failed — OS did NOT take ownership, so free h_mem
+            let _ = GlobalFree(h_mem);
+            return Err(format!("SetClipboardData failed: {}", e));
         }
 
+        // On success the OS owns h_mem — do NOT call GlobalFree
         Ok(())
     }
 }
