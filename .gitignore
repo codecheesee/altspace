@@ -1,0 +1,44 @@
+# Rust & Cargo build artifacts
+target/
+frontend/src-tauri/target/
+**/*.rs.bk
+Cargo.lock.backup
+
+# Node & Frontend dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.vite/
+
+# Binary & build temp outputs (keep release bins or distribution scripts)
+*.pdb
+*.obj
+*.ilk
+*.exp
+*.log
+out.log
+bin/icon_cache.json
+icon_cache.json
+
+# OS & Editor files
+.vscode/
+.idea/
+*.suo
+*.user
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Scratch & test scripts
+scratch_capture.ps1
+capture_screen.ps1
+check_*.ps1
+find_proc.ps1
+inspect_win.ps1
+test_*.ps1
+test_*.py
+update_shortcuts.ps1
+*.txt
+out.txt
+err.txt

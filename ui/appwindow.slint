@@ -1,0 +1,230 @@
+import { ListView, LineEdit } from "std-widgets.slint";
+
+export struct LauncherItem {
+    id: string,
+    title: string,
+    subtitle: string,
+    category: string,
+    is_app: bool,
+    is_folder: bool,
+    full_path: string,
+}
+
+export component AppWindow inherits Window {
+    title: "Raycast Windows";
+    no-frame: true;
+    background: transparent;
+    always-on-top: true;
+    width: 680px;
+    height: 440px;
+
+    in-out property <string> search_query: "";
+    in-out property <[LauncherItem]> results: [];
+    in-out property <int> selected_index: 0;
+    in-out property <string> status_text: "Type to search apps, files or commands...";
+
+    callback query_changed(string);
+    callback item_executed(LauncherItem);
+    callback open_parent_folder(LauncherItem);
+    callback copy_path(LauncherItem);
+    callback close_window();
+
+    forward-focus: input;
+
+    // Main Card Container with Dark Acrylic look
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #1c1d22f2;
+        border-radius: 12px;
+        border-width: 1px;
+        border-color: #3b3d45;
+        clip: true;
+
+        VerticalLayout {
+            padding: 12px;
+            spacing: 8px;
+
+            // Header Search Bar
+            Rectangle {
+                height: 52px;
+                background: #25272e;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #343740;
+
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 14px;
+                    spacing: 10px;
+                    alignment: center;
+
+                    // Search Icon placeholder
+                    Text {
+                        text: "🔍";
+                        font-size: 16px;
+                        vertical-alignment: center;
+                    }
+
+                    input := TextInput {
+                        text <=> root.search_query;
+                        font-size: 16px;
+                        color: #ffffff;
+                        vertical-alignment: center;
+
+                        edited => {
+                            root.query_changed(self.text);
+                        }
+
+                        key-pressed(event) => {
+                            if (event.text == Key.DownArrow) {
+                                if (root.selected_index < root.results.length - 1) {
+                                    root.selected_index += 1;
+                                }
+                                return accept;
+                            }
+                            if (event.text == Key.UpArrow) {
+                                if (root.selected_index > 0) {
+                                    root.selected_index -= 1;
+                                }
+                                return accept;
+                            }
+                            if (event.text == Key.Return) {
+                                if (root.results.length > 0 && root.selected_index >= 0 && root.selected_index < root.results.length) {
+                                    root.item_executed(root.results[root.selected_index]);
+                                }
+                                return accept;
+                            }
+                            if (event.text == Key.Escape) {
+                                root.close_window();
+                                return accept;
+                            }
+                            return reject;
+                        }
+                    }
+                }
+            }
+
+            // Results List
+            Rectangle {
+                vertical-stretch: 1;
+                background: transparent;
+
+                ListView {
+                    for item[idx] in root.results: Rectangle {
+                        height: 52px;
+                        border-radius: 6px;
+                        background: idx == root.selected_index ? #3a3f50 : transparent;
+
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 12px;
+                            alignment: center;
+
+                            // Category icon
+                            Text {
+                                text: item.is_app ? "⚡" : (item.is_folder ? "📁" : "📄");
+                                font-size: 16px;
+                                vertical-alignment: center;
+                            }
+
+                            // Title & Subtitle Column
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                alignment: center;
+                                spacing: 2px;
+
+                                Text {
+                                    text: item.title;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    color: idx == root.selected_index ? #ffffff : #e1e3e8;
+                                    overflow: elide;
+                                }
+
+                                Text {
+                                    text: item.subtitle;
+                                    font-size: 11px;
+                                    color: #8b90a0;
+                                    overflow: elide;
+                                }
+                            }
+
+                            // Badge Tag
+                            Rectangle {
+                                width: 70px;
+                                height: 22px;
+                                border-radius: 4px;
+                                background: idx == root.selected_index ? #4b5268 : #272a33;
+
+                                Text {
+                                    text: item.category;
+                                    font-size: 11px;
+                                    color: #b0b5c4;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => {
+                                root.selected_index = idx;
+                                root.item_executed(item);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Action Footer
+            Rectangle {
+                height: 32px;
+                background: #17181c;
+                border-radius: 6px;
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 16px;
+                    alignment: center;
+
+                    Text {
+                        text: root.status_text;
+                        font-size: 11px;
+                        color: #727787;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 12px;
+
+                        Text {
+                            text: "↵ Open";
+                            font-size: 11px;
+                            font-weight: 600;
+                            color: #a5abbb;
+                            vertical-alignment: center;
+                        }
+
+                        Text {
+                            text: "Ctrl+↵ Folder";
+                            font-size: 11px;
+                            color: #727787;
+                            vertical-alignment: center;
+                        }
+
+                        Text {
+                            text: "Esc Dismiss";
+                            font-size: 11px;
+                            color: #727787;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
