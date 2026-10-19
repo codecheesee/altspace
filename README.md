@@ -1,4 +1,4 @@
-# ⚡ AltSpace — Next-Gen Command Palette & Launcher for Windows
+# AltSpace — Next-Gen Command Palette & Launcher for Windows
 
 [![CI / Release](https://github.com/codecheesee/altspace/actions/workflows/release.yml/badge.svg)](https://github.com/codecheesee/altspace/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -11,7 +11,7 @@
 
 ---
 
-## ⚡ 1-Line Modern Installation
+## 1-Line Modern Installation
 
 Open PowerShell (Run as User or Administrator) and run:
 
@@ -28,7 +28,7 @@ irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | ie
 
 ---
 
-## 🧠 Intelligent Command Engine & AI-Ready Architecture
+## Intelligent Command Engine & AI-Ready Architecture
 
 AltSpace is designed as a modular 2026 command center with native support for intelligent intent parsing and local automation:
 
@@ -40,42 +40,42 @@ AltSpace is designed as a modular 2026 command center with native support for in
 
 ---
 
-## ✨ Features at a Glance
+## Features at a Glance
 
-- **🚀 Sub-Millisecond Input & Multi-Tiered Search:**
+- **Sub-Millisecond Input & Multi-Tiered Search:**
   - **L1 In-Memory Cache:** 0ms instant optimistic matching for hot apps, settings, window snap commands, snippets, and themes.
   - **L2 Everything NTFS MFT Engine:** Deep multi-drive file search via 64-bit IPC without heavy CPU or memory overhead.
-- **🎨 21st.dev Dynamic Theme Engine:**
+- **21st.dev Dynamic Theme Engine:**
   - 5 Built-in curated themes: **Raycast Dark** (Default), **Obsidian Charcoal**, **Tokyo Night**, **Sunset OLED**, and **Cyberpunk Neon**.
   - Real-time accent glow, border opacity, and background blur customization.
   - Quick filter: type `:theme` or `:themes` in the search bar.
-- **📋 Developer Tools & Utilities:**
+- **Developer Tools & Utilities:**
   - **Clipboard History:** Automatic in-memory secret detection, quick copy, and type tags (`Alt+C` or tray menu).
   - **Dev Ports Inspector:** Scan active TCP/UDP ports, see running process names/PIDs, and kill hung servers in 1 click (`Alt+P` or tray menu).
   - **Game Launcher:** Auto-detects Steam, Epic Games, and Xbox PC titles with banner art and launch URIs (type `:game`).
   - **Window Snapping:** Instant layout management (Left half, Right half, Top, Maximize, Center).
   - **Integrated Quick Terminal:** Run shell commands directly with `> <command>`.
-- **🛡️ Windows System Tray & Background Daemon:**
+- **Windows System Tray & Background Daemon:**
   - Lives silently in the notification area with full tray menu.
   - Foreground window elevation via Win32 `AllowSetForegroundWindow` and `SetForegroundWindow`.
   - Global hotkey `Alt+Space` summons the palette anywhere.
 
 ---
 
-## 📊 Industry Benchmarks & Technical Footprint
+## Industry Benchmarks & Technical Footprint
 
 | Benchmark Metric | PowerToys Run | Flow Launcher | Raycast (macOS) | **AltSpace (Windows)** |
 | :--- | :--- | :--- | :--- | :--- |
-| **Release Binary Size** | ~180 MB | ~85 MB | ~65 MB | **11.2 MB** ⚡ |
-| **Idle Memory (RAM)** | 120–250 MB | 80–140 MB | 70–120 MB | **43.3 MB** ⚡ |
-| **Keystroke Input Latency** | 25–60 ms | 15–35 ms | < 5 ms | **< 3 ms** ⚡ |
+| **Release Binary Size** | ~180 MB | ~85 MB | ~65 MB | **11.2 MB**  |
+| **Idle Memory (RAM)** | 120–250 MB | 80–140 MB | 70–120 MB | **43.3 MB**  |
+| **Keystroke Input Latency** | 25–60 ms | 15–35 ms | < 5 ms | **< 3 ms**  |
 | **Full Disk Search Engine** | Windows Search | Everything/Plugin | Custom local index | **Native Everything MFT IPC** |
 | **Background Tray Daemon** | Yes | Yes | Yes | **Yes (Native Win32)** |
-| **Cold Startup Time** | 1.2–2.5 s | 0.8–1.5 s | 0.3–0.6 s | **< 200 ms** ⚡ |
+| **Cold Startup Time** | 1.2–2.5 s | 0.8–1.5 s | 0.3–0.6 s | **< 200 ms**  |
 
 ---
 
-## ⌨️ Default Keyboard Shortcuts
+##  Default Keyboard Shortcuts
 
 | Shortcut | Description |
 | :--- | :--- |
@@ -90,7 +90,7 @@ AltSpace is designed as a modular 2026 command center with native support for in
 
 ---
 
-## 🛠️ Building from Source
+##  Building from Source
 
 ### Prerequisites
 - [Rust](https://rustup.rs/) (stable toolchain)
@@ -121,7 +121,7 @@ The compiled native executable will be located at:
 
 ---
 
-## 🚀 Pushing Updates & Publishing Releases
+## Pushing Updates & Publishing Releases
 
 AltSpace includes a fully automated GitHub Actions pipeline. Pushing a tag will automatically compile release binaries, execute tests, and draft GitHub release assets:
 
@@ -140,6 +140,6 @@ git push origin v1.0.1
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE). Built for speed, elegance, and developer productivity.
