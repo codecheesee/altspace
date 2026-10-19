@@ -2480,7 +2480,6 @@ dependencies = [
  "chrono",
  "fuzzy-matcher",
  "log",
- "once_cell",
  "regex",
  "serde",
  "serde_json",

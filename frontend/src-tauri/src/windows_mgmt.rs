@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Gdi::{
@@ -11,7 +11,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 /// Tracks the window that was focused before AltSpace was summoned
-pub static PREVIOUS_WINDOW: Lazy<Mutex<Option<isize>>> = Lazy::new(|| Mutex::new(None));
+pub static PREVIOUS_WINDOW: LazyLock<Mutex<Option<isize>>> = LazyLock::new(|| Mutex::new(None));
 
 /// Updates the tracked previous foreground window if it's not AltSpace or Desktop/Shell
 pub fn record_previous_foreground(current_altspace_hwnd: HWND) {

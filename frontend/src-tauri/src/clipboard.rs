@@ -1,5 +1,5 @@
 use chrono::Local;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -168,7 +168,7 @@ impl ClipboardManager {
     }
 }
 
-pub static CLIPBOARD_MANAGER: Lazy<ClipboardManager> = Lazy::new(ClipboardManager::new);
+pub static CLIPBOARD_MANAGER: LazyLock<ClipboardManager> = LazyLock::new(ClipboardManager::new);
 
 // Read text from the Windows Clipboard
 pub fn read_system_clipboard_text() -> Option<String> {

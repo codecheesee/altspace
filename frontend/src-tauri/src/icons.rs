@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use windows::core::PCWSTR;
@@ -43,7 +43,7 @@ fn save_cache_to_disk(cache: &HashMap<String, String>) {
 
 static ICON_CACHE_DIRTY: AtomicBool = AtomicBool::new(false);
 
-static ICON_CACHE: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| {
+static ICON_CACHE: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| {
     Mutex::new(load_cache_from_disk())
 });
 

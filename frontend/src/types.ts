@@ -27,11 +27,20 @@ export interface GameItem {
   size_gb: number | null;
 }
 
+export interface AICardData {
+  prompt: string;
+  response: string;
+  isLoading: boolean;
+  model: string;
+  error?: string | null;
+}
+
 export type SpecialCard =
   | { kind: "calc"; data: CalcResult }
   | { kind: "quickjump"; data: QuickJumpResult }
   | { kind: "snippet"; data: SnippetMatch }
-  | { kind: "terminal"; data: TerminalCardData };
+  | { kind: "terminal"; data: TerminalCardData }
+  | { kind: "ai"; data: AICardData };
 
 export interface DriveIndexStats {
   search_all_drives: boolean;

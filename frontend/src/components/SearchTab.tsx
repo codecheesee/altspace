@@ -339,6 +339,65 @@ export function SearchTab({
           </div>
         )}
 
+        {specialCard && specialCard.kind === "ai" && (
+          <div
+            key="ai-result"
+            onClick={() => setSelectedIndex(0)}
+            onDoubleClick={() => {
+              if (specialCard.data.response) {
+                onCopyClipboard(specialCard.data.response);
+                onCopiedNotification("AI response copied to clipboard!");
+              }
+            }}
+            className={cn(
+              "flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-all duration-100 group",
+              selectedIndex === 0
+                ? "bg-white/[0.08] text-white shadow-sm border border-purple-500/30"
+                : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-200 border border-transparent"
+            )}
+          >
+            <div className="flex items-center gap-3 min-w-0 pr-3">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold text-xs">
+                AI
+              </div>
+
+              <div className="min-w-0">
+                <div className="font-semibold text-[14px] truncate tracking-tight text-white flex items-center gap-2">
+                  <span>{specialCard.data.prompt}</span>
+                </div>
+                <div className="text-[11px] text-neutral-400 truncate font-mono">
+                  {specialCard.data.isLoading
+                    ? "Generating offline tokens via Ollama..."
+                    : specialCard.data.error
+                    ? specialCard.data.error
+                    : specialCard.data.response
+                    ? specialCard.data.response.slice(0, 70) + "..."
+                    : "Press Enter or finish typing to stream"}
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2">
+              <span
+                className={cn(
+                  "text-[10px] font-medium px-2 py-0.5 rounded-md border uppercase tracking-wider font-mono",
+                  selectedIndex === 0
+                    ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                    : "bg-white/[0.03] text-neutral-500 border-white/[0.05]"
+                )}
+              >
+                {specialCard.data.isLoading ? "STREAMING" : specialCard.data.model}
+              </span>
+              <ChevronRight
+                className={cn(
+                  "w-3.5 h-3.5 transition",
+                  selectedIndex === 0 ? "text-purple-400 translate-x-0.5" : "text-transparent"
+                )}
+              />
+            </div>
+          </div>
+        )}
+
         {!query.trim() ? (
           <div className="space-y-3">
             {/* Section 1: Suggested Applications */}
@@ -918,6 +977,86 @@ export function SearchTab({
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open in Windows Terminal (Ctrl+T)
+                </button>
+              </div>
+            </div>
+          ) : selectedSpecial.kind === "ai" ? (
+            <div className="w-[310px] border-l border-white/[0.06] bg-[#0c0d11] p-4 flex flex-col justify-between overflow-hidden">
+              <div className="space-y-3 min-h-0 flex flex-col flex-1">
+                <div className="flex flex-col items-center text-center p-3 rounded-xl bg-purple-500/[0.06] border border-purple-500/20 shrink-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-inner border bg-purple-500/10 text-purple-400 border-purple-500/25 font-bold text-sm">
+                    AI
+                  </div>
+                  <div className="text-xs font-semibold text-purple-300 tracking-tight truncate max-w-full">
+                    {selectedSpecial.data.prompt}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className="text-[9.5px] font-mono text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/30 uppercase tracking-wide">
+                      {selectedSpecial.data.model} (100% Free / Offline)
+                    </span>
+                    {selectedSpecial.data.isLoading && (
+                      <span className="text-[9.5px] font-mono text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 animate-pulse">
+                        STREAMING
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="flex items-center justify-between pb-1.5 text-[10px] uppercase font-bold tracking-wider text-neutral-400">
+                    <span>AI Stream</span>
+                    {selectedSpecial.data.response && (
+                      <button
+                        onClick={() => {
+                          onCopyClipboard(selectedSpecial.data.response);
+                          onCopiedNotification("AI response copied!");
+                        }}
+                        className="text-[9.5px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-mono cursor-pointer"
+                      >
+                        <Copy className="w-2.5 h-2.5" />
+                        <span>Copy</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex-1 bg-black/60 border border-white/[0.08] rounded-xl p-3 font-mono text-[11px] leading-relaxed text-neutral-200 overflow-y-auto select-text shadow-inner">
+                    {selectedSpecial.data.error ? (
+                      <div className="space-y-2 text-neutral-300 text-[10.5px]">
+                        <p className="text-rose-400 font-semibold">⚡ Ollama Not Running on localhost:11434</p>
+                        <p className="text-neutral-400">To enable 100% free offline AI in AltSpace:</p>
+                        <ol className="list-decimal pl-4 space-y-1 text-neutral-400 font-sans text-[10px]">
+                          <li>Install free Ollama: <code className="text-purple-300">winget install Ollama.Ollama</code></li>
+                          <li>Start model: <code className="text-purple-300">ollama run llama3.2</code></li>
+                        </ol>
+                        <p className="text-emerald-400 text-[9.5px]">Zero cost, zero API keys, 100% private.</p>
+                      </div>
+                    ) : selectedSpecial.data.response ? (
+                      <div className="whitespace-pre-wrap text-neutral-200/90 break-words">
+                        {selectedSpecial.data.response}
+                      </div>
+                    ) : (
+                      <div className="text-neutral-500 italic text-[10.5px]">
+                        {selectedSpecial.data.isLoading
+                          ? "Connecting to local Ollama and generating tokens..."
+                          : "Type your question after '?' to generate instant answers locally."}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-3 border-t border-white/[0.06]">
+                <button
+                  onClick={() => {
+                    if (selectedSpecial.data.response) {
+                      onCopyClipboard(selectedSpecial.data.response);
+                      onCopiedNotification("AI answer copied to clipboard!");
+                    }
+                  }}
+                  disabled={!selectedSpecial.data.response}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/30 transition shadow-sm disabled:opacity-40"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy Answer (↵)
                 </button>
               </div>
             </div>

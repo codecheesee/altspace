@@ -21,30 +21,61 @@ export function saveCachedApps(apps: Item[]): void {
   } catch (_) {}
 }
 
+export interface FrecencyRecord {
+  count: number;
+  lastUsed: number; // Unix epoch ms
+}
+
+export const FRECENCY_CACHE_KEY = "altspace_frecency_v2";
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function calculateFrecencyScore(record?: FrecencyRecord | number, now = Date.now()): number {
+  if (!record) return 0;
+  if (typeof record === "number") {
+    return record * 0.25; // Legacy raw count migration
+  }
+  const age = Math.max(0, now - record.lastUsed);
+  const decay = Math.pow(0.5, age / SEVEN_DAYS_MS);
+  // Recency bonus: items used within 4 hours get a direct priority boost
+  const recencyBonus = age < 4 * 60 * 60 * 1000 ? 2.5 : 0;
+  return record.count * decay + recencyBonus;
+}
+
 export function recordItemUsage(idOrPath: string): void {
   try {
-    const raw = localStorage.getItem(FREQ_CACHE_KEY);
-    const freqs: Record<string, number> = raw ? JSON.parse(raw) : {};
-    freqs[idOrPath] = (freqs[idOrPath] || 0) + 1;
-    localStorage.setItem(FREQ_CACHE_KEY, JSON.stringify(freqs));
+    const raw = localStorage.getItem(FRECENCY_CACHE_KEY);
+    const records: Record<string, FrecencyRecord> = raw ? JSON.parse(raw) : {};
+    const existing = records[idOrPath];
+    records[idOrPath] = {
+      count: (existing?.count || 0) + 1,
+      lastUsed: Date.now(),
+    };
+    localStorage.setItem(FRECENCY_CACHE_KEY, JSON.stringify(records));
   } catch (_) {}
 }
 
 export function getItemFrequencies(): Record<string, number> {
   try {
-    const raw = localStorage.getItem(FREQ_CACHE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const raw = localStorage.getItem(FRECENCY_CACHE_KEY);
+    if (!raw) return {};
+    const records: Record<string, FrecencyRecord> = JSON.parse(raw);
+    const now = Date.now();
+    const scores: Record<string, number> = {};
+    for (const [key, record] of Object.entries(records)) {
+      scores[key] = calculateFrecencyScore(record, now);
+    }
+    return scores;
   } catch (_) {
     return {};
   }
 }
 
 export function sortByFrequency(list: Item[]): Item[] {
-  const freqs = getItemFrequencies();
+  const scores = getItemFrequencies();
   return [...list].sort((a, b) => {
-    const freqA = freqs[a.path] || freqs[a.id] || 0;
-    const freqB = freqs[b.path] || freqs[b.id] || 0;
-    return freqB - freqA;
+    const scoreA = scores[a.path] ?? scores[a.id] ?? 0;
+    const scoreB = scores[b.path] ?? scores[b.id] ?? 0;
+    return scoreB - scoreA;
   });
 }
 

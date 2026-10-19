@@ -4,13 +4,15 @@ mod clipboard;
 mod everything;
 mod games;
 mod icons;
+mod plugins;
 mod ports;
 mod terminal_runner;
+mod updater;
 mod windows_mgmt;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
 use std::process::Command;
@@ -104,8 +106,8 @@ pub struct SearchItem {
     pub updated: Option<String>,
 }
 
-static APP_INDEX: Lazy<Mutex<AppIndex>> = Lazy::new(|| Mutex::new(AppIndex::new()));
-static EVERYTHING_CLIENT: Lazy<EverythingClient> = Lazy::new(|| EverythingClient::new());
+static APP_INDEX: LazyLock<Mutex<AppIndex>> = LazyLock::new(|| Mutex::new(AppIndex::new()));
+static EVERYTHING_CLIENT: LazyLock<EverythingClient> = LazyLock::new(|| EverythingClient::new());
 
 #[tauri::command]
 fn search(query: String) -> Vec<SearchItem> {
@@ -658,6 +660,26 @@ fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
     });
 }
 
+#[tauri::command]
+fn list_plugins() -> Vec<plugins::PluginItem> {
+    plugins::scan_plugins()
+}
+
+#[tauri::command]
+fn run_plugin(script_path: String, args: String) -> Result<String, String> {
+    plugins::run_plugin_script(&script_path, &args)
+}
+
+#[tauri::command]
+fn check_app_update() -> Result<updater::UpdateInfo, String> {
+    updater::check_for_update()
+}
+
+#[tauri::command]
+fn trigger_app_update() -> Result<String, String> {
+    updater::apply_update()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Single-Instance Named Event Guard:
@@ -709,7 +731,11 @@ pub fn run() {
             launch_in_terminal_window,
             get_installed_games,
             launch_game,
-            get_game_mode_status
+            get_game_mode_status,
+            list_plugins,
+            run_plugin,
+            check_app_update,
+            trigger_app_update
         ])
         .setup(|app| {
             // Start background Single-Instance Named Event summoner thread
