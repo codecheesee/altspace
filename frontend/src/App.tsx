@@ -35,7 +35,9 @@ import {
   Settings,
   AlignLeft,
   LayoutGrid,
-  Gamepad2
+  Gamepad2,
+  PanelRightClose,
+  PanelRightOpen
 } from "lucide-react";
 import { cn } from "./lib/utils";
 import { evaluateSmartQuery, type CalcResult } from "./lib/calc";
@@ -526,6 +528,10 @@ export default function App() {
   const [customAccent, setCustomAccent] = useState<string | null>(getSavedCustomAccent);
   const activeTheme = resolveTheme(currentThemeId, customAccent);
 
+  // Auto-Adaptive Minimalist Sidebar State
+  const [manualSidebarToggle, setManualSidebarToggle] = useState<boolean | null>(null);
+  const isAutoRichRef = useRef(false);
+
   const handleSelectTheme = (themeId: string) => {
     setCurrentThemeId(themeId);
     saveThemeId(themeId);
@@ -791,6 +797,13 @@ export default function App() {
         e.stopPropagation();
         setShowActionsModal((prev) => !prev);
         setActionSelectedIndex(0);
+      }
+
+      const isKeyB = e.key?.toLowerCase() === "b" || e.code === "KeyB";
+      if (isKeyB && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setManualSidebarToggle((prev) => (prev === null ? !isAutoRichRef.current : !prev));
       }
     };
     window.addEventListener("keydown", onGlobalKeyDown, true);
@@ -1088,6 +1101,31 @@ export default function App() {
 
   const selectedPort = filteredPorts[selectedIndex] || filteredPorts[0];
   const selectedClip = filteredClipboard[selectedIndex] || filteredClipboard[0];
+
+  // Auto-Adaptive Rich Item Detection (Intelligent Context-Aware Expansion)
+  const isAutoRich = React.useMemo(() => {
+    if (currentMode === "clipboard") {
+      return Boolean(selectedClip && (selectedClip.content.includes("\n") || selectedClip.content_type !== "text"));
+    }
+    if (currentMode === "ports") {
+      return Boolean(selectedPort);
+    }
+    // "all" search mode:
+    if (selectedSpecial) {
+      return selectedSpecial.kind === "snippet" || selectedSpecial.kind === "terminal";
+    }
+    if (selectedItem) {
+      if (selectedItem.category === "File" || selectedItem.category === "Folder") return true;
+      if (selectedItem.category === "Game" && selectedItem.bannerUrl) return true;
+    }
+    return false;
+  }, [currentMode, selectedClip, selectedPort, selectedSpecial, selectedItem]);
+
+  useEffect(() => {
+    isAutoRichRef.current = isAutoRich;
+  }, [isAutoRich]);
+
+  const isSidebarVisible = manualSidebarToggle !== null ? manualSidebarToggle : isAutoRich;
 
   // Fetch Git info and File preview whenever selected item changes (Choice 2 & 3)
   useEffect(() => {
@@ -1711,6 +1749,18 @@ export default function App() {
       icon: <RefreshCw className="w-4 h-4 text-blue-400" />,
       run: () => {
         handleRescanDrives();
+      }
+    });
+
+    actions.push({
+      id: "pref-toggle-sidebar",
+      title: isSidebarVisible ? "Hide Details Sidebar" : "Show Details Sidebar",
+      shortcut: "Ctrl B",
+      section: "PREFERENCES",
+      icon: isSidebarVisible ? <PanelRightClose className="w-4 h-4 text-rose-400" /> : <PanelRightOpen className="w-4 h-4 text-rose-400" />,
+      run: () => {
+        setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev));
+        setShowActionsModal(false);
       }
     });
 
@@ -2607,7 +2657,8 @@ export default function App() {
             </div>
 
             {/* Right Pane: Inspector */}
-            {selectedSpecial ? (
+            {isSidebarVisible && (
+              selectedSpecial ? (
               selectedSpecial.kind === "calc" ? (
                 <div className="w-[290px] border-l border-white/[0.06] bg-black/20 p-4 flex flex-col justify-between overflow-hidden">
                   <div className="space-y-4">
@@ -3136,7 +3187,7 @@ export default function App() {
                   )}
                 </div>
               </div>
-            ) : null}
+            ) : null)}
           </>
         )}
 
@@ -3252,7 +3303,7 @@ export default function App() {
             </div>
 
             {/* Right Pane: Clipboard Inspector */}
-            {selectedClip && (
+            {isSidebarVisible && selectedClip && (
               <div className="w-[310px] border-l border-white/[0.06] bg-black/20 p-4 flex flex-col justify-between overflow-hidden">
                 <div className="space-y-4 overflow-y-auto">
                   <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
@@ -3399,7 +3450,7 @@ export default function App() {
             </div>
 
             {/* Right Pane: Port Inspector */}
-            {selectedPort && (
+            {isSidebarVisible && selectedPort && (
               <div className="w-[300px] border-l border-white/[0.06] bg-black/20 p-4 flex flex-col justify-between overflow-hidden">
                 <div className="space-y-4">
                   <div className="flex flex-col items-center text-center p-4 rounded-xl bg-emerald-500/[0.05] border border-emerald-500/20">
@@ -3504,6 +3555,27 @@ export default function App() {
               Space
             </kbd>
           </div>
+
+          <button
+            onClick={() => setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev))}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-md transition shrink-0 cursor-pointer border text-xs",
+              isSidebarVisible
+                ? "bg-white/[0.12] text-white border-white/[0.16]"
+                : "hover:bg-white/[0.08] text-neutral-400 hover:text-white border-transparent"
+            )}
+            title="Toggle Details Sidebar (Ctrl+B)"
+          >
+            {isSidebarVisible ? (
+              <PanelRightClose className="w-3.5 h-3.5 text-rose-400" />
+            ) : (
+              <PanelRightOpen className="w-3.5 h-3.5" />
+            )}
+            <span>Details</span>
+            <kbd className="px-1 py-0.2 rounded bg-white/[0.08] text-[9.5px] font-mono">
+              Ctrl B
+            </kbd>
+          </button>
 
           <button
             onClick={() => {
