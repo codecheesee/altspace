@@ -30,17 +30,18 @@ use windows::Win32::System::Registry::{
     HKEY_CURRENT_USER, KEY_READ, KEY_WRITE, REG_SZ,
 };
 use windows::Win32::System::Threading::{
-    CreateEventW, CreateMutexW, GetCurrentThreadId, OpenEventW, SetEvent, WaitForSingleObject,
-    EVENT_MODIFY_STATE, INFINITE,
+    CreateEventW, CreateMutexW, OpenEventW, OpenProcess, SetEvent, TerminateProcess,
+    WaitForSingleObject, EVENT_MODIFY_STATE, INFINITE, PROCESS_TERMINATE,
 };
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     RegisterHotKey, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, VK_SPACE,
 };
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId,
-    PeekMessageW, SetForegroundWindow, ShowWindow, MSG, PM_NOREMOVE, SW_RESTORE, SW_SHOWNORMAL,
-    WM_HOTKEY,
+    AllowSetForegroundWindow, BringWindowToTop, FindWindowW, GetForegroundWindow, GetMessageW,
+    GetWindowThreadProcessId, IsHungAppWindow, IsWindow, PeekMessageW, SetForegroundWindow,
+    SetWindowPos, ShowWindow, HWND_TOPMOST, MSG, PM_NOREMOVE, SWP_NOMOVE, SWP_NOSIZE,
+    SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WM_HOTKEY,
 };
 
 #[link(name = "user32")]
@@ -80,18 +81,34 @@ pub fn force_foreground_window(hwnd: HWND) {
     unsafe {
         let fg_hwnd = GetForegroundWindow();
         let fg_thread = GetWindowThreadProcessId(fg_hwnd, None);
-        let cur_thread = GetCurrentThreadId();
+        let target_thread = GetWindowThreadProcessId(hwnd, None);
 
-        if fg_thread != 0 && fg_thread != cur_thread {
-            let _ = AttachThreadInput(cur_thread, fg_thread, windows::Win32::Foundation::BOOL(1));
-            let _ = ShowWindow(hwnd, SW_RESTORE);
-            let _ = BringWindowToTop(hwnd);
-            let _ = SetForegroundWindow(hwnd);
-            let _ = AttachThreadInput(cur_thread, fg_thread, windows::Win32::Foundation::BOOL(0));
-        } else {
-            let _ = ShowWindow(hwnd, SW_RESTORE);
-            let _ = BringWindowToTop(hwnd);
-            let _ = SetForegroundWindow(hwnd);
+        // Explicitly allow foreground activation from any process
+        let _ = AllowSetForegroundWindow(0xFFFFFFFF);
+
+        let mut attached = false;
+        if fg_thread != 0 && fg_thread != target_thread && target_thread != 0 {
+            attached = AttachThreadInput(target_thread, fg_thread, windows::Win32::Foundation::BOOL(1)).as_bool();
+        }
+
+        let _ = ShowWindow(hwnd, SW_SHOW);
+        let _ = ShowWindow(hwnd, SW_RESTORE);
+
+        let _ = SetWindowPos(
+            hwnd,
+            HWND_TOPMOST,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+        );
+
+        let _ = BringWindowToTop(hwnd);
+        let _ = SetForegroundWindow(hwnd);
+
+        if attached {
+            let _ = AttachThreadInput(target_thread, fg_thread, windows::Win32::Foundation::BOOL(0));
         }
     }
 }
@@ -787,6 +804,43 @@ pub fn run() {
     unsafe {
         let _mutex = CreateMutexW(None, true, w!("AltSpace_SingleInstance_Mutex_2026"));
         if GetLastError() == ERROR_ALREADY_EXISTS {
+            // 1. Authorize foreground activation: This newly launched instance has user focus rights
+            // from Windows Explorer / desktop double-click. We grant rights to the running instance!
+            let _ = AllowSetForegroundWindow(0xFFFFFFFF);
+
+            // 2. Direct Window Summoning:
+            // Find the existing AltSpace window and bring it directly to top.
+            if let Ok(existing_hwnd) = FindWindowW(None, w!("AltSpace")) {
+                if !existing_hwnd.0.is_null() && IsWindow(existing_hwnd).as_bool() {
+                    if IsHungAppWindow(existing_hwnd).as_bool() {
+                        // Previous instance is hung/frozen - terminate it to unblock the user!
+                        let mut hung_pid = 0u32;
+                        GetWindowThreadProcessId(existing_hwnd, Some(&mut hung_pid));
+                        if hung_pid != 0 {
+                            if let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, hung_pid) {
+                                let _ = TerminateProcess(process, 1);
+                                let _ = CloseHandle(process);
+                            }
+                        }
+                    } else {
+                        let _ = ShowWindow(existing_hwnd, SW_SHOW);
+                        let _ = ShowWindow(existing_hwnd, SW_RESTORE);
+                        let _ = SetWindowPos(
+                            existing_hwnd,
+                            HWND_TOPMOST,
+                            0,
+                            0,
+                            0,
+                            0,
+                            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+                        );
+                        let _ = BringWindowToTop(existing_hwnd);
+                        let _ = SetForegroundWindow(existing_hwnd);
+                    }
+                }
+            }
+
+            // 3. Signal the named summon event so Tauri's webview focuses the input bar
             if let Ok(event) = OpenEventW(EVENT_MODIFY_STATE, false, w!("AltSpace_Summon_Event_2026")) {
                 let _ = SetEvent(event);
                 let _ = CloseHandle(event);
@@ -867,18 +921,20 @@ pub fn run() {
                 loop {
                     let res = unsafe { WaitForSingleObject(summon_event, INFINITE) };
                     if res == WAIT_OBJECT_0 {
-                        if let Some(window) = app_handle_for_summon.get_webview_window("main") {
-                            if let Ok(hwnd) = window.hwnd() {
-                                windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
+                        let handle = app_handle_for_summon.clone();
+                        let handle_inner = handle.clone();
+                        let _ = handle.run_on_main_thread(move || {
+                            if let Some(window) = handle_inner.get_webview_window("main") {
+                                if let Ok(hwnd) = window.hwnd() {
+                                    windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
+                                    force_foreground_window(HWND(hwnd.0 as _));
+                                }
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                                let _ = window.emit("window-summoned", ());
                             }
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
-                            if let Ok(hwnd) = window.hwnd() {
-                                force_foreground_window(HWND(hwnd.0 as _));
-                            }
-                            let _ = window.emit("window-summoned", ());
-                        }
+                        });
                     }
                 }
             });
