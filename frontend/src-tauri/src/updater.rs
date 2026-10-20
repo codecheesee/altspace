@@ -30,10 +30,7 @@ pub struct UpdateInfo {
 
 pub fn check_for_update() -> Result<UpdateInfo, String> {
     let current_version = env!("CARGO_PKG_VERSION").to_string();
-
-    // Query GitHub API using PowerShell Invoke-RestMethod for zero extra dependencies
     let ps_script = r#"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $res = Invoke-RestMethod -Uri 'https://api.github.com/repos/codecheesee/altspace/releases/latest' -Headers @{'User-Agent'='AltSpace-Updater'} -TimeoutSec 5; ConvertTo-Json -InputObject @{ tag_name = $res.tag_name; html_url = $res.html_url; body = $res.body } -Compress"#;
-
     let output = Command::new("powershell.exe")
         .args(["-NoProfile", "-Command", ps_script])
         .creation_flags(CREATE_NO_WINDOW)
@@ -72,14 +69,14 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
         let tag = release.tag_name.unwrap_or_default();
         let clean_latest = tag.trim_start_matches('v').trim().to_string();
         let clean_current = current_version.trim_start_matches('v').trim().to_string();
-
         let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
-
         return Ok(UpdateInfo {
             has_update,
             current_version,
             latest_version: clean_latest,
-            release_url: release.html_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
+            release_url: release
+                .html_url
+                .unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
             release_notes: release.body.unwrap_or_default(),
         });
     }
@@ -94,15 +91,13 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
 }
 
 pub fn apply_update() -> Result<String, String> {
-    // Executes 1-line update command via background PowerShell
-    let ps_cmd = "irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex";
-    Command::new("powershell.exe")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd])
+    let release_url = "https://github.com/codecheesee/altspace/releases/latest";
+    Command::new("explorer.exe")
+        .arg(release_url)
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
-        .map_err(|e| format!("Failed to spawn updater: {}", e))?;
-
-    Ok("Update installer launched in background. AltSpace will restart shortly.".to_string())
+        .map_err(|e| format!("Failed to open release page: {}", e))?;
+    Ok("The latest release page was opened. Download and run the signed installer or portable package to update AltSpace.".to_string())
 }
 
 #[cfg(test)]
