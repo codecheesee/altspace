@@ -77,13 +77,12 @@ jobs:
           Copy-Item 'install.ps1' 'dist_artifacts/install.ps1'
           Compress-Archive -Path 'dist_artifacts/AltSpace-Portable.exe','dist_artifacts/Everything64.dll' -DestinationPath 'dist_artifacts/AltSpace-Portable-x64.zip' -Force
 
-      - name: Sign Windows artifacts when configured
+      - name: Sign Windows artifacts
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE)) {
-            Write-Host 'No WINDOWS_SIGNING_CERTIFICATE configured; publishing unsigned artifacts.'
-            exit 0
+            throw 'WINDOWS_SIGNING_CERTIFICATE is required for tagged production releases.'
           }
           if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD)) {
             throw 'WINDOWS_SIGNING_CERTIFICATE_PASSWORD is required when a certificate is configured.'
