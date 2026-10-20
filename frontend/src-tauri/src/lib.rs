@@ -17,7 +17,7 @@ use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
 use std::process::Command;
-use std::sync::Mutex;
+use std::sync::{atomic::{AtomicBool, Ordering}, Mutex};
 use tauri::{Emitter, Manager};
 use windows::core::w;
 use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HWND, WAIT_OBJECT_0};
@@ -53,6 +53,8 @@ extern "system" {
 }
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+struct ExitState(AtomicBool);
 
 fn apply_native_glass(hwnd: HWND) {
     unsafe {
@@ -780,6 +782,7 @@ pub fn run() {
             import_legacy_frecency
         ])
         .setup(|app| {
+            app.manage(ExitState(AtomicBool::new(false)));
             let app_data_dir = std::env::var("LOCALAPPDATA")
                 .map(|p| std::path::PathBuf::from(p).join("AltSpace"))
                 .unwrap_or_else(|_| {
@@ -953,6 +956,7 @@ pub fn run() {
                         let _ = open_url("https://github.com/codecheesee/altspace".to_string());
                     }
                     "quit" => {
+                        app.state::<ExitState>().0.store(true, Ordering::SeqCst);
                         app.exit(0);
                     }
                     _ => {}
@@ -1015,7 +1019,9 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|_app_handle, event| {
             if let tauri::RunEvent::ExitRequested { api, .. } = event {
-                api.prevent_exit();
+                if !_app_handle.state::<ExitState>().0.load(Ordering::SeqCst) {
+                    api.prevent_exit();
+                }
             }
         });
 }

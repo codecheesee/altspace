@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
-use std::process::Command;
-use std::time::Instant;
+use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+const SHELL_EXECUTION_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShellExecutionResult {
@@ -24,7 +26,7 @@ pub fn execute_shell_command(cmd: &str) -> Result<ShellExecutionResult, String> 
     let start = Instant::now();
 
     // Run in powershell.exe with hidden window and output capture
-    let output = Command::new("powershell")
+    let child = Command::new("powershell")
         .args([
             "-NoProfile",
             "-NonInteractive",
@@ -34,8 +36,31 @@ pub fn execute_shell_command(cmd: &str) -> Result<ShellExecutionResult, String> 
             trimmed,
         ])
         .creation_flags(CREATE_NO_WINDOW)
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(|e| format!("Failed to execute command: {}", e))?;
+    let child_pid = child.id();
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let result = child.wait_with_output();
+        let _ = tx.send(result);
+    });
+
+    let output = match rx.recv_timeout(Duration::from_secs(SHELL_EXECUTION_TIMEOUT_SECS)) {
+        Ok(result) => result.map_err(|e| format!("Failed to collect command output: {}", e))?,
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            let _ = Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &child_pid.to_string()])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output();
+            return Err(format!(
+                "Command timed out after {} seconds",
+                SHELL_EXECUTION_TIMEOUT_SECS
+            ));
+        }
+        Err(error) => return Err(format!("Command execution thread failed: {}", error)),
+    };
 
     let elapsed_ms = start.elapsed().as_millis() as u64;
     let exit_code = output.status.code().unwrap_or(-1);

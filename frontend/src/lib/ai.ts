@@ -52,6 +52,7 @@ export async function streamOllamaResponse({
   onDone,
   onError,
   signal,
+  confirmShellCommand,
 }: {
   prompt: string;
   model?: string;
@@ -60,13 +61,18 @@ export async function streamOllamaResponse({
   onDone: () => void;
   onError: (error: string) => void;
   signal?: AbortSignal;
+  confirmShellCommand?: (command: string) => Promise<boolean>;
 }): Promise<void> {
   // 1. Check for Model Context Protocol (MCP) tool execution intent
   const action = detectActionIntent(prompt);
   if (action.isAction && action.toolName) {
     onToken(`⚡ [MCP Action Detected]: ${action.description}...\n\n`);
     try {
-      const toolResult = await executeMCPTool(action.toolName, action.args || {});
+      const toolResult = await executeMCPTool(
+        action.toolName,
+        action.args || {},
+        confirmShellCommand
+      );
       if (toolResult.success) {
         if (typeof toolResult.result === "object") {
           onToken(`✅ Result:\n\`\`\`json\n${JSON.stringify(toolResult.result, null, 2)}\n\`\`\`\n\n`);

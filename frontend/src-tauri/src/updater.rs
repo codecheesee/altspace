@@ -4,6 +4,21 @@ use std::process::Command;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+fn is_newer_version(latest: &str, current: &str) -> bool {
+    let parse = |value: &str| {
+        value
+            .trim_start_matches('v')
+            .split('.')
+            .map(|part| part.parse::<u64>().unwrap_or(0))
+            .collect::<Vec<_>>()
+    };
+    let mut latest_parts = parse(latest);
+    let mut current_parts = parse(current);
+    latest_parts.resize(3, 0);
+    current_parts.resize(3, 0);
+    latest_parts > current_parts
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateInfo {
     pub has_update: bool,
@@ -58,7 +73,7 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
         let clean_latest = tag.trim_start_matches('v').trim().to_string();
         let clean_current = current_version.trim_start_matches('v').trim().to_string();
 
-        let has_update = !clean_latest.is_empty() && clean_latest != clean_current;
+        let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
 
         return Ok(UpdateInfo {
             has_update,
@@ -88,4 +103,17 @@ pub fn apply_update() -> Result<String, String> {
         .map_err(|e| format!("Failed to spawn updater: {}", e))?;
 
     Ok("Update installer launched in background. AltSpace will restart shortly.".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_newer_version;
+
+    #[test]
+    fn only_newer_versions_are_updates() {
+        assert!(is_newer_version("1.0.3", "1.0.2"));
+        assert!(is_newer_version("v2.0.0", "1.99.99"));
+        assert!(!is_newer_version("1.0.2", "1.0.2"));
+        assert!(!is_newer_version("1.0.1", "1.0.2"));
+    }
 }

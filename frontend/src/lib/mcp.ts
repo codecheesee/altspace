@@ -94,7 +94,8 @@ export const ALTSPACE_MCP_TOOLS: MCPToolDefinition[] = [
 
 export async function executeMCPTool(
   toolName: string,
-  args: Record<string, any>
+  args: Record<string, any>,
+  confirmShellCommand?: (command: string) => Promise<boolean>
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
     switch (toolName) {
@@ -124,6 +125,12 @@ export async function executeMCPTool(
       case "execute_shell_command": {
         const cmd = String(args.command || "").trim();
         if (!cmd) throw new Error("Command cannot be empty");
+        if (!confirmShellCommand) {
+          throw new Error("Shell execution requires explicit user confirmation.");
+        }
+        if (!(await confirmShellCommand(cmd))) {
+          return { success: false, error: "Shell command cancelled by user." };
+        }
         const lower = cmd.toLowerCase();
         if (
           lower.includes("format ") ||

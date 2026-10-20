@@ -167,8 +167,8 @@ pub fn get_listening_ports() -> Vec<PortProcess> {
 
 // Kill a process by PID cleanly
 pub fn kill_pid(pid: u32) -> Result<(), String> {
-    if pid == 0 || pid == 4 {
-        return Err("Cannot terminate Windows System process".into());
+    if pid == 0 || pid == 4 || pid == std::process::id() {
+        return Err("Cannot terminate a protected process".into());
     }
 
     // Protect critical Windows OS processes against accidental termination
@@ -216,7 +216,13 @@ mod tests {
         for p in ports.iter().take(10) {
             println!("- Port :{} -> PID {} ({})", p.port, p.pid, p.process_name);
         }
-        assert!(!ports.is_empty(), "Should find at least one listening port on Windows");
+        assert!(
+            ports.windows(2).all(|pair| pair[0].port <= pair[1].port),
+            "Listening ports should be sorted"
+        );
+        assert!(
+            ports.windows(2).all(|pair| pair[0].port != pair[1].port || pair[0].pid != pair[1].pid),
+            "Listening ports should not contain duplicate port/PID pairs"
+        );
     }
 }
-

@@ -10,6 +10,7 @@ import { QuickLookModal } from "./components/QuickLookModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { StoreTab } from "./components/StoreTab";
 import { LicenseModal } from "./components/LicenseModal";
+import { ShellConfirmationModal } from "./components/ShellConfirmationModal";
 import { BUILTIN_EXTENSIONS } from "./lib/registry";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
@@ -49,6 +50,24 @@ export default function App() {
     setTimeout(() => setCopiedNotification(null), 2500);
   }, []);
 
+  const [shellConfirmation, setShellConfirmation] = useState<{
+    command: string;
+    resolve: (approved: boolean) => void;
+  } | null>(null);
+  const requestShellConfirmation = useCallback(
+    (command: string) =>
+      new Promise<boolean>((resolve) => {
+        setShellConfirmation({ command, resolve });
+      }),
+    []
+  );
+  const resolveShellConfirmation = useCallback((approved: boolean) => {
+    setShellConfirmation((current) => {
+      current?.resolve(approved);
+      return null;
+    });
+  }, []);
+
   // 1. Theme Engine Hook
   const {
     currentThemeId,
@@ -82,6 +101,7 @@ export default function App() {
     currentMode,
     currentThemeId,
     onNotify: notify,
+    onConfirmShellCommand: requestShellConfirmation,
   });
 
   // 3. Dev Ports Inspector Hook
@@ -730,6 +750,13 @@ export default function App() {
           onCancel={() => setInputModalConfig(null)}
         />
       )}
+
+      <ShellConfirmationModal
+        isOpen={shellConfirmation !== null}
+        command={shellConfirmation?.command ?? ""}
+        onConfirm={() => resolveShellConfirmation(true)}
+        onCancel={() => resolveShellConfirmation(false)}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ export interface ExtensionRegistryItem {
   icon: string;
   scriptFilename: string;
   scriptContent: string;
+  scriptSha256?: string;
   manifestJson: string;
 }
 
@@ -281,7 +282,16 @@ export async function fetchRemoteRegistry(): Promise<ExtensionRegistryItem[] | n
 
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) return data;
+      if (Array.isArray(data)) {
+        return data.filter(
+          (item): item is ExtensionRegistryItem =>
+            item &&
+            typeof item.id === "string" &&
+            typeof item.scriptContent === "string" &&
+            typeof item.scriptSha256 === "string" &&
+            /^[a-f0-9]{64}$/i.test(item.scriptSha256)
+        );
+      }
     }
   } catch (_) {}
   return null;
@@ -290,6 +300,24 @@ export async function fetchRemoteRegistry(): Promise<ExtensionRegistryItem[] | n
 export async function installRegistryExtension(
   plugin: ExtensionRegistryItem
 ): Promise<void> {
+  const isBuiltin = BUILTIN_EXTENSIONS.some((item) => item.id === plugin.id);
+  if (!isBuiltin && !plugin.scriptSha256) {
+    throw new Error(
+      "Remote extension installation is deferred until the package has a verified SHA-256 digest."
+    );
+  }
+  if (!isBuiltin && plugin.scriptSha256) {
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(plugin.scriptContent)
+    );
+    const actual = Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+    if (actual.toLowerCase() !== plugin.scriptSha256.toLowerCase()) {
+      throw new Error("Remote extension integrity verification failed.");
+    }
+  }
   await tauriInvoke("install_plugin", {
     pluginId: plugin.id,
     manifestJson: plugin.manifestJson,

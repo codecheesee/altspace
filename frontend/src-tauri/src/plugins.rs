@@ -75,15 +75,17 @@ pub fn scan_plugins() -> Vec<PluginItem> {
                 if manifest_path.exists() {
                     if let Ok(content) = fs::read_to_string(&manifest_path) {
                         if let Ok(manifest) = serde_json::from_str::<PluginManifest>(&content) {
-                            let script_path = path.join(&manifest.script);
-                            plugins.push(PluginItem {
-                                id: manifest.id,
-                                name: manifest.name,
-                                description: manifest.description,
-                                keyword: manifest.keyword,
-                                script_path: script_path.to_string_lossy().to_string(),
-                                icon: manifest.icon.unwrap_or_else(|| "cmd".to_string()),
-                            });
+                            if validate_script_filename(&manifest.script).is_ok() {
+                                let script_path = path.join(&manifest.script);
+                                plugins.push(PluginItem {
+                                    id: manifest.id,
+                                    name: manifest.name,
+                                    description: manifest.description,
+                                    keyword: manifest.keyword,
+                                    script_path: script_path.to_string_lossy().to_string(),
+                                    icon: manifest.icon.unwrap_or_else(|| "cmd".to_string()),
+                                });
+                            }
                         }
                     }
                 }
@@ -143,10 +145,12 @@ pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String
 
     // Security Check: Verify that the script resides inside the AltSpace plugins directory
     let plugins_dir = get_plugins_dir();
-    if let (Ok(canon_script), Ok(canon_dir)) = (fs::canonicalize(&path), fs::canonicalize(&plugins_dir)) {
-        if !canon_script.starts_with(&canon_dir) {
-            return Err("Security Sandbox Violation: Script resides outside the AltSpace plugins directory".into());
-        }
+    let canon_script = fs::canonicalize(&path)
+        .map_err(|e| format!("Unable to resolve plugin script safely: {}", e))?;
+    let canon_dir = fs::canonicalize(&plugins_dir)
+        .map_err(|e| format!("Unable to resolve plugin directory safely: {}", e))?;
+    if !canon_script.starts_with(&canon_dir) {
+        return Err("Security Sandbox Violation: Script resides outside the AltSpace plugins directory".into());
     }
 
     let extension = path
@@ -241,6 +245,9 @@ pub fn install_plugin(
 
     if manifest.id != plugin_id {
         return Err("Manifest ID mismatch with plugin ID".into());
+    }
+    if manifest.script != script_filename {
+        return Err("Manifest script filename does not match submitted script filename".into());
     }
 
     let plugins_dir = get_plugins_dir();

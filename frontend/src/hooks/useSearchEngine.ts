@@ -34,10 +34,12 @@ export function useSearchEngine({
   currentMode,
   currentThemeId,
   onNotify,
+  onConfirmShellCommand,
 }: {
   currentMode: Mode;
   currentThemeId: string;
   onNotify?: (msg: string) => void;
+  onConfirmShellCommand?: (command: string) => Promise<boolean>;
 }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -179,11 +181,12 @@ export function useSearchEngine({
             error: err,
           }));
         },
+        confirmShellCommand: onConfirmShellCommand,
       });
     }, 400);
 
     return () => clearTimeout(aiTimer);
-  }, [query]);
+  }, [query, onConfirmShellCommand]);
 
   // Phase 1: Instant L1 Search & Matching
   useEffect(() => {
