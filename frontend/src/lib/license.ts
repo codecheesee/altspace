@@ -19,47 +19,11 @@ export interface FeatureBounty {
   githubIssueUrl: string;
 }
 
-export const SUPPORTER_PRICE_INR = 99; // ₹99/year (~$1.19)
+export const SUPPORTER_PRICE_INR = 299; // ₹299/year (~$3.60)
 export const TREASURY_ALLOCATION_PCT = 20; // 20% to Community Treasury
-export const TREASURY_PER_SALE_INR = Math.round((SUPPORTER_PRICE_INR * TREASURY_ALLOCATION_PCT) / 100); // ₹20
+export const TREASURY_PER_SALE_INR = Math.round((SUPPORTER_PRICE_INR * TREASURY_ALLOCATION_PCT) / 100); // ₹60
 
-export const ACTIVE_BOUNTIES: FeatureBounty[] = [
-  {
-    id: "bounty-bluetooth",
-    title: "Bluetooth Device Switcher",
-    description: "1-click connect/disconnect for paired Bluetooth headphones and peripherals.",
-    bountyAmountINR: 3000,
-    status: "Completed",
-    assignee: "alexrivera",
-    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/42",
-  },
-  {
-    id: "bounty-spotify",
-    title: "Spotify Desktop Mini-Controller",
-    description: "Search playlists, skip tracks, and display live lyrics inside AltSpace.",
-    bountyAmountINR: 2500,
-    status: "Claimed",
-    assignee: "sarahchen",
-    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/56",
-  },
-  {
-    id: "bounty-obsidian",
-    title: "Obsidian Quick Note Appender",
-    description: "Instantly append daily notes, tasks, or bookmarks into local Obsidian vault.",
-    bountyAmountINR: 2000,
-    status: "Open",
-    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/61",
-  },
-  {
-    id: "bounty-docker-stats",
-    title: "Docker Container Live Metrics",
-    description: "View CPU/RAM usage of running containers with restart/stop buttons.",
-    bountyAmountINR: 2500,
-    status: "Completed",
-    assignee: "elenarostova",
-    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/73",
-  },
-];
+export const ACTIVE_BOUNTIES: FeatureBounty[] = [];
 
 export interface LicenseStatus {
   isSupporter: boolean;

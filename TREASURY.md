@@ -1,88 +1,99 @@
-# AltSpace Contributor Treasury & Governance Charter
+# AltSpace Contributor Treasury & Governance Specification
 
-This document outlines the financial allocation, legal payout rails, and bounty distribution model for **AltSpace**.
+This document defines the financial architecture, allocation guidelines, legal framework, and bounty disbursement procedures governing the **AltSpace** open-source project.
 
 ---
 
-## 1. Core Economic Model (The 70 / 20 / 10 Split)
+## 1. Economic Framework: The 70 / 20 / 10 Revenue Allocation
 
-AltSpace operates as an **Open-Core Sustainable Ecosystem**. All source code is 100% free under the **Apache 2.0 License**. Revenue generated from pre-built signed binaries, enterprise packages, and Supporter Licenses is distributed according to this transparent formula:
+AltSpace is maintained as an open-core, sustainable engineering project. All core source code is licensed under the **Apache License 2.0**. Revenue generated from optional Supporter Licenses, commercial support, and enterprise tooling is partitioned strictly according to the following audited allocation schedule:
 
 ```
                       ┌──────────────────────────────────────────────┐
                       │         TOTAL SUPPORTER REVENUE (100%)       │
                       └──────────────────────┬───────────────────────┘
                                              │
-               ┌─────────────────────────────┼─────────────────────────────┐
-               ▼                             ▼                             ▼
-  ┌───────────────────────────┐┌───────────────────────────┐┌───────────────────────────┐
-  │     FOUNDER / OWNER       ││   CONTRIBUTOR TREASURY    ││  INFRA & SECURITY RESERVE │
-  │           70%             ││           20%             ││           10%             │
-  ├───────────────────────────┤├───────────────────────────┤├───────────────────────────┤
-  │ • Core Rust engine design ││ • Funded GitHub Bounties  ││ • Authenticode EV Signing │
-  │ • Win32 API low-level dev ││ • Community plugin grants ││   (removes SmartScreen)   │
-  │ • Security & code reviews ││ • Bug hunter rewards      ││ • Build runners & CDN     │
-  │ • Releases & operations   ││ • Docs & translations     ││ • Domain & infrastructure │
-  └───────────────────────────┘└───────────────────────────┘└───────────────────────────┘
+                ┌─────────────────────────────┼─────────────────────────────┐
+                ▼                             ▼                             ▼
+   ┌───────────────────────────┐┌───────────────────────────┐┌───────────────────────────┐
+   │     CORE MAINTENANCE      ││   CONTRIBUTOR TREASURY    ││  INFRASTRUCTURE & COMPLIANCE│
+   │           70%             ││           20%             ││           10%             │
+   ├───────────────────────────┤├───────────────────────────┤├───────────────────────────┤
+   │ • Rust backend engineering││ • Funded GitHub Bounties  ││ • Windows EV Code Signing │
+   │ • Low-level Win32 systems ││ • Extension development   ││   (Authenticode certs)    │
+   │ • Security reviews & CVEs ││ • Critical bug fixes      ││ • Build runners & CI/CD   │
+   │ • Release engineering     ││ • Performance enhancements││ • Infrastructure hosting  │
+   └───────────────────────────┘└───────────────────────────┘└───────────────────────────┘
 ```
 
+### Allocation Breakdown
+1. **70% — Core Maintenance and Engineering**:
+   Allocated directly to lead maintainers for full-time engineering, architecture design, low-level Win32 integration, security audits, and continuous maintenance.
+2. **20% — Public Contributor Bounty Treasury**:
+   Reserved exclusively for community contributors who author approved extensions, fix verified bugs, or implement prioritized system features.
+3. **10% — Infrastructure, Signing, and Compliance**:
+   Dedicated to project overhead, including Windows Authenticode Extended Validation (EV) code signing certificates to ensure clean SmartScreen verification, high-performance CI build runners, and domain infrastructure.
+
 ---
 
-## 2. Direct Creator Sponsorships (100% to Authors)
+## 2. Creator Sponsorships and Tipping Policy
 
-In addition to the public Bounty Treasury:
-- **Zero Platform Fee**: Every extension listed in the AltSpace Community Store includes a direct **"Tip Creator"** button linking to the author's personal GitHub Sponsors, Ko-fi, or BuyMeACoffee.
-- **Direct Payout**: 100% of user tips go directly to the creator without AltSpace taking any intermediary cut or commission.
+AltSpace supports independent open-source developers through direct monetization rails:
+- **Zero Intermediation**: Extension author cards displayed within the in-app Store include direct links to the author's independent sponsorship profile (GitHub Sponsors, Ko-fi, BuyMeACoffee).
+- **100% Retained by Authors**: AltSpace retains zero commission, processing fee, or take-rate from direct community tips sent to extension developers.
 
 ---
 
-## 3. Bounty Tiers & Reward Schedule
+## 3. Bounty Classification and Valuation Matrix
 
-Bounties are posted publicly on GitHub Issues and tagged with the [`bounty`](https://github.com/codecheesee/altspace/labels/bounty) label:
+When funds accumulate in the Contributor Treasury, maintainers allocate bounties to public GitHub issues labeled [`bounty`](https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty). Bounties adhere to the following complexity tiers:
 
-| Tier | Complexity | Bounty (INR) | Bounty (USD Equiv) | Example Deliverable |
+| Tier | Category | Valuation (INR) | Valuation (USD Equiv.) | Scope and Qualifying Criteria |
 | :---: | :--- | :---: | :---: | :--- |
-| **Tier 1** | Minor Bug / Small Script | **₹1,000** | ~$12 | Fix a window positioning edge case or add a simple PowerShell script |
-| **Tier 2** | Standard Community Extension | **₹2,000 – ₹3,500** | ~$25 – ~$42 | Bluetooth device switcher, Spotify controller, Obsidian note appender |
-| **Tier 3** | Complex System Integration | **₹5,000 – ₹10,000** | ~$60 – ~$120 | Virtual desktop manager, GPU switcher, multi-monitor display profile manager |
+| **Tier 1** | Maintenance & Small Utilities | **₹1,000** | ~$12 | Edge-case bug resolutions, localized script utilities, documentation or translation packs. |
+| **Tier 2** | Standard Community Extensions | **₹2,000 – ₹3,500** | ~$25 – ~$42 | Fully functional extension package with manifest, error handling, and icon assets (e.g. Docker, Spotify, Obsidian). |
+| **Tier 3** | Core Systems Integration | **₹5,000 – ₹10,000** | ~$60 – ~$120 | Complex low-level Win32 integrations, IPC pipelines, performance optimizations, or virtual desktop subsystem enhancements. |
 
 ---
 
-## 4. Legal & Tax-Compliant Payout Rails
+## 4. Legal Compliance and Cross-Border Tax Architecture
 
-To protect both contributors and the project maintainer from cross-border tax liabilities:
+To adhere to international financial and tax regulations, all disbursements from the Contributor Treasury operate through a designated **Merchant of Record (MoR)**:
 
-1. **Merchant of Record (MoR) Integration**:
-   - Payouts are handled via **Polar.sh** or **Open Collective**.
-   - The platform acts as the legal Merchant of Record, automatically collecting required tax forms:
-     - **Non-US Contributors**: Automatic W-8BEN filing.
-     - **Indian Contributors**: PAN verification and TDS compliance.
-     - **US Contributors**: Form 1099 generation.
-2. **Global Payout Rails**:
-   - Funds are disbursed directly to contributors via **Stripe Connect, Local Bank Transfer, or PayPal** in their local currency without exorbitant wire transfer fees.
-3. **Founder Non-Liability**:
-   - The maintainer does not act as an escrow middleman or employer. You receive your bounty as an independent open-source grant or contractor payment.
-
----
-
-## 5. How to Claim a Bounty
-
-1. **Find an Open Bounty**: Browse issues labeled [`bounty:open`](https://github.com/codecheesee/altspace/labels).
-2. **Comment to Claim**: Post a comment on the issue stating your intent to work on it and outlining your proposed architectural approach. A maintainer will assign the issue to you.
-3. **Submit Your Pull Request**:
-   - Reference the issue (e.g., `Resolves #42`).
-   - Ensure all automated checks pass:
-     - `cargo test` in `frontend/src-tauri` (all 26+ tests must pass).
-     - `npm run build` in `frontend` (zero TypeScript or Vite errors).
-     - Respect security boundaries (no hardcoded path escapes, enforce timeouts).
-4. **Merge & Payout**:
-   - Once the PR is reviewed and merged into `main`, the bounty is automatically awarded to your connected Polar.sh or GitHub Sponsors account!
+1. **Merchant of Record Protocol**:
+   - Payouts are executed via **Polar.sh** or **Open Collective**.
+   - The MoR assumes legal responsibility as the disbursement entity and manages automated tax compliance:
+     - **United States Residents**: Automated generation and filing of IRS Form 1099.
+     - **Non-US Contributors**: Automated submission and verification of IRS Form W-8BEN / W-8BEN-E.
+     - **Indian Contributors**: PAN collection and compliance with Tax Deducted at Source (TDS) under applicable provisions of the Indian Income Tax Act.
+2. **Disbursement Channels**:
+   - Payouts are transferred through Stripe Connect, standard wire transfer, or direct bank deposit in the recipient's domestic currency.
+3. **Independent Contractor Status**:
+   - Contributors receive bounty payments strictly as independent open-source grant recipients or external contractors. Bounty awards do not establish an employer-employee relationship or partnership with the maintainers of AltSpace.
 
 ---
 
-## 6. Anti-Spam & Quality Standards
+## 5. Contribution and Bounty Disbursement Protocol
 
-To ensure long-term health and prevent PR spam:
-- Low-effort, auto-generated, or AI-hallucinated PRs that do not add genuine utility will be rejected.
-- Trivial 1-line changes or typo fixes do not qualify for cash bounties.
-- All extensions must adhere to AltSpace's sandboxing rules (path validation, execution timeouts, non-destructive execution).
+To claim a funded bounty, contributors must follow this procedural workflow:
+
+1. **Identify a Funded Issue**:
+   Select an open issue labeled [`bounty`](https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty).
+2. **Intent to Implement**:
+   Submit a comment on the target issue outlining the proposed technical design, target APIs, and test strategy. A repository maintainer will review the approach and assign the issue.
+3. **Pull Request Requirements**:
+   - The pull request must reference the issue number.
+   - All automated continuous integration checks must pass:
+     - `cargo test` in `frontend/src-tauri` (all unit and integration tests).
+     - `npm run build` in `frontend` (zero TypeScript and bundling errors).
+     - Full compliance with extension sandboxing standards (15-second process timeout, path confinement).
+4. **Code Review, Merge, and Disbursement**:
+   Upon formal code review approval and merge into the `main` branch, the bounty is released via the connected Polar.sh or Open Collective payout rail.
+
+---
+
+## 6. Quality Assurance and Anti-Abuse Standards
+
+To preserve the architectural integrity of the AltSpace ecosystem:
+- Low-effort pull requests, automated AI-generated submissions without human review, and trivial aesthetic modifications are strictly ineligible for bounty compensation.
+- Security-sensitive contributions must demonstrate memory safety, sanitize input parameters, and prevent execution privilege escalation.

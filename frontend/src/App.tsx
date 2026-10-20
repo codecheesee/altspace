@@ -328,6 +328,25 @@ export default function App() {
         window.open("https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md", "_blank");
       }
       handleDismissWindow();
+    } else if (item.id === "util-update" || item.path.startsWith("update://")) {
+      notify("Checking GitHub for the latest AltSpace release...");
+      tauriInvoke<UpdateInfo>("check_app_update")
+        .then((info) => {
+          if (info && info.has_update) {
+            notify(`Update v${info.latest_version} found. Launching updater...`);
+            tauriInvoke("trigger_app_update")
+              .then(() => {
+                notify("Updater running. AltSpace will restart automatically.");
+              })
+              .catch((err) => notify(`Update error: ${err}`));
+          } else {
+            notify(`AltSpace is up to date (v${info?.current_version || "1.0.1"}).`);
+          }
+        })
+        .catch((err) => {
+          notify(`Update check failed: ${err}`);
+        });
+      handleDismissWindow();
     } else if (item.id === "util-community") {
       if (tauriInvoke) {
         tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });

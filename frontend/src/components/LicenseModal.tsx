@@ -339,48 +339,57 @@ export function LicenseModal({
             </div>
 
             <div className="rounded-xl border border-white/[0.06] divide-y divide-white/[0.05] overflow-hidden bg-white/[0.01]">
-              {bounties.map((bounty) => (
-                <div
-                  key={bounty.id}
-                  onClick={() => handleOpenBounty(bounty.githubIssueUrl)}
-                  className="p-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition cursor-pointer group"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white group-hover:text-purple-300 transition">
-                        {bounty.title}
-                      </span>
-                      <span
-                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
-                          bounty.status === "Completed"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : bounty.status === "Claimed"
-                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            : "bg-sky-500/10 text-sky-400 border-sky-500/20"
-                        }`}
-                      >
-                        {bounty.status}
-                      </span>
+              {bounties.length > 0 ? (
+                bounties.map((bounty) => (
+                  <div
+                    key={bounty.id}
+                    onClick={() => handleOpenBounty(bounty.githubIssueUrl)}
+                    className="p-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition cursor-pointer group"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white group-hover:text-purple-300 transition">
+                          {bounty.title}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                            bounty.status === "Completed"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : bounty.status === "Claimed"
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              : "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                          }`}
+                        >
+                          {bounty.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                        {bounty.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-neutral-500">
+                        {bounty.assignee ? (
+                          <span>Claimed by @{bounty.assignee}</span>
+                        ) : (
+                          <span className="text-sky-400">View issue and claim on GitHub →</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                      {bounty.description}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-neutral-500">
-                      {bounty.assignee ? (
-                        <span>Claimed by @{bounty.assignee}</span>
-                      ) : (
-                        <span className="text-sky-400">Click to view & claim on GitHub →</span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/25 text-purple-300 font-mono text-xs font-semibold">
-                      ₹{bounty.bountyAmountINR.toLocaleString()} Bounty
-                    </span>
+                    <div className="text-right shrink-0">
+                      <span className="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/25 text-purple-300 font-mono text-xs font-semibold">
+                        ₹{bounty.bountyAmountINR.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-xs text-neutral-400 space-y-1">
+                  <p className="text-neutral-300 font-medium">No open bounties currently funded.</p>
+                  <p className="text-[11px] text-neutral-500">
+                    Maintainers allocate 20% of Supporter revenue to public GitHub issues labeled <span className="font-mono text-neutral-300">bounty</span>.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

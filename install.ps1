@@ -1,51 +1,57 @@
-# AltSpace 1-Line Modern Windows Installer
+# AltSpace Windows Command Palette & Launcher Installer / Updater
 # Usage: irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
+
+param(
+    [switch]$LocalOnly,
+    [string]$TargetDir = "$env:LOCALAPPDATA\Programs\AltSpace"
+)
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host @"
-    ___    __  __  _____                         
-   /   |  / / / /_/ ___/____  ____ _________    
-  / /| | / / / __/\__ \/ __ \/ __ `/ ___/ _ \   
- / ___ |/ / / /_ ___/ / /_/ / /_/ / /__/  __/   
-/_/  |_/_/_/\__//____/ .___/\__,_/\___/\___/    
-                    /_/                         
-  Raycast-Speed Native Command Palette for Windows
-"@ -ForegroundColor Cyan
+Write-Host "===========================================================" -ForegroundColor DarkCyan
+Write-Host " AltSpace - Native Windows Command Palette & Launcher" -ForegroundColor Cyan
+Write-Host " Architecture: Rust Core (Tauri v2) | License: Apache-2.0" -ForegroundColor Gray
+Write-Host "===========================================================" -ForegroundColor DarkCyan
 
-$InstallDir = "$env:LOCALAPPDATA\Programs\AltSpace"
-$BinaryPath = "$InstallDir\altspace.exe"
+$BinaryPath = "$TargetDir\altspace.exe"
 $Repo = "codecheesee/altspace"
 
-Write-Host "`n[*] Installing AltSpace into $InstallDir..." -ForegroundColor Yellow
-
-# 1. Terminate running instance if updating
+Write-Host "[*] Terminating existing AltSpace instances..." -ForegroundColor Yellow
 Stop-Process -Name altspace -Force -ErrorAction SilentlyContinue
+Stop-Process -Name raycast-windows -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 800
 
-# 2. Create Target Directory
-if (!(Test-Path $InstallDir)) {
-    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+# 1. Create Target Directory
+if (!(Test-Path $TargetDir)) {
+    New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
 }
 
-# 3. Download or Copy Release Binary
-$DownloadUrl = "https://github.com/$Repo/releases/latest/download/altspace.exe"
+# 2. Resolve Binary (Local or Remote Release)
 $LocalBin = "$PSScriptRoot\bin\altspace.exe"
 
-if (Test-Path $LocalBin) {
-    Write-Host "[*] Using local release binary: $LocalBin" -ForegroundColor Green
+if ((Test-Path $LocalBin) -and ($LocalOnly -or -not $PSScriptRoot -eq "")) {
+    Write-Host "[*] Installing from local repository binary: $LocalBin" -ForegroundColor Green
     Copy-Item $LocalBin $BinaryPath -Force
 } else {
-    Write-Host "[*] Fetching latest release binary from GitHub..." -ForegroundColor Green
+    Write-Host "[*] Downloading verified release from GitHub ($Repo)..." -ForegroundColor Green
+    $PrimaryUrl = "https://github.com/$Repo/releases/latest/download/altspace.exe"
+    $FallbackUrl = "https://github.com/$Repo/releases/download/v1.0.1/altspace.exe"
+
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $BinaryPath -UseBasicParsing
+        Invoke-WebRequest -Uri $PrimaryUrl -OutFile $BinaryPath -UseBasicParsing
     } catch {
-        Write-Warning "Could not fetch directly from GitHub ($DownloadUrl). Please ensure repository release asset exists."
-        exit 1
+        Write-Host "[!] Primary latest endpoint redirected. Attempting release tag fallback..." -ForegroundColor Yellow
+        try {
+            Invoke-WebRequest -Uri $FallbackUrl -OutFile $BinaryPath -UseBasicParsing
+        } catch {
+            Write-Error "Failed to download AltSpace binary: $_"
+            exit 1
+        }
     }
 }
 
-# 4. Create Start Menu Shortcut
+# 3. Create / Update Start Menu Shortcut
 $StartMenuDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\AltSpace"
 if (!(Test-Path $StartMenuDir)) {
     New-Item -ItemType Directory -Path $StartMenuDir -Force | Out-Null
@@ -54,28 +60,22 @@ if (!(Test-Path $StartMenuDir)) {
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut("$StartMenuDir\AltSpace.lnk")
 $Shortcut.TargetPath = $BinaryPath
-$Shortcut.Description = "AltSpace — Instant Command Palette for Windows"
-$Shortcut.WorkingDirectory = $InstallDir
+$Shortcut.Description = "AltSpace - Instant Command Palette for Windows"
+$Shortcut.WorkingDirectory = $TargetDir
 $Shortcut.Save()
 
-# 5. Add to User PATH
+# 4. Configure User PATH
 $CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($CurrentPath -notlike "*$InstallDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$CurrentPath;$InstallDir", "User")
-    Write-Host "[+] Added $InstallDir to user PATH" -ForegroundColor Green
+if ($CurrentPath -notlike "*$TargetDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$CurrentPath;$TargetDir", "User")
+    Write-Host "[+] Registered $TargetDir in User PATH" -ForegroundColor Green
 }
 
-# 6. Launch AltSpace in background
-Write-Host "[+] Installation Complete! Launching AltSpace..." -ForegroundColor Green
+# 5. Launch AltSpace in Background
+Write-Host "[+] Installation verified. Starting AltSpace..." -ForegroundColor Green
 Start-Process -FilePath $BinaryPath
 
-Write-Host @"
-
-  =======================================================
-  🚀 AltSpace is running!
-  • Summon Launcher:  Alt + Space (or Ctrl + Space)
-  • Actions Drawer:   Ctrl + K
-  • Themes & Modes:   Ctrl + Shift + T  or  type :theme
-  • System Tray:      Check the taskbar tray icon!
-  =======================================================
-"@ -ForegroundColor Cyan
+Write-Host "`nAltSpace is now running." -ForegroundColor Cyan
+Write-Host "Default Hotkey: Alt + Space (or Ctrl + Space)" -ForegroundColor Gray
+Write-Host "Action Drawer:  Ctrl + K" -ForegroundColor Gray
+Write-Host "Updates:        Type ':update' into AltSpace anytime or re-run this script." -ForegroundColor Gray

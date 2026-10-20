@@ -53,18 +53,18 @@
   <nav class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25">
-        ⚡
+        Alt
       </div>
       <span class="text-xl font-bold tracking-tight text-white">AltSpace</span>
       <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/25 ml-1">
-        v0.1.0 • Apache 2.0
+        v1.0.1 • Apache 2.0
       </span>
     </div>
 
     <div class="flex items-center gap-4 text-sm font-medium">
       <a href="#features" class="text-neutral-400 hover:text-white transition">Features</a>
       <a href="#treasury" class="text-purple-300 hover:text-purple-200 transition">Bounty Treasury</a>
-      <a href="#bounties" class="text-neutral-400 hover:text-white transition">Claim Bounties</a>
+      <a href="#bounties" class="text-neutral-400 hover:text-white transition">Bounties</a>
       <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white transition border border-white/[0.1]">
         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         <span>GitHub</span>
@@ -75,20 +75,20 @@
   <!-- Hero Section -->
   <section class="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
     <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold mb-6">
-      <span>🚀 The Next-Gen Windows Spotlight Launcher</span>
+      <span>High-Performance Windows Command Center</span>
       <span class="text-neutral-500">•</span>
-      <span class="text-white">Built in Rust + React 19 + Tailwind v4</span>
+      <span class="text-white">Rust + React 19 + Tailwind CSS v4</span>
     </div>
 
     <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
-      Your Windows Command Center. <br>
+      Native Windows Command Palette. <br>
       <span class="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
-        Sub-5ms Fast. Zero Bloat.
+        Sub-5ms Latency. 18MB RAM Footprint.
       </span>
     </h1>
 
     <p class="text-lg text-neutral-400 max-w-2xl mx-auto mt-6">
-      Supercharge your workflow with instant app search, local AI with Model Context Protocol (MCP), a 1-click dev port killer, clipboard manager, and an in-app community extension store.
+      Low-latency desktop productivity featuring SQLite frecency search, local AI via Model Context Protocol (MCP), developer port management, clipboard history, and a sandboxed extension store.
     </p>
 
     <!-- 1-Click Install Command -->
@@ -96,7 +96,7 @@
       <div class="glass-card rounded-2xl p-2 flex items-center justify-between gap-3 shadow-xl">
         <div class="flex items-center gap-3 pl-3 text-neutral-300 text-sm font-mono overflow-x-auto whitespace-nowrap">
           <span class="text-purple-400 select-none">PS &gt;</span>
-          <span id="install-cmd">irm https://altspace.dev/install.ps1 | iex</span>
+          <span id="install-cmd">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
         </div>
         <button id="copy-btn" onclick="copyInstallCmd()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -293,58 +293,16 @@
     </div>
 
     <!-- Live Synced Bounties Grid -->
-    <div id="bounties-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <a href="https://github.com/codecheesee/altspace/issues" target="_blank" rel="noreferrer" class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-purple-500/30 transition block">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Bluetooth Device Switcher</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>
-          </div>
-          <p class="text-xs text-neutral-400 mt-1">1-click Bluetooth headphone switcher</p>
-        </div>
-        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold shrink-0">
-          ₹3,000 Bounty
-        </span>
-      </a>
-
-      <a href="https://github.com/codecheesee/altspace/issues" target="_blank" rel="noreferrer" class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-purple-500/30 transition block">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Spotify Desktop Mini-Controller</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Claimed</span>
-          </div>
-          <p class="text-xs text-neutral-400 mt-1">Search tracks and display lyrics in spotlight</p>
-        </div>
-        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold shrink-0">
-          ₹2,500 Bounty
-        </span>
-      </a>
-
-      <a href="https://github.com/codecheesee/altspace/issues" target="_blank" rel="noreferrer" class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-purple-500/30 transition block">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Obsidian Quick Note Appender</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Open Bounty</span>
-          </div>
-          <p class="text-xs text-neutral-400 mt-1">Append daily tasks and notes into local vault</p>
-        </div>
-        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold shrink-0">
-          ₹2,000 Bounty
-        </span>
-      </a>
-
-      <a href="https://github.com/codecheesee/altspace/issues" target="_blank" rel="noreferrer" class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-purple-500/30 transition block">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Docker Container Live Metrics</span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>
-          </div>
-          <p class="text-xs text-neutral-400 mt-1">Live RAM/CPU stats with restart controls</p>
-        </div>
-        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold shrink-0">
-          ₹2,500 Bounty
-        </span>
-      </a>
+    <div id="bounties-grid" class="max-w-3xl mx-auto">
+      <div class="glass-card rounded-2xl p-6 text-center border border-white/[0.08]">
+        <h3 class="text-base font-semibold text-white mb-2">Funded by 20% of Supporter Revenue</h3>
+        <p class="text-xs text-neutral-400 max-w-xl mx-auto leading-relaxed mb-4">
+          All feature bounties are tracked transparently on GitHub Issues under the <code class="text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">bounty</code> label. When community members propose and complete requested extensions, bounties are disbursed via Polar.sh / Open Collective.
+        </p>
+        <a href="https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/30 text-xs font-semibold transition">
+          View Active GitHub Bounties & Propose Features →
+        </a>
+      </div>
     </div>
   </section>
 

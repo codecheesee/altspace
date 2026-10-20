@@ -298,6 +298,27 @@ export function useSearchEngine({
         path: `theme://${t.id}`,
       }));
 
+      // System Update
+      const isUpdateFilter = qLower === ":update" || qLower === ":upgrade" || qLower === "update";
+      const updateItems: Item[] = isUpdateFilter
+        ? [
+            {
+              id: "util-update",
+              title: "Check for Updates & Upgrade AltSpace",
+              subtitle: "Fetches and applies the latest verified release from GitHub",
+              category: "Command",
+              iconType: "cmd",
+              path: "update://latest",
+            },
+          ]
+        : [];
+
+      if (isUpdateFilter) {
+        setItems(updateItems);
+        setSelectedIndex(0);
+        return;
+      }
+
       if (isGameFilter) {
         setItems(gameItems);
         setSelectedIndex(0);
