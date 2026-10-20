@@ -40,7 +40,7 @@ if ((Test-Path $LocalBin) -and ($LocalOnly -or -not $PSScriptRoot -eq "")) {
 } else {
     Write-Host "[*] Downloading verified release from GitHub ($Repo)..." -ForegroundColor Green
     $PrimaryUrl = "https://github.com/$Repo/releases/latest/download/altspace.exe"
-    $FallbackUrl = "https://github.com/$Repo/releases/download/v1.0.1/altspace.exe"
+    $FallbackUrl = "https://github.com/$Repo/releases/download/v1.0.2/altspace.exe"
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
