@@ -10,10 +10,9 @@ import {
   ExternalLink,
   Gift,
   RefreshCw,
+  CreditCard,
 } from "lucide-react";
 import {
-  SUPPORTER_PRICE_INR,
-  TREASURY_PER_SALE_INR,
   ACTIVE_BOUNTIES,
   getLicenseStatus,
   activateLicenseKey,
@@ -26,6 +25,12 @@ import {
   calculateTreasuryStats,
   type TreasuryStats,
 } from "../lib/bountySync";
+import {
+  getRegionalPricing,
+  openCheckout,
+  detectUserCurrency,
+  type CurrencyCode,
+} from "../lib/checkout";
 import { tauriInvoke } from "../lib/appStorage";
 
 interface LicenseModalProps {
@@ -49,6 +54,12 @@ export function LicenseModal({
   const [inputKey, setInputKey] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isActivating, setIsActivating] = useState(false);
+
+  // Currency & Purchasing Power Parity State
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() =>
+    detectUserCurrency()
+  );
+  const pricing = getRegionalPricing(selectedCurrency);
 
   // Live Bounties & Treasury State
   const [bounties, setBounties] = useState<FeatureBounty[]>(ACTIVE_BOUNTIES);
@@ -158,21 +169,47 @@ export function LicenseModal({
 
         {/* Modal Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
-          {/* Pricing & Treasury Breakdown Card */}
+          {/* Pricing & Regional PPP Breakdown Card */}
           <div className="p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] text-neutral-400 uppercase tracking-wider font-semibold">
-                1-Year Supporter Tier
-              </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold text-white tracking-tight">
-                  ₹{SUPPORTER_PRICE_INR}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-neutral-400 uppercase tracking-wider font-semibold">
+                  Supporter Edition
                 </span>
-                <span className="text-neutral-400">/ year (~$1.19 USD)</span>
+                {/* Currency Selector Pill */}
+                <div className="flex items-center bg-white/[0.06] p-0.5 rounded-md border border-white/[0.08]">
+                  <button
+                    onClick={() => setSelectedCurrency("INR")}
+                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono transition cursor-pointer ${
+                      selectedCurrency === "INR"
+                        ? "bg-amber-400 text-black font-semibold"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    ₹ INR
+                  </button>
+                  <button
+                    onClick={() => setSelectedCurrency("USD")}
+                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono transition cursor-pointer ${
+                      selectedCurrency === "USD"
+                        ? "bg-amber-400 text-black font-semibold"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    $ USD
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-baseline gap-2 mt-1.5">
+                <span className="text-2xl font-bold text-white tracking-tight">
+                  {pricing.formattedPrice}
+                </span>
+                <span className="text-neutral-400">/ year ({pricing.monthlyEquivalent})</span>
               </div>
               <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-mono">
                 <Gift className="w-3.5 h-3.5" />
-                <span>₹{TREASURY_PER_SALE_INR} (20%) directly funds Community Feature Bounties</span>
+                <span>20% ({pricing.formattedTreasury}) directly funds Community Bounties</span>
               </p>
             </div>
 
@@ -186,6 +223,18 @@ export function LicenseModal({
               </div>
             </div>
           </div>
+
+          {/* Checkout CTA Button (If not supporter) */}
+          {!licenseStatus.isSupporter && (
+            <button
+              onClick={() => openCheckout(selectedCurrency)}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/10 active:scale-[0.99]"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Get Supporter License ({pricing.formattedPrice} / year)</span>
+              <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
+            </button>
+          )}
 
           {/* Active Status or License Activation Box */}
           {licenseStatus.isSupporter ? (
@@ -219,7 +268,7 @@ export function LicenseModal({
           ) : (
             <div className="space-y-3">
               <label className="block text-xs font-medium text-neutral-300">
-                Activate Supporter Key
+                Already have a key? Activate it here
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -256,12 +305,12 @@ export function LicenseModal({
                 </button>
 
                 <a
-                  href="https://github.com/codecheesee/altspace#supporter-license"
+                  href={pricing.checkoutUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1"
                 >
-                  <span>Get Official Key (₹99)</span>
+                  <span>Polar.sh Checkout</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>

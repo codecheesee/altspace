@@ -130,7 +130,7 @@
         The 20% Contributor Bounty Treasury
       </h2>
       <p class="text-neutral-400 text-sm mt-3">
-        Source code is 100% Free Apache-2.0. Supporter licenses (₹299/year in India, $12/year Global) fund development, with <strong>20% of every purchase going directly into the Open Source Feature Bounty Treasury</strong> to pay community developers who build useful extensions!
+        Source code is 100% Free Apache-2.0. Supporter licenses fund development, with <strong>20% of every purchase going directly into the Open Source Feature Bounty Treasury</strong> to pay community developers who build useful extensions!
       </p>
     </div>
 
@@ -163,10 +163,17 @@
 
       <!-- Live Dynamic Numbers -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/[0.08]">
+        <!-- Regional Price Card with Currency Switcher -->
         <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-          <div class="text-[11px] uppercase font-semibold text-neutral-400">Supporter Price</div>
-          <div class="text-2xl font-bold text-white mt-1">₹299</div>
-          <div class="text-[11px] text-neutral-500 mt-1">~$12 USD Global (PPP)</div>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] uppercase font-semibold text-neutral-400">Supporter Tier</span>
+            <div class="flex items-center bg-white/[0.06] p-0.5 rounded border border-white/[0.08]">
+              <button id="curr-btn-inr" onclick="setCurrency('INR')" class="px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold">₹ INR</button>
+              <button id="curr-btn-usd" onclick="setCurrency('USD')" class="px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white">$ USD</button>
+            </div>
+          </div>
+          <div id="price-display" class="text-2xl font-bold text-white mt-1">₹299</div>
+          <div id="ppp-note" class="text-[11px] text-neutral-500 mt-1">~$25/mo • Regional PPP Active</div>
         </div>
 
         <div class="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25">
@@ -182,16 +189,16 @@
         </div>
       </div>
 
-      <!-- Creator Tips Banner -->
-      <div class="mt-6 p-4 rounded-2xl bg-neutral-900/80 border border-white/[0.06] flex items-center justify-between text-xs">
+      <!-- Checkout & Creator Tips Banner -->
+      <div class="mt-6 p-4 rounded-2xl bg-neutral-900/80 border border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
         <div>
-          <span class="text-neutral-400">Direct Creator Tipping:</span>
+          <span class="text-neutral-400">Merchant of Record via Polar.sh:</span>
           <div class="text-white font-semibold text-sm mt-0.5">
-            Every extension in the Store has a direct <span class="text-rose-400 font-medium">GitHub Sponsors</span> button with 0% platform fee.
+            Automated tax compliance, instant license keys, and 100% direct creator tipping.
           </div>
         </div>
-        <a href="#bounties" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition shrink-0 cursor-pointer">
-          View Bounties →
+        <a id="checkout-link-btn" href="https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr" target="_blank" rel="noreferrer" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs transition shrink-0 cursor-pointer shadow-md shadow-amber-500/20">
+          Get Supporter License →
         </a>
       </div>
     </div>
@@ -340,15 +347,44 @@
   </footer>
 
   <script>
+    let currentCurrency = 'INR';
+
+    function setCurrency(curr) {
+      currentCurrency = curr;
+      const inrBtn = document.getElementById('curr-btn-inr');
+      const usdBtn = document.getElementById('curr-btn-usd');
+      const priceDisplay = document.getElementById('price-display');
+      const pppNote = document.getElementById('ppp-note');
+      const checkoutBtn = document.getElementById('checkout-link-btn');
+
+      if (curr === 'INR') {
+        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold';
+        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
+        priceDisplay.innerText = '₹299';
+        pppNote.innerText = '~₹25/mo • Regional PPP Active';
+        checkoutBtn.href = 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr';
+      } else {
+        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold';
+        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
+        priceDisplay.innerText = '$12';
+        pppNote.innerText = '$1/mo • Global Supporter Tier';
+        checkoutBtn.href = 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-usd';
+      }
+
+      const sales = document.getElementById('sales-slider').value;
+      updateTreasuryCalculator(sales);
+    }
+
     function updateTreasuryCalculator(sales) {
       const count = parseInt(sales, 10);
-      const price = 299; // ₹299 Supporter Tier
-      const treasuryPool = Math.round(count * (price * 0.20)); // 20%
-      const avgBounty = 3000;
+      const isINR = currentCurrency === 'INR';
+      const price = isINR ? 299 : 12;
+      const treasuryPool = Math.round(count * (price * 0.20));
+      const avgBounty = isINR ? 3000 : 36;
       const fundedBounties = Math.floor(treasuryPool / avgBounty);
 
       document.getElementById('sales-count-display').innerText = count.toLocaleString() + ' supporters';
-      document.getElementById('treasury-pool-display').innerText = '₹' + treasuryPool.toLocaleString();
+      document.getElementById('treasury-pool-display').innerText = (isINR ? '₹' : '$') + treasuryPool.toLocaleString();
       document.getElementById('bounties-funded-display').innerText = fundedBounties + ' Bounties';
     }
 
@@ -360,6 +396,20 @@
       setTimeout(() => {
         btnText.innerText = 'Copy';
       }, 2000);
+    }
+
+    // Auto-detect Regional Currency on Load
+    function autoDetectCurrency() {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        if (tz.includes('Calcutta') || tz.includes('Kolkata') || tz.includes('Asia/Colombo')) {
+          setCurrency('INR');
+        } else {
+          setCurrency('USD');
+        }
+      } catch (_) {
+        setCurrency('INR');
+      }
     }
 
     // Dynamic SWR GitHub Bounty Sync
@@ -417,6 +467,7 @@
       } catch (_) {}
     }
 
+    autoDetectCurrency();
     syncGitHubBounties();
   </script>
 </body>
