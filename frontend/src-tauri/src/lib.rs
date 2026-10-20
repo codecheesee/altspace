@@ -836,6 +836,9 @@ pub fn run() {
             let autostart_i = MenuItem::with_id(app, "autostart", autostart_label, true, None::<&str>)?;
             let updates_i = MenuItem::with_id(app, "updates", "🔄 Check for Updates", true, None::<&str>)?;
             let sep2 = PredefinedMenuItem::separator(app)?;
+            let feedback_i = MenuItem::with_id(app, "feedback", "💬 Rate & Send Feedback", true, None::<&str>)?;
+            let github_i = MenuItem::with_id(app, "github", "⭐ Star on GitHub", true, None::<&str>)?;
+            let sep3 = PredefinedMenuItem::separator(app)?;
             let quit_i = MenuItem::with_id(app, "quit", "❌ Exit AltSpace", true, None::<&str>)?;
 
             let tray_menu = Menu::with_items(
@@ -849,6 +852,9 @@ pub fn run() {
                     &autostart_i,
                     &updates_i,
                     &sep2,
+                    &feedback_i,
+                    &github_i,
+                    &sep3,
                     &quit_i,
                 ],
             )?;
@@ -916,6 +922,20 @@ pub fn run() {
                             let _ = window.set_focus();
                             let _ = window.emit("check-updates", ());
                         }
+                    }
+                    "feedback" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                            if let Ok(hwnd) = window.hwnd() {
+                                force_foreground_window(HWND(hwnd.0 as _));
+                            }
+                            let _ = window.emit("open-feedback", ());
+                        }
+                    }
+                    "github" => {
+                        let _ = open_url("https://github.com/codecheesee/altspace".to_string());
                     }
                     "quit" => {
                         app.exit(0);

@@ -1,0 +1,45 @@
+name: "🔌 Plugin Proposal"
+description: "Propose a new plugin or script extension for AltSpace"
+title: "[Plugin]: "
+labels: ["plugin", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AltSpace supports PowerShell and Python plugins that can run commands, fetch data, or automate desktop actions.
+  - type: input
+    id: plugin_name
+    attributes:
+      label: "Plugin Name & Trigger"
+      description: "What is the name of this plugin and what command prefix would trigger it?"
+      placeholder: "e.g. Spotify Controls (:spotify), AWS Account Switcher (:aws)"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: "Runtime Language"
+      options:
+        - "PowerShell (.ps1)"
+        - "Python (.py)"
+        - "Native Rust Command"
+        - "Web / REST API"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: "Plugin Description & Workflow"
+      description: "How does the plugin work? What input does it take, and what does it display or execute?"
+    validations:
+      required: true
+  - type: dropdown
+    id: authorship
+    attributes:
+      label: "Are you willing to build or test this plugin?"
+      options:
+        - "Yes, I can submit a PR with the plugin script!"
+        - "I can test and provide feedback if someone builds it"
+        - "Just sharing an idea for the community"
+    validations:
+      required: true

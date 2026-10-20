@@ -207,4 +207,28 @@ export const UTILITY_ITEMS: Item[] = [
     iconType: "cmd",
     path: "raycast://drives",
   },
+  {
+    id: "util-feedback",
+    title: "Send Feedback & Rate AltSpace",
+    subtitle: "Submit a 1-5 star rating, feature idea, or bug report",
+    category: "Command",
+    iconType: "cmd",
+    path: "altspace://feedback",
+  },
+  {
+    id: "util-contribute",
+    title: "Contribute to AltSpace",
+    subtitle: "Explore good first issues, propose plugins, or view the architecture guide",
+    category: "Command",
+    iconType: "cmd",
+    path: "altspace://contribute",
+  },
+  {
+    id: "util-community",
+    title: "Star on GitHub & Discussions",
+    subtitle: "View the open-source repository (codecheesee/altspace) and star the project",
+    category: "Command",
+    iconType: "cmd",
+    path: "altspace://community",
+  },
 ];

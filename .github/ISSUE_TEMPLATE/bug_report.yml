@@ -1,0 +1,54 @@
+name: "🐛 Bug Report"
+description: "File a bug report to help us improve AltSpace"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue quickly.
+  - type: input
+    id: version
+    attributes:
+      label: "AltSpace Version"
+      description: "Which version of AltSpace are you running? (Check Settings or commit hash)"
+      placeholder: "e.g. 1.0.0 or main"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: "Windows Version"
+      description: "What version of Windows are you using?"
+      options:
+        - "Windows 11 (23H2 or newer)"
+        - "Windows 11 (22H2 or older)"
+        - "Windows 10"
+        - "Other / Wine"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Step-by-step description of how to reproduce the issue"
+      placeholder: |
+        1. Press Alt + Space to summon AltSpace
+        2. Type '...'
+        3. Observe error...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What did you expect to happen?"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Behavior / Screenshots / Logs"
+      description: "What actually happened? Include terminal output or error messages if available."
+    validations:
+      required: false

@@ -17,6 +17,8 @@ import {
   Gamepad2,
   PanelRightClose,
   PanelRightOpen,
+  Heart,
+  Star,
 } from "lucide-react";
 import { PRESET_THEMES } from "../lib/theme";
 import { tauriInvoke } from "../lib/appStorage";
@@ -59,6 +61,7 @@ interface UseContextualActionsProps {
   onRescanDrives: () => void;
   onCloseActionsModal: () => void;
   onOpenQuickLook: () => void;
+  onOpenFeedback?: () => void;
 }
 
 export function useContextualActions({
@@ -90,6 +93,7 @@ export function useContextualActions({
   onRescanDrives,
   onCloseActionsModal,
   onOpenQuickLook,
+  onOpenFeedback,
 }: UseContextualActionsProps) {
   const getContextualActions = useCallback((): ActionItem[] => {
     const actions: ActionItem[] = [];
@@ -436,6 +440,41 @@ export function useContextualActions({
       },
     });
 
+    actions.push({
+      id: "comm-feedback",
+      title: "Rate & Send Feedback",
+      section: "COMMUNITY & SUPPORT",
+      icon: <Heart className="w-4 h-4 text-rose-400" />,
+      run: () => {
+        onOpenFeedback?.();
+        onCloseActionsModal();
+      },
+    });
+
+    actions.push({
+      id: "comm-github",
+      title: "Star on GitHub (codecheesee/altspace)",
+      section: "COMMUNITY & SUPPORT",
+      icon: <Star className="w-4 h-4 text-amber-400" />,
+      run: () => {
+        if (tauriInvoke) tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });
+        else window.open("https://github.com/codecheesee/altspace", "_blank");
+        onCloseActionsModal();
+      },
+    });
+
+    actions.push({
+      id: "comm-contribute",
+      title: "Contributing Guide & Issues",
+      section: "COMMUNITY & SUPPORT",
+      icon: <Code className="w-4 h-4 text-purple-400" />,
+      run: () => {
+        if (tauriInvoke) tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md" });
+        else window.open("https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md", "_blank");
+        onCloseActionsModal();
+      },
+    });
+
     return actions;
   }, [
     currentMode,
@@ -466,6 +505,7 @@ export function useContextualActions({
     onRescanDrives,
     onCloseActionsModal,
     onOpenQuickLook,
+    onOpenFeedback,
   ]);
 
   return { getContextualActions };

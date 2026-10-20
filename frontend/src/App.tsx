@@ -7,6 +7,7 @@ import { ClipboardTab } from "./components/ClipboardTab";
 import { PortsTab } from "./components/PortsTab";
 import { ActionDrawer } from "./components/ActionDrawer";
 import { QuickLookModal } from "./components/QuickLookModal";
+import { FeedbackModal } from "./components/FeedbackModal";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
 import { useClipboardHistory } from "./hooks/useClipboardHistory";
@@ -115,6 +116,7 @@ export default function App() {
   const [manualSidebarToggle, setManualSidebarToggle] = useState<boolean | null>(null);
 
   // Input Modal State (replaces prompt/alert)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
     title: string;
     description?: string;
@@ -168,6 +170,7 @@ export default function App() {
   useEffect(() => {
     let unlisten: (() => void) | null = null;
     let unlistenMode: (() => void) | null = null;
+    let unlistenFeedback: (() => void) | null = null;
 
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen("window-summoned", () => {
@@ -188,6 +191,12 @@ export default function App() {
       }).then((fn) => {
         unlistenMode = fn;
       });
+
+      listen("open-feedback", () => {
+        setShowFeedbackModal(true);
+      }).then((fn) => {
+        unlistenFeedback = fn;
+      });
     }).catch(() => {});
 
     const onFocus = () => inputRef.current?.focus();
@@ -196,6 +205,7 @@ export default function App() {
     return () => {
       if (unlisten) unlisten();
       if (unlistenMode) unlistenMode();
+      if (unlistenFeedback) unlistenFeedback();
       window.removeEventListener("focus", onFocus);
     };
   }, [setQuery]);
@@ -303,6 +313,23 @@ export default function App() {
       setQuery("");
     } else if (item.id === "util-drives") {
       setShowActionsModal(true);
+    } else if (item.id === "util-feedback") {
+      setShowFeedbackModal(true);
+      setQuery("");
+    } else if (item.id === "util-contribute") {
+      if (tauriInvoke) {
+        tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md" });
+      } else {
+        window.open("https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md", "_blank");
+      }
+      handleDismissWindow();
+    } else if (item.id === "util-community") {
+      if (tauriInvoke) {
+        tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });
+      } else {
+        window.open("https://github.com/codecheesee/altspace", "_blank");
+      }
+      handleDismissWindow();
     } else if (item.category === "Setting") {
       if (tauriInvoke) tauriInvoke("open_settings_uri", { uri: item.path });
       handleDismissWindow();
@@ -425,6 +452,7 @@ export default function App() {
     },
     onCloseActionsModal: () => setShowActionsModal(false),
     onOpenQuickLook: () => setQuickLookOpen(true),
+    onOpenFeedback: () => setShowFeedbackModal(true),
   });
 
   // Global Keyboard Navigation
@@ -613,6 +641,7 @@ export default function App() {
         onCycleTheme={handleCycleTheme}
         isSidebarVisible={isSidebarVisible}
         onToggleSidebar={() => setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev))}
+        onOpenFeedback={() => setShowFeedbackModal(true)}
         onOpenActions={() => {
           setShowActionsModal((prev) => !prev);
           setActionSelectedIndex(0);
@@ -638,6 +667,13 @@ export default function App() {
         filePreview={filePreview}
         onLaunch={handleLaunch}
         onCopiedNotification={notify}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        activeTheme={activeTheme}
+        notify={notify}
       />
 
       {inputModalConfig && (

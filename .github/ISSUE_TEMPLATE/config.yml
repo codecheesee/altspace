@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 Community & Q&A"
+    url: "https://github.com/codecheesee/altspace/discussions"
+    about: "Ask questions, share workflows, or discuss ideas with the AltSpace community."
+  - name: "⭐ Star on GitHub"
+    url: "https://github.com/codecheesee/altspace"
+    about: "Support AltSpace development with a GitHub star!"
