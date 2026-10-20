@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Mutex;
 
-/// Lightweight SQLite-backed frecency (frequency × recency) ranking engine.
-/// Replaces the previous localStorage-based counter with persistent,
-/// time-decay-weighted scoring that survives cache clears.
-
+// Lightweight SQLite-backed frecency (frequency × recency) ranking engine.
+// Replaces the previous localStorage-based counter with persistent,
+// time-decay-weighted scoring that survives cache clears.
 const SEVEN_DAYS_SECS: f64 = 7.0 * 24.0 * 3600.0;
 const RECENCY_BONUS_WINDOW_SECS: f64 = 4.0 * 3600.0; // 4 hours
 const RECENCY_BONUS: f64 = 2.5;
@@ -22,14 +21,16 @@ pub struct FrecencyEntry {
 
 impl FrecencyDb {
     /// Open (or create) the frecency database in the app data directory.
-    pub fn open(app_data_dir: &PathBuf) -> Result<Self, String> {
+    pub fn open(app_data_dir: &Path) -> Result<Self, String> {
         let db_path = app_data_dir.join("frecency.db");
 
         let conn = rusqlite::Connection::open(&db_path)
             .map_err(|e| format!("Failed to open frecency DB: {}", e))?;
 
         conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS usage_events (
+            "PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            CREATE TABLE IF NOT EXISTS usage_events (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
                 item_id   TEXT NOT NULL,
                 timestamp REAL NOT NULL
@@ -38,6 +39,14 @@ impl FrecencyDb {
             CREATE INDEX IF NOT EXISTS idx_usage_ts   ON usage_events(timestamp);",
         )
         .map_err(|e| format!("Failed to initialize frecency schema: {}", e))?;
+
+        // Prune events older than 90 days once on startup
+        let now = now_epoch_secs();
+        let cutoff = now - 90.0 * 24.0 * 3600.0;
+        let _ = conn.execute(
+            "DELETE FROM usage_events WHERE timestamp < ?1",
+            rusqlite::params![cutoff],
+        );
 
         Ok(Self {
             conn: Mutex::new(conn),
@@ -53,13 +62,6 @@ impl FrecencyDb {
             rusqlite::params![item_id, now],
         )
         .map_err(|e| format!("Failed to record usage: {}", e))?;
-
-        // Prune events older than 90 days to keep the DB small
-        let cutoff = now - 90.0 * 24.0 * 3600.0;
-        let _ = conn.execute(
-            "DELETE FROM usage_events WHERE timestamp < ?1",
-            rusqlite::params![cutoff],
-        );
 
         Ok(())
     }

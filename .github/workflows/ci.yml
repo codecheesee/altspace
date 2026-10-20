@@ -1,0 +1,50 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-verify:
+    name: Verify Build & Tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/src-tauri
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck & Build Frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run Node Unit Tests
+        run: node --test frontend/src/lib/checkout.test.mjs frontend/src/lib/bountySync.test.mjs scripts/verify_launch_kit.test.mjs
+
+      - name: Run Rust Backend Tests
+        working-directory: frontend/src-tauri
+        run: cargo test --verbose

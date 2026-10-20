@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; font-src 'self' data:; connect-src ipc: http://ipc.localhost https://open.er-api.com http://localhost:11434 http://127.0.0.1:11434"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; font-src 'self' data:; connect-src ipc: http://ipc.localhost https://open.er-api.com http://localhost:11434 http://127.0.0.1:11434 https://api.github.com https://raw.githubusercontent.com https://discord.com"
     }
   },
   "bundle": {

@@ -171,6 +171,24 @@ pub fn kill_pid(pid: u32) -> Result<(), String> {
         return Err("Cannot terminate Windows System process".into());
     }
 
+    // Protect critical Windows OS processes against accidental termination
+    let process_map = get_process_names();
+    if let Some(proc_name) = process_map.get(&pid) {
+        let name_lower = proc_name.to_lowercase();
+        let protected = [
+            "csrss.exe",
+            "lsass.exe",
+            "services.exe",
+            "smss.exe",
+            "wininit.exe",
+            "winlogon.exe",
+            "dwm.exe",
+        ];
+        if protected.iter().any(|&p| name_lower == p) {
+            return Err(format!("Cannot terminate protected Windows system service: {}", proc_name));
+        }
+    }
+
     // Use taskkill /PID ... /F for reliable tree termination
     use std::os::windows::process::CommandExt;
     let status = Command::new("taskkill")

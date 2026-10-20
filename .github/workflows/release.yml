@@ -56,14 +56,16 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path dist_artifacts -Force
           Copy-Item frontend/src-tauri/target/release/raycast-windows.exe dist_artifacts/altspace.exe
+          Copy-Item bin/Everything64.dll dist_artifacts/Everything64.dll
           Copy-Item install.ps1 dist_artifacts/install.ps1
-          Compress-Archive -Path dist_artifacts/altspace.exe -DestinationPath dist_artifacts/altspace-portable-x64.zip -Force
+          Compress-Archive -Path dist_artifacts/altspace.exe, dist_artifacts/Everything64.dll -DestinationPath dist_artifacts/altspace-portable-x64.zip -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist_artifacts/altspace.exe
+            dist_artifacts/Everything64.dll
             dist_artifacts/altspace-portable-x64.zip
             dist_artifacts/install.ps1
           name: AltSpace Release ${{ github.ref_name }}

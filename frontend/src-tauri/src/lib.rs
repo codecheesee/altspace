@@ -64,7 +64,7 @@ fn apply_native_glass(hwnd: HWND) {
             std::mem::size_of::<i32>() as u32,
         );
 
-        let round = DWMWCP_ROUND.0 as i32;
+        let round = DWMWCP_ROUND.0;
         let _ = DwmSetWindowAttribute(
             hwnd,
             DWMWA_WINDOW_CORNER_PREFERENCE,
@@ -108,7 +108,7 @@ pub struct SearchItem {
 }
 
 static APP_INDEX: LazyLock<Mutex<AppIndex>> = LazyLock::new(|| Mutex::new(AppIndex::new()));
-static EVERYTHING_CLIENT: LazyLock<EverythingClient> = LazyLock::new(|| EverythingClient::new());
+static EVERYTHING_CLIENT: LazyLock<EverythingClient> = LazyLock::new(EverythingClient::new);
 
 #[tauri::command]
 fn search(query: String) -> Vec<SearchItem> {
@@ -549,14 +549,12 @@ fn kill_all_dev_servers() -> Result<usize, String> {
     let mut killed_pids = std::collections::HashSet::new();
 
     for item in active {
-        if dev_ports.contains(&item.port) {
-            if !killed_pids.contains(&item.pid) {
-                if ports::kill_pid(item.pid).is_ok() {
+        if dev_ports.contains(&item.port)
+            && !killed_pids.contains(&item.pid)
+                && ports::kill_pid(item.pid).is_ok() {
                     killed_pids.insert(item.pid);
                     killed += 1;
                 }
-            }
-        }
     }
     Ok(killed)
 }

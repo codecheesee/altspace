@@ -130,6 +130,11 @@ export function HeaderBar({
           ref={inputRef}
           type="text"
           value={query}
+          role="combobox"
+          aria-expanded={true}
+          aria-autocomplete="list"
+          aria-controls="search-results-list"
+          aria-label="Search apps, files, commands, and ports"
           onChange={(e) => {
             setQuery(e.target.value);
             setSelectedIndex(0);

@@ -319,7 +319,7 @@ impl EverythingClient {
         }
 
         // Sort by score descending (most relevant first)
-        matches.sort_by(|a, b| b.0.cmp(&a.0));
+        matches.sort_by_key(|a| std::cmp::Reverse(a.0));
 
         matches
             .into_iter()

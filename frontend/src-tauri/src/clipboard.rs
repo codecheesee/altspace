@@ -85,13 +85,11 @@ impl ClipboardManager {
             return "url".into();
         }
 
-        if (trimmed.starts_with('{') && trimmed.ends_with('}'))
-            || (trimmed.starts_with('[') && trimmed.ends_with(']'))
-        {
-            if serde_json::from_str::<serde_json::Value>(trimmed).is_ok() {
+        if ((trimmed.starts_with('{') && trimmed.ends_with('}'))
+            || (trimmed.starts_with('[') && trimmed.ends_with(']')))
+            && serde_json::from_str::<serde_json::Value>(trimmed).is_ok() {
                 return "json".into();
             }
-        }
 
         if trimmed.contains("fn ")
             || trimmed.contains("function ")

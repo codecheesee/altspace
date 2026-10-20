@@ -122,8 +122,19 @@ export async function executeMCPTool(
       }
 
       case "execute_shell_command": {
-        const cmd = String(args.command || "");
-        const res = await tauriInvoke<any>("execute_command", { command: cmd });
+        const cmd = String(args.command || "").trim();
+        if (!cmd) throw new Error("Command cannot be empty");
+        const lower = cmd.toLowerCase();
+        if (
+          lower.includes("format ") ||
+          lower.includes("del /f /s /q c:") ||
+          lower.includes("rmdir /s /q c:") ||
+          lower.includes("remove-item -recurse c:") ||
+          lower.includes("stop-computer")
+        ) {
+          throw new Error("Execution blocked: Destructive system command rejected by policy.");
+        }
+        const res = await tauriInvoke<any>("execute_shell_command", { command: cmd });
         return { success: true, result: res };
       }
 

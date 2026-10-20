@@ -167,7 +167,7 @@ pub fn scan_all_installed_games() -> Vec<GameItem> {
     // 4. Scan Start Menu game shortcuts
     scan_start_menu_games(&mut games, &mut seen_titles);
 
-    games.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+    games.sort_by_key(|a| a.title.to_lowercase());
     games
 }
 
@@ -316,11 +316,9 @@ fn scan_common_game_directories(games: &mut Vec<GameItem>, seen: &mut HashSet<St
                                     && !exe_name.contains("crash")
                                     && !exe_name.contains("helper")
                                     && !exe_name.contains("setup")
-                                {
-                                    if exe_name.starts_with("play") || main_exe.is_none() {
+                                    && (exe_name.starts_with("play") || main_exe.is_none()) {
                                         main_exe = Some(f_path);
                                     }
-                                }
                             }
                         }
 
