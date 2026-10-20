@@ -127,6 +127,22 @@ For complete financial, governance, and payout specifications, review [**TREASUR
 
 ---
 
+## Modern Windows Distribution
+
+AltSpace is distributed as a native Windows application with several installation paths:
+
+- **Recommended:** download `AltSpace-Setup-x64.exe` from the [latest GitHub release](https://github.com/codecheesee/altspace/releases). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator access.
+- **Managed environments:** use `AltSpace-MSI-x64.msi` with your organization''s Windows deployment tooling.
+- **Portable:** download `AltSpace-Portable-x64.zip`, extract it, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
+- **PowerShell:** run the verified installer script from a trusted PowerShell prompt:
+
+```powershell
+irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
+```
+
+The script resolves the latest GitHub release through the GitHub API, downloads `AltSpace-Portable-x64.zip` and `SHA256SUMS.txt`, verifies the archive with SHA-256, and then installs it to `%LOCALAPPDATA%\Programs\AltSpace`. Do not bypass checksum failures. Release artifacts include `SHA256SUMS.txt`; signed releases may also show a Windows publisher identity after Authenticode signing is configured.
+
+WinGet and Microsoft Store distribution are planned follow-up channels. Until those channels are published, use the signed installer or the official GitHub release page rather than third-party mirrors.
 ## Building from Source
 
 ### Prerequisites
