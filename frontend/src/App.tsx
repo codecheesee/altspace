@@ -215,7 +215,7 @@ export default function App() {
         } else if (e.payload === "games") {
           setActiveTab("all");
           setQuery(":game");
-        }`r`n        else if (e.payload === "games") {`r`n          setActiveTab("all");`r`n          setQuery(":game");`r`n        }
+        }
       }).then((fn) => {
         unlistenMode = fn;
       });
