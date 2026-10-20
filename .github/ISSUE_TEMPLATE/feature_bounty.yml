@@ -1,0 +1,57 @@
+name: "💰 Feature Bounty Proposal"
+description: "Propose a new feature to be funded by the AltSpace Contributor Bounty Treasury"
+title: "[Bounty]: "
+labels: ["bounty:proposal", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### AltSpace Community Bounty Proposal
+        20% of AltSpace Supporter revenue funds open-source bounties for developers. Use this template to propose a feature or extension for funding.
+
+  - type: input
+    id: feature-title
+    attributes:
+      label: "Feature / Extension Name"
+      description: "A clear, concise name for the proposed capability."
+      placeholder: "e.g., Bluetooth Quick Device Switcher"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: "Problem or User Need"
+      description: "What pain point does this solve on Windows?"
+      placeholder: "Switching between Bluetooth headphones and desktop speakers requires navigating 4 menus in Windows Settings..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: "Technical Implementation & Architecture"
+      description: "How should this be implemented? (PowerShell script, Win32 API, or Extension SDK)"
+      placeholder: "Can use Windows.Devices.Bluetooth API via a sandboxed PowerShell script or native Rust binding..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: proposed-tier
+    attributes:
+      label: "Suggested Bounty Tier"
+      description: "Estimated complexity based on TREASURY.md"
+      options:
+        - "Tier 1: Minor Fix / Small Script (₹1,000 / ~$12)"
+        - "Tier 2: Standard Extension (₹2,000 - ₹3,500 / ~$25 - ~$42)"
+        - "Tier 3: Complex Integration / Native Win32 (₹5,000 - ₹10,000 / ~$60 - ~$120)"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: readiness
+    attributes:
+      label: "Community Commitment"
+      options:
+        - label: "I am interested in claiming this bounty and submitting the pull request myself."
+        - label: "I have read TREASURY.md and understand the automated payout rails via Polar.sh."

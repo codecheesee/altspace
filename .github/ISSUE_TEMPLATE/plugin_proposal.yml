@@ -1,45 +1,66 @@
-name: "🔌 Plugin Proposal"
-description: "Propose a new plugin or script extension for AltSpace"
-title: "[Plugin]: "
-labels: ["plugin", "help wanted"]
+name: "🔌 Extension Submission & Proposal"
+description: "Submit or propose a new community extension for the AltSpace Store"
+title: "[Extension]: "
+labels: ["extension", "store:submission"]
 body:
   - type: markdown
     attributes:
       value: |
-        AltSpace supports PowerShell and Python plugins that can run commands, fetch data, or automate desktop actions.
+        ### Submit a Community Extension
+        Extensions run in an isolated sandbox (`%LOCALAPPDATA%\AltSpace\plugins\<id>\`) and support PowerShell (`.ps1`), Batch (`.bat`), Python (`.py`), or Node.js (`.js`).
+        Every extension card includes your direct GitHub Sponsors link so users can tip you 100% directly!
+
   - type: input
     id: plugin_name
     attributes:
-      label: "Plugin Name & Trigger"
-      description: "What is the name of this plugin and what command prefix would trigger it?"
-      placeholder: "e.g. Spotify Controls (:spotify), AWS Account Switcher (:aws)"
+      label: "Extension Name"
+      placeholder: "e.g., Spotify Mini-Controller"
     validations:
       required: true
+
+  - type: input
+    id: keyword
+    attributes:
+      label: "Keyword Trigger"
+      description: "Omnibar keyword to invoke this extension"
+      placeholder: "e.g., :spotify"
+    validations:
+      required: true
+
   - type: dropdown
     id: runtime
     attributes:
-      label: "Runtime Language"
+      label: "Script Language"
       options:
         - "PowerShell (.ps1)"
+        - "Node.js (.js)"
         - "Python (.py)"
-        - "Native Rust Command"
-        - "Web / REST API"
+        - "Batch (.bat / .cmd)"
     validations:
       required: true
+
   - type: textarea
     id: description
     attributes:
-      label: "Plugin Description & Workflow"
-      description: "How does the plugin work? What input does it take, and what does it display or execute?"
+      label: "Extension Purpose & Behavior"
+      description: "What does this script do? What output does it produce?"
     validations:
       required: true
-  - type: dropdown
-    id: authorship
+
+  - type: input
+    id: sponsor_url
     attributes:
-      label: "Are you willing to build or test this plugin?"
-      options:
-        - "Yes, I can submit a PR with the plugin script!"
-        - "I can test and provide feedback if someone builds it"
-        - "Just sharing an idea for the community"
+      label: "Your Sponsorship / Tip Link"
+      description: "Direct link displayed on your extension card (GitHub Sponsors, Ko-fi, BuyMeACoffee)"
+      placeholder: "https://github.com/sponsors/yourname"
     validations:
-      required: true
+      required: false
+
+  - type: checkboxes
+    id: security_checks
+    attributes:
+      label: "Security & Quality Checklist"
+      options:
+        - label: "My extension script runs in under 15 seconds without infinite loops."
+        - label: "My script does not access or modify paths outside its designated sandbox."
+        - label: "I have included a clean manifest.json matching the spec in CONTRIBUTING.md."
