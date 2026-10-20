@@ -370,6 +370,9 @@ export default function App() {
     if (item.id === "util-clipboard") {
       setActiveTab("clipboard");
       setQuery("");
+    } else if (item.id === "quota-limit-notice" || item.path === "altspace://license") {
+      setShowLicenseModal(true);
+      return;
     } else if (item.id === "util-ports") {
       setActiveTab("ports");
       setQuery("");
