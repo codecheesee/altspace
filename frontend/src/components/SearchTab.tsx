@@ -10,7 +10,6 @@ import {
   AlignLeft,
 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { UTILITY_ITEMS } from "../lib/appStorage";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ResultSection } from "./search/ResultSection";
 import { ResultRow } from "./search/ResultRow";
@@ -80,7 +79,7 @@ export function SearchTab({
   // Screen-reader announcement text
   const screenReaderAnnouncement = query.trim()
     ? `${items.length + (specialCard ? 1 : 0)} results available for query ${query}`
-    : `${frequentApps.length + recentWorkspaces.length + UTILITY_ITEMS.length} suggested items ready`;
+    : `${frequentApps.length + recentWorkspaces.length} suggested items ready`;
 
   return (
     <ErrorBoundary label="Search Panel">
@@ -413,7 +412,7 @@ export function SearchTab({
 
             {/* Section 2: Recent Workspaces & Hard Disks */}
             {recentWorkspaces.length > 0 && (
-              <ResultSection title="Recent Workspaces & Disks" badge="All volumes (C:, F:)" count={recentWorkspaces.length}>
+              <ResultSection title="Recent Workspaces" badge="User folders" count={recentWorkspaces.length}>
                 {recentWorkspaces.map((item, localIdx) => {
                   const globalIdx = frequentApps.length + localIdx;
                   const effectiveIndex = specialCard ? globalIdx + 1 : globalIdx;
@@ -434,28 +433,6 @@ export function SearchTab({
               </ResultSection>
             )}
 
-            {/* Section 3: Quick Utilities */}
-            {UTILITY_ITEMS.length > 0 && (
-              <ResultSection title="Quick Utilities" badge="Built-in tools" count={UTILITY_ITEMS.length}>
-                {UTILITY_ITEMS.map((item, localIdx) => {
-                  const globalIdx = frequentApps.length + recentWorkspaces.length + localIdx;
-                  const effectiveIndex = specialCard ? globalIdx + 1 : globalIdx;
-                  const isSelected = effectiveIndex === selectedIndex;
-                  return (
-                    <ResultRow
-                      key={item.id}
-                      item={item}
-                      effectiveIndex={effectiveIndex}
-                      isSelected={isSelected}
-                      query=""
-                      reason="Built-in tool"
-                      onSelect={setSelectedIndex}
-                      onAction={onItemAction}
-                    />
-                  );
-                })}
-              </ResultSection>
-            )}
           </div>
         ) : items.length === 0 && !specialCard ? (
           <SearchEmptyState query={query} />

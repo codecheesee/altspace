@@ -91,6 +91,13 @@ Deep search across physical drives (C:, D:, E:, etc.) connects directly to Windo
 Search and restore clipboard history with automated credential masking:
 - In-memory regex parsing automatically classifies snippets as code, URLs, colors, or plain text.
 - Passwords, bearer tokens, and private keys are detected and masked in memory to prevent accidental exposure.
+- Fresh installs start empty; clipboard contents are never seeded with demo data and are not persisted to disk.
+
+### 7. First-run privacy defaults
+- The details/context sidebar starts hidden and only changes when the user explicitly toggles it; the preference is persisted locally.
+- Multi-drive indexing starts disabled. C: user folders are the initial scope, and additional drives require an explicit preference action.
+- Clipboard, listening ports, installed games, and drive data are exposed only in their explicit modes or after a meaningful query.
+- No starter plugin or hard-coded workspace path is created on installation.
 
 ---
 
@@ -121,9 +128,29 @@ AltSpace operates under a sustainable **Open-Core and Contributor Treasury** gov
   - **20% Public Contributor Treasury**: Allocated directly to public community feature bounties on GitHub.
   - **10% Infrastructure Reserve**: Covers Authenticode code signing, build infrastructure, and hosting.
 - **Transparent Bounty Tracking**: All funded community bounties are tracked on public GitHub issues with the [`bounty`](https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty) label.
-- **Tax-Compliant Payouts**: Payouts are administered via Polar.sh / Open Collective with automated IRS (W-8BEN / 1099) and Indian PAN/TDS compliance.
+- **Tax-Compliant Payouts**: Lemon Squeezy handles Merchant-of-Record checkout and tax collection; contributor treasury payouts still require the operator's configured payout process.
 
 For complete financial, governance, and payout specifications, review [**TREASURY.md**](TREASURY.md).
+
+### Hosted checkout and entitlements
+
+AltSpace uses Lemon Squeezy as its planned Merchant of Record. The client contains no payment or provider secrets, does not accept local license keys, and has no development bypass. Basic local launching and ordinary local search remain unlimited and free.
+
+Deployment configuration:
+
+- `VITE_CHECKOUT_URL`: the Lemon Squeezy hosted checkout URL for the Supporter variant.
+- `VITE_ENTITLEMENT_ENDPOINT`: an HTTPS endpoint that returns a provider-verified entitlement such as `{ "active": true, "tier": "supporter", "provider": "lemonsqueezy", "expiresAt": "..." }`.
+- The backend must validate the Lemon Squeezy webhook signature and authenticate entitlement requests. This repository includes no provider credentials or webhook handler; payment verification is not claimed until those services are deployed.
+
+Advanced search has a 50-search allowance over 14 days, warns at 40, and requires a verified Supporter entitlement after the allowance is exhausted. See [docs/LEMON_SQUEEZY_ENTITLEMENTS.md](docs/LEMON_SQUEEZY_ENTITLEMENTS.md).
+
+### Local configuration sync
+
+The `.altconfig` export/import actions provide local transfer of non-sensitive
+preferences such as theme, custom accent, sidebar visibility, and drive-search
+preference. Clipboard history, frecency/history data, secrets, raw system
+paths, and entitlement state are intentionally excluded. AltSpace does not add
+cloud app-data sync.
 
 ---
 

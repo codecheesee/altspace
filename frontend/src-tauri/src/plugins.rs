@@ -43,27 +43,8 @@ pub fn get_plugins_dir() -> PathBuf {
     PathBuf::from("plugins")
 }
 
-/// Ensures a demo plugin exists so users can see how to build extensions immediately
-fn ensure_starter_plugin(plugins_dir: &Path) {
-    let demo_dir = plugins_dir.join("ip-inspector");
-    if !demo_dir.exists() && fs::create_dir_all(&demo_dir).is_ok() {
-        let manifest = r#"{
-  "id": "ip-inspector",
-  "name": "Local Network & IP Inspector",
-  "description": "Inspects local IPv4/IPv6 addresses and active default gateway",
-  "keyword": ":ip",
-  "script": "get_ip.ps1",
-  "icon": "globe"
-}"#;
-            let script = r#"Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike "*Loopback*" } | Select-Object -Property IPAddress, InterfaceAlias | Format-Table -AutoSize | Out-String"#;
-            let _ = fs::write(demo_dir.join("manifest.json"), manifest);
-            let _ = fs::write(demo_dir.join("get_ip.ps1"), script);
-        }
-    }
-
 pub fn scan_plugins() -> Vec<PluginItem> {
     let plugins_dir = get_plugins_dir();
-    ensure_starter_plugin(&plugins_dir);
 
     let mut plugins = Vec::new();
 

@@ -39,7 +39,7 @@ function getRegionalPricing(forcedCurrency, detectedCurrency = 'USD') {
       monthlyEquivalent: '~₹25/mo',
       treasuryAmount: treasury,
       formattedTreasury: '₹60',
-      checkoutUrl: 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr',
+      checkoutUrl: 'https://app.lemonsqueezy.com/checkout/buy/REPLACE_WITH_VARIANT_ID',
     };
   }
 
@@ -53,7 +53,7 @@ function getRegionalPricing(forcedCurrency, detectedCurrency = 'USD') {
     monthlyEquivalent: '$1/mo',
     treasuryAmount: treasury,
     formattedTreasury: '$2.40',
-    checkoutUrl: 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd',
+    checkoutUrl: 'https://app.lemonsqueezy.com/checkout/buy/REPLACE_WITH_VARIANT_ID',
   };
 }
 
@@ -78,7 +78,7 @@ test('getRegionalPricing INR tier has correct pricing and 20% treasury allocatio
   assert.equal(pricing.treasuryAmount, 60);
   assert.equal(pricing.formattedPrice, '₹299');
   assert.equal(pricing.formattedTreasury, '₹60');
-  assert.match(pricing.checkoutUrl, /supporter-inr/);
+  assert.match(pricing.checkoutUrl, /lemonsqueezy\.com\/checkout/);
 });
 
 test('getRegionalPricing USD tier has correct pricing and 20% treasury allocation', () => {
@@ -88,5 +88,5 @@ test('getRegionalPricing USD tier has correct pricing and 20% treasury allocatio
   assert.equal(pricing.treasuryAmount, 2.4);
   assert.equal(pricing.formattedPrice, '$12');
   assert.equal(pricing.formattedTreasury, '$2.40');
-  assert.match(pricing.checkoutUrl, /supporter-usd/);
+  assert.match(pricing.checkoutUrl, /lemonsqueezy\.com\/checkout/);
 });

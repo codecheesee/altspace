@@ -51,7 +51,7 @@ pub struct EverythingClient {
 impl EverythingClient {
     pub fn new() -> Self {
         let client = Self {
-            search_all_drives: AtomicBool::new(true),
+            search_all_drives: AtomicBool::new(false),
             cached_index: Arc::new(RwLock::new(Vec::new())),
             indexed_drives: Arc::new(RwLock::new(Vec::new())),
             is_indexing: Arc::new(AtomicBool::new(false)),

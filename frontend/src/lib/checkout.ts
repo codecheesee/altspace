@@ -1,9 +1,3 @@
-/**
- * AltSpace Purchasing Power Parity (PPP) & Checkout Engine (2026 Production)
- * Detects regional timezone/locales to provide fair pricing (₹299 INR in India vs $12 USD globally).
- * Generates direct Merchant of Record (Polar.sh / Stripe) checkout URLs with automated tax compliance.
- */
-
 import { tauriInvoke } from "./appStorage";
 
 export type CurrencyCode = "INR" | "USD";
@@ -19,86 +13,49 @@ export interface RegionalPricing {
   checkoutUrl: string;
 }
 
-export const CHECKOUT_URLS: Record<CurrencyCode, string> = {
-  INR: "https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr",
-  USD: "https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd",
-};
+const DEFAULT_CHECKOUT_URL =
+  "https://app.lemonsqueezy.com/checkout/buy/REPLACE_WITH_VARIANT_ID";
 
-export const POLAR_PROFILE_URL = "https://polar.sh/codecheesee";
+export const CHECKOUT_URL =
+  typeof import.meta !== "undefined" && import.meta.env?.VITE_CHECKOUT_URL
+    ? String(import.meta.env.VITE_CHECKOUT_URL)
+    : DEFAULT_CHECKOUT_URL;
 export const GITHUB_SPONSORS_URL = "https://github.com/sponsors/codecheesee";
-export const EVALUATION_LICENSE_KEY = "ALTSP-SUPPORTER-2026";
 
-/**
- * Detects if the user is in India or international based on browser timezone and language
- */
 export function detectUserCurrency(timeZone?: string, languages?: string[]): CurrencyCode {
   try {
     const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    if (
-      tz.includes("Calcutta") ||
-      tz.includes("Kolkata") ||
-      tz.includes("Asia/Colombo") ||
-      tz.includes("IST")
-    ) {
+    if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.includes("Asia/Colombo") || tz.includes("IST")) {
       return "INR";
     }
-
-    const langs =
-      languages || (typeof navigator !== "undefined" ? navigator.languages || [navigator.language] : []);
-    for (const lang of langs) {
-      if (lang && lang.toLowerCase().endsWith("-in")) {
-        return "INR";
-      }
-    }
+    const langs = languages || (typeof navigator !== "undefined" ? navigator.languages || [navigator.language] : []);
+    if (langs.some((lang) => lang?.toLowerCase().endsWith("-in"))) return "INR";
   } catch (_) {}
-
   return "USD";
 }
 
-/**
- * Returns formatted pricing and treasury allocation for the target currency
- */
 export function getRegionalPricing(forcedCurrency?: CurrencyCode): RegionalPricing {
-  const currency: CurrencyCode = forcedCurrency || detectUserCurrency();
-
-  if (currency === "INR") {
-    const price = 299; // ₹299 / year
-    const treasury = Math.round(price * 0.2); // ₹60 (20%)
-    return {
-      currency: "INR",
-      symbol: "₹",
-      price,
-      formattedPrice: "₹299",
-      monthlyEquivalent: "~₹25/mo",
-      treasuryAmount: treasury,
-      formattedTreasury: "₹60",
-      checkoutUrl: CHECKOUT_URLS.INR,
-    };
-  }
-
-  // Global USD
-  const price = 12; // $12 / year
-  const treasury = Number((price * 0.2).toFixed(2)); // $2.40 (20%)
+  const currency = forcedCurrency || detectUserCurrency();
+  const price = currency === "INR" ? 299 : 12;
+  const treasury = Number((price * 0.2).toFixed(currency === "INR" ? 0 : 2));
   return {
-    currency: "USD",
-    symbol: "$",
+    currency,
+    symbol: currency === "INR" ? "₹" : "$",
     price,
-    formattedPrice: "$12",
-    monthlyEquivalent: "$1/mo",
+    formattedPrice: currency === "INR" ? "₹299" : "$12",
+    monthlyEquivalent: currency === "INR" ? "~₹25/mo" : "$1/mo",
     treasuryAmount: treasury,
-    formattedTreasury: "$2.40",
-    checkoutUrl: CHECKOUT_URLS.USD,
+    formattedTreasury: currency === "INR" ? "₹60" : "$2.40",
+    checkoutUrl: CHECKOUT_URL,
   };
 }
 
-/**
- * Opens checkout in the user's default browser via Tauri IPC or window.open
- */
 export function openCheckout(currency?: CurrencyCode): void {
-  const pricing = getRegionalPricing(currency);
+  const url = getRegionalPricing(currency).checkoutUrl;
+  if (url.includes("REPLACE_WITH_VARIANT_ID")) return;
   if (tauriInvoke) {
-    tauriInvoke("open_url", { url: pricing.checkoutUrl });
+    tauriInvoke("open_url", { url });
   } else if (typeof window !== "undefined") {
-    window.open(pricing.checkoutUrl, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 }

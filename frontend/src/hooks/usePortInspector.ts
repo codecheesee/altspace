@@ -1,17 +1,15 @@
 import { useState, useCallback, useMemo } from "react";
-import { tauriInvoke, DEMO_PORTS } from "../lib/appStorage";
+import { tauriInvoke } from "../lib/appStorage";
 import type { PortItem } from "../types";
 
 export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
-  const [ports, setPorts] = useState<PortItem[]>(DEMO_PORTS);
+  const [ports, setPorts] = useState<PortItem[]>([]);
   const [portStatusMsg, setPortStatusMsg] = useState<string | null>(null);
 
   const fetchPorts = useCallback(async () => {
     try {
       const res = await tauriInvoke<PortItem[]>("get_listening_ports");
-      if (res && Array.isArray(res) && res.length > 0) {
-        setPorts(res);
-      }
+      if (res && Array.isArray(res)) setPorts(res);
     } catch (_) {}
   }, []);
 

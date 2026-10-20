@@ -43,7 +43,7 @@ jobs:
         run: npm run build
 
       - name: Run Node Unit Tests
-        run: node --test frontend/src/lib/checkout.test.mjs frontend/src/lib/bountySync.test.mjs scripts/verify_launch_kit.test.mjs
+        run: node --test frontend/src/lib/checkout.test.mjs frontend/src/lib/quota.test.mjs frontend/src/lib/bountySync.test.mjs scripts/verify_launch_kit.test.mjs
 
       - name: Run Rust Backend Tests
         working-directory: frontend/src-tauri

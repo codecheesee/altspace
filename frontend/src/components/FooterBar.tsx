@@ -10,6 +10,8 @@ interface FooterBarProps {
   activeTheme: {
     accentHex: string;
     name: string;
+    headerBg: string;
+    borderColor: string;
   };
   onCycleTheme: () => void;
   isSidebarVisible: boolean;
@@ -34,13 +36,14 @@ export function FooterBar({
     <footer
       role="contentinfo"
       aria-label="Application status and shortcut keys"
-      className="h-9 px-4 bg-[#111114] border-t border-white/[0.08] flex items-center justify-between text-xs text-zinc-400 font-medium shrink-0 select-none"
+      className="min-h-9 px-3 sm:px-4 py-1.5 bg-black/20 border-t flex items-center justify-between gap-2 text-xs text-zinc-400 font-medium shrink-0 select-none"
+      style={{ backgroundColor: activeTheme.headerBg, borderColor: activeTheme.borderColor }}
     >
       {/* Left: Product title, dynamic count, and active theme badge */}
-      <div className="flex items-center gap-2 text-[11.5px] text-zinc-400">
+      <div className="flex items-center gap-1.5 sm:gap-2 text-[11.5px] text-zinc-400 min-w-0">
         <span className="font-semibold text-zinc-200 tracking-tight">AltSpace</span>
-        <span className="text-zinc-600">/</span>
-        <span className="text-zinc-400 font-mono text-[11px]">
+        <span className="text-zinc-600 hidden sm:inline">/</span>
+        <span className="text-zinc-400 font-mono text-[11px] truncate max-w-[9rem] sm:max-w-none">
           {currentMode === "all"
             ? `${itemsCount} ${itemsCount === 1 ? "result" : "results"}`
             : currentMode === "clipboard"
@@ -49,7 +52,7 @@ export function FooterBar({
             ? `${portsCount} ports`
             : "Extensions"}
         </span>
-        <span className="text-zinc-600">/</span>
+        <span className="text-zinc-600 hidden sm:inline">/</span>
         <button
           onClick={onCycleTheme}
           className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
@@ -59,18 +62,18 @@ export function FooterBar({
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: activeTheme.accentHex }}
           />
-          <span className="text-[10.5px] font-sans">{activeTheme.name}</span>
+          <span className="text-[10.5px] font-sans hidden md:inline">{activeTheme.name}</span>
         </button>
       </div>
 
       {/* Right: Focused contextual keyboard actions */}
-      <div className="flex items-center gap-3 text-[11px] whitespace-nowrap shrink-0">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-3 text-[11px] whitespace-nowrap shrink-0">
+        <div className="hidden sm:flex items-center gap-1.5">
           <span className="text-zinc-400">Open</span>
           <kbd className="kbd-cap">↵</kbd>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="hidden md:flex items-center gap-1.5">
           <span className="text-zinc-400">Preview</span>
           <kbd className="kbd-cap">Space</kbd>
         </div>
@@ -80,7 +83,7 @@ export function FooterBar({
           className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
           title="Contextual Actions (Ctrl+K)"
         >
-          <span>Actions</span>
+          <span className="hidden sm:inline">Actions</span>
           <kbd className="kbd-cap">Ctrl K</kbd>
         </button>
 
@@ -100,7 +103,7 @@ export function FooterBar({
           ) : (
             <PanelRightOpen className="w-3.5 h-3.5 text-zinc-400" />
           )}
-          <span>Details</span>
+          <span className="hidden sm:inline">Details</span>
           <kbd className="kbd-cap">Ctrl B</kbd>
         </button>
       </div>
