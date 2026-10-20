@@ -7,6 +7,7 @@ mod icons;
 mod plugins;
 mod ports;
 mod terminal_runner;
+mod frecency;
 mod updater;
 mod windows_mgmt;
 
@@ -680,6 +681,29 @@ fn trigger_app_update() -> Result<String, String> {
     updater::apply_update()
 }
 
+#[tauri::command]
+fn record_frecency_usage(
+    db: tauri::State<'_, frecency::FrecencyDb>,
+    item_id: String,
+) -> Result<(), String> {
+    db.record(&item_id)
+}
+
+#[tauri::command]
+fn get_frecency_scores(
+    db: tauri::State<'_, frecency::FrecencyDb>,
+) -> Result<Vec<frecency::FrecencyEntry>, String> {
+    db.get_scores()
+}
+
+#[tauri::command]
+fn import_legacy_frecency(
+    db: tauri::State<'_, frecency::FrecencyDb>,
+    data: Vec<(String, f64)>,
+) -> Result<(), String> {
+    db.import_legacy(&data)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Single-Instance Named Event Guard:
@@ -735,9 +759,24 @@ pub fn run() {
             list_plugins,
             run_plugin,
             check_app_update,
-            trigger_app_update
+            trigger_app_update,
+            record_frecency_usage,
+            get_frecency_scores,
+            import_legacy_frecency
         ])
         .setup(|app| {
+            let app_data_dir = std::env::var("LOCALAPPDATA")
+                .map(|p| std::path::PathBuf::from(p).join("AltSpace"))
+                .unwrap_or_else(|_| {
+                    std::env::current_exe()
+                        .ok()
+                        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                        .unwrap_or_else(|| std::path::PathBuf::from("."))
+                });
+            let _ = std::fs::create_dir_all(&app_data_dir);
+            let frecency_db = frecency::FrecencyDb::open(&app_data_dir)
+                .expect("Failed to open frecency DB");
+            app.manage(frecency_db);
             // Start background Single-Instance Named Event summoner thread
             let app_handle_for_summon = app.handle().clone();
             std::thread::spawn(move || {

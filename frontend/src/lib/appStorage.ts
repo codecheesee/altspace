@@ -41,7 +41,47 @@ export function calculateFrecencyScore(record?: FrecencyRecord | number, now = D
   return record.count * decay + recencyBonus;
 }
 
+// In-memory cache for SQLite-computed frecency scores
+let sqliteScoresCache: Record<string, number> | null = null;
+let legacyMigrated = false;
+
+export async function syncFrecencyFromDb(): Promise<Record<string, number>> {
+  if (!legacyMigrated) {
+    legacyMigrated = true;
+    try {
+      const raw = localStorage.getItem(FRECENCY_CACHE_KEY);
+      if (raw) {
+        const records: Record<string, FrecencyRecord | number> = JSON.parse(raw);
+        const legacyEntries: [string, number][] = Object.entries(records).map(([k, v]) => [
+          k,
+          typeof v === "number" ? v : (v.count || 1),
+        ]);
+        if (legacyEntries.length > 0) {
+          await tauriInvoke("import_legacy_frecency", { data: legacyEntries });
+        }
+      }
+    } catch (_) {}
+  }
+
+  const entries = await tauriInvoke<Array<{ item_id: string; score: number }>>("get_frecency_scores");
+  if (entries && Array.isArray(entries)) {
+    const map: Record<string, number> = {};
+    for (const entry of entries) {
+      map[entry.item_id] = entry.score;
+    }
+    sqliteScoresCache = map;
+    return map;
+  }
+  return getItemFrequencies();
+}
+
+// Auto-prime SQLite frecency cache on startup
+if (typeof window !== "undefined") {
+  syncFrecencyFromDb().catch(() => {});
+}
+
 export function recordItemUsage(idOrPath: string): void {
+  // 1. Synchronous update for instant localStorage fallback
   try {
     const raw = localStorage.getItem(FRECENCY_CACHE_KEY);
     const records: Record<string, FrecencyRecord> = raw ? JSON.parse(raw) : {};
@@ -52,9 +92,20 @@ export function recordItemUsage(idOrPath: string): void {
     };
     localStorage.setItem(FRECENCY_CACHE_KEY, JSON.stringify(records));
   } catch (_) {}
+
+  // 2. Synchronous in-memory update for instant UI feedback
+  if (sqliteScoresCache) {
+    sqliteScoresCache[idOrPath] = (sqliteScoresCache[idOrPath] || 0) + 1;
+  }
+
+  // 3. Persist asynchronously to Rust SQLite frecency database
+  tauriInvoke("record_frecency_usage", { itemId: idOrPath }).catch(() => {});
 }
 
 export function getItemFrequencies(): Record<string, number> {
+  if (sqliteScoresCache && Object.keys(sqliteScoresCache).length > 0) {
+    return sqliteScoresCache;
+  }
   try {
     const raw = localStorage.getItem(FRECENCY_CACHE_KEY);
     if (!raw) return {};

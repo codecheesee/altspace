@@ -1,6 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-raycast-bg: #141517;
+  --color-raycast-card: #1a1b1e;
+  --color-raycast-hover: #24262b;
+  --color-raycast-border: #2a2c33;
+  --color-raycast-accent: #e5484d;
+  --color-raycast-text: #ededed;
+  --color-raycast-subtext: #8f93a0;
+
+  --shadow-raycast: 0 20px 70px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-glow: 0 0 20px -5px rgba(229, 72, 77, 0.3);
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
 
 @layer base {
   body {
