@@ -1,8 +1,10 @@
 /**
- * Local AI & LLM Engine for AltSpace (2026 Free & Open-Source Architecture)
+ * Local AI & LLM Engine with Model Context Protocol (MCP) for AltSpace
  * Connects directly to local Ollama (http://localhost:11434) for zero-latency,
- * private, offline AI text generation with streaming support.
+ * private, offline AI text generation with streaming support and native system actions.
  */
+
+import { detectActionIntent, executeMCPTool } from "./mcp";
 
 export const OLLAMA_DEFAULT_HOST = "http://localhost:11434";
 export const OLLAMA_DEFAULT_MODEL = "llama3.2"; // 100% free, fast local model
@@ -59,6 +61,31 @@ export async function streamOllamaResponse({
   onError: (error: string) => void;
   signal?: AbortSignal;
 }): Promise<void> {
+  // 1. Check for Model Context Protocol (MCP) tool execution intent
+  const action = detectActionIntent(prompt);
+  if (action.isAction && action.toolName) {
+    onToken(`⚡ [MCP Action Detected]: ${action.description}...\n\n`);
+    try {
+      const toolResult = await executeMCPTool(action.toolName, action.args || {});
+      if (toolResult.success) {
+        if (typeof toolResult.result === "object") {
+          onToken(`✅ Result:\n\`\`\`json\n${JSON.stringify(toolResult.result, null, 2)}\n\`\`\`\n\n`);
+        } else {
+          onToken(`✅ ${toolResult.result || "Command executed successfully."}\n\n`);
+        }
+      } else {
+        onToken(`❌ Error executing action: ${toolResult.error}\n\n`);
+      }
+    } catch (e: any) {
+      onToken(`❌ MCP execution failed: ${e?.message || e}\n\n`);
+    }
+
+    // After tool execution, we finish or let LLM elaborate
+    onDone();
+    return;
+  }
+
+  // 2. Stream standard Ollama response
   try {
     const res = await fetch(`${host}/api/generate`, {
       method: "POST",
@@ -118,6 +145,8 @@ export async function streamOllamaResponse({
       onDone();
       return;
     }
-    onError(err.message || "Failed to communicate with local Ollama instance.");
+    onError(
+      "Ollama is offline. Run 'ollama run llama3.2' or ask an MCP action (e.g. '? kill port 3000', '? snap left')."
+    );
   }
 }

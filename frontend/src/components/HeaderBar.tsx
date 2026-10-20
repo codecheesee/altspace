@@ -3,6 +3,7 @@ import {
   Search,
   Clipboard as ClipboardIcon,
   Activity,
+  ShoppingBag,
   X,
   Skull,
   Check,
@@ -51,7 +52,8 @@ export function HeaderBar({
           "h-[1.5px] w-full bg-gradient-to-r from-transparent to-transparent transition-all duration-300",
           currentMode === "all" && "via-white/[0.12]",
           currentMode === "clipboard" && "via-blue-500/70",
-          currentMode === "ports" && "via-emerald-500/70"
+          currentMode === "ports" && "via-emerald-500/70",
+          currentMode === "store" && "via-purple-500/70"
         )}
         style={
           currentMode === "all"
@@ -69,7 +71,7 @@ export function HeaderBar({
       >
         <Search className="w-4 h-4 text-neutral-400 shrink-0 stroke-[2.2]" />
 
-        {/* Active Mode Pill Indicator if in Clipboard or Ports */}
+        {/* Active Mode Pill Indicator if in Clipboard, Ports or Store */}
         {currentMode === "clipboard" && (
           <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/25 text-blue-300 text-xs font-medium shrink-0 animate-in fade-in">
             <ClipboardIcon className="w-3 h-3 text-blue-400" />
@@ -106,6 +108,24 @@ export function HeaderBar({
           </div>
         )}
 
+        {currentMode === "store" && (
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/25 text-purple-300 text-xs font-medium shrink-0 animate-in fade-in">
+            <ShoppingBag className="w-3 h-3 text-purple-400" />
+            <span>Store</span>
+            <button
+              onClick={() => {
+                setActiveTab("all");
+                setQuery("");
+                inputRef.current?.focus();
+              }}
+              className="hover:text-white ml-0.5 cursor-pointer"
+              title="Return to Search (Esc)"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         <input
           ref={inputRef}
           type="text"
@@ -119,7 +139,9 @@ export function HeaderBar({
               ? "Filter port (e.g. 3000) or process name..."
               : currentMode === "clipboard"
               ? "Filter clipboard history..."
-              : "Search apps, files, calculate, or type :port..."
+              : currentMode === "store"
+              ? "Search extensions, keywords (e.g. :dns, :wifi), or authors..."
+              : "Search apps, files, calculate, or type :store, :port..."
           }
           className="w-full bg-transparent text-[14.5px] font-medium text-white placeholder-neutral-500 outline-none border-none tracking-tight font-sans cursor-text"
         />

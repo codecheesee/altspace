@@ -19,6 +19,8 @@ import {
   PanelRightOpen,
   Heart,
   Star,
+  ShoppingBag,
+  Award,
 } from "lucide-react";
 import { PRESET_THEMES } from "../lib/theme";
 import { tauriInvoke } from "../lib/appStorage";
@@ -62,6 +64,8 @@ interface UseContextualActionsProps {
   onCloseActionsModal: () => void;
   onOpenQuickLook: () => void;
   onOpenFeedback?: () => void;
+  onOpenStore?: () => void;
+  onOpenLicense?: () => void;
 }
 
 export function useContextualActions({
@@ -94,6 +98,8 @@ export function useContextualActions({
   onCloseActionsModal,
   onOpenQuickLook,
   onOpenFeedback,
+  onOpenStore,
+  onOpenLicense,
 }: UseContextualActionsProps) {
   const getContextualActions = useCallback((): ActionItem[] => {
     const actions: ActionItem[] = [];
@@ -441,6 +447,28 @@ export function useContextualActions({
     });
 
     actions.push({
+      id: "comm-store",
+      title: "Community Extension Store",
+      section: "COMMUNITY & SUPPORT",
+      icon: <ShoppingBag className="w-4 h-4 text-purple-400" />,
+      run: () => {
+        onOpenStore?.();
+        onCloseActionsModal();
+      },
+    });
+
+    actions.push({
+      id: "comm-license",
+      title: "Supporter License & Bonding Curve",
+      section: "COMMUNITY & SUPPORT",
+      icon: <Award className="w-4 h-4 text-amber-400" />,
+      run: () => {
+        onOpenLicense?.();
+        onCloseActionsModal();
+      },
+    });
+
+    actions.push({
       id: "comm-feedback",
       title: "Rate & Send Feedback",
       section: "COMMUNITY & SUPPORT",
@@ -506,6 +534,8 @@ export function useContextualActions({
     onCloseActionsModal,
     onOpenQuickLook,
     onOpenFeedback,
+    onOpenStore,
+    onOpenLicense,
   ]);
 
   return { getContextualActions };

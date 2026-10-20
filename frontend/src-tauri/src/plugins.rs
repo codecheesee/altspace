@@ -144,3 +144,33 @@ pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String
         Err(e) => Err(format!("Failed to execute plugin: {}", e)),
     }
 }
+
+
+pub fn install_plugin(
+    plugin_id: &str,
+    manifest_json: &str,
+    script_content: &str,
+    script_filename: &str,
+) -> Result<(), String> {
+    let plugins_dir = get_plugins_dir();
+    let target_dir = plugins_dir.join(plugin_id);
+    fs::create_dir_all(&target_dir).map_err(|e| format!("Failed to create plugin dir: {}", e))?;
+
+    fs::write(target_dir.join("manifest.json"), manifest_json)
+        .map_err(|e| format!("Failed to write manifest.json: {}", e))?;
+
+    fs::write(target_dir.join(script_filename), script_content)
+        .map_err(|e| format!("Failed to write {}: {}", script_filename, e))?;
+
+    Ok(())
+}
+
+pub fn uninstall_plugin(plugin_id: &str) -> Result<(), String> {
+    let plugins_dir = get_plugins_dir();
+    let target_dir = plugins_dir.join(plugin_id);
+    if target_dir.exists() {
+        fs::remove_dir_all(&target_dir)
+            .map_err(|e| format!("Failed to remove plugin dir: {}", e))?;
+    }
+    Ok(())
+}

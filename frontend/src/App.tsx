@@ -8,6 +8,9 @@ import { PortsTab } from "./components/PortsTab";
 import { ActionDrawer } from "./components/ActionDrawer";
 import { QuickLookModal } from "./components/QuickLookModal";
 import { FeedbackModal } from "./components/FeedbackModal";
+import { StoreTab } from "./components/StoreTab";
+import { LicenseModal } from "./components/LicenseModal";
+import { COMMUNITY_PLUGINS } from "./lib/communityPlugins";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
 import { useClipboardHistory } from "./hooks/useClipboardHistory";
@@ -82,8 +85,9 @@ export default function App() {
   });
 
   // 3. Dev Ports Inspector Hook
-  const smartPortMode = query.startsWith(":");
-  const resolvedMode: Mode = smartPortMode ? "ports" : currentMode;
+  const isStoreMode = activeTab === "store" || query.startsWith(":store") || query.startsWith(":plugin") || query.startsWith(":ext");
+  const smartPortMode = !isStoreMode && query.startsWith(":") && !query.startsWith(":theme");
+  const resolvedMode: Mode = isStoreMode ? "store" : smartPortMode ? "ports" : currentMode;
 
   const {
     filteredPorts,
@@ -117,6 +121,7 @@ export default function App() {
 
   // Input Modal State (replaces prompt/alert)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
     title: string;
     description?: string;
@@ -453,6 +458,8 @@ export default function App() {
     onCloseActionsModal: () => setShowActionsModal(false),
     onOpenQuickLook: () => setQuickLookOpen(true),
     onOpenFeedback: () => setShowFeedbackModal(true),
+    onOpenStore: () => { setActiveTab("store"); setQuery(""); },
+    onOpenLicense: () => setShowLicenseModal(true),
   });
 
   // Global Keyboard Navigation
@@ -494,7 +501,7 @@ export default function App() {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const maxLen = resolvedMode === "all" ? (specialCard ? items.length + 1 : items.length) : resolvedMode === "ports" ? filteredPorts.length : filteredClipboard.length;
+      const maxLen = resolvedMode === "all" ? (specialCard ? items.length + 1 : items.length) : resolvedMode === "ports" ? filteredPorts.length : resolvedMode === "store" ? COMMUNITY_PLUGINS.length : filteredClipboard.length;
       setSelectedIndex((prev) => (prev < maxLen - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -630,6 +637,15 @@ export default function App() {
             onRefreshPorts={fetchPorts}
           />
         )}
+
+        {resolvedMode === "store" && (
+          <StoreTab
+            query={query}
+            selectedIndex={selectedIndex}
+            setSelectedIndex={setSelectedIndex}
+            onCopiedNotification={notify}
+          />
+        )}
       </div>
 
       <FooterBar
@@ -642,6 +658,7 @@ export default function App() {
         isSidebarVisible={isSidebarVisible}
         onToggleSidebar={() => setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev))}
         onOpenFeedback={() => setShowFeedbackModal(true)}
+        onOpenLicense={() => setShowLicenseModal(true)}
         onOpenActions={() => {
           setShowActionsModal((prev) => !prev);
           setActionSelectedIndex(0);
@@ -672,6 +689,13 @@ export default function App() {
       <FeedbackModal
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
+        activeTheme={activeTheme}
+        notify={notify}
+      />
+
+      <LicenseModal
+        isOpen={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
         activeTheme={activeTheme}
         notify={notify}
       />

@@ -672,6 +672,21 @@ fn run_plugin(script_path: String, args: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn install_plugin(
+    plugin_id: String,
+    manifest_json: String,
+    script_content: String,
+    script_filename: String,
+) -> Result<(), String> {
+    plugins::install_plugin(&plugin_id, &manifest_json, &script_content, &script_filename)
+}
+
+#[tauri::command]
+fn uninstall_plugin(plugin_id: String) -> Result<(), String> {
+    plugins::uninstall_plugin(&plugin_id)
+}
+
+#[tauri::command]
 fn check_app_update() -> Result<updater::UpdateInfo, String> {
     updater::check_for_update()
 }
@@ -758,6 +773,8 @@ pub fn run() {
             get_game_mode_status,
             list_plugins,
             run_plugin,
+            install_plugin,
+            uninstall_plugin,
             check_app_update,
             trigger_app_update,
             record_frecency_usage,

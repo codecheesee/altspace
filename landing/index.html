@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AltSpace — The Modern Extensible Raycast for Windows</title>
+  <meta name="description" content="Lightning-fast, extensible spotlight launcher for Windows with local AI (MCP), SQLite frecency, dev port killer, and a revolutionary open-source contributor bonding curve." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #090a0f;
+      color: #f3f4f6;
+    }
+    code, kbd, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .gradient-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, rgba(236, 72, 153, 0.08) 35%, transparent 70%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+  </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden selection:bg-purple-500 selection:text-white">
+  <!-- Ambient Top Glow -->
+  <div class="absolute top-0 left-0 right-0 h-[650px] gradient-glow pointer-events-none -z-10"></div>
+
+  <!-- Navigation -->
+  <nav class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25">
+        ⚡
+      </div>
+      <span class="text-xl font-bold tracking-tight text-white">AltSpace</span>
+      <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/25 ml-1">
+        v0.1.0 • Apache 2.0
+      </span>
+    </div>
+
+    <div class="flex items-center gap-4 text-sm font-medium">
+      <a href="#features" class="text-neutral-400 hover:text-white transition">Features</a>
+      <a href="#bonding-curve" class="text-purple-300 hover:text-purple-200 transition">Bonding Curve</a>
+      <a href="#contributors" class="text-neutral-400 hover:text-white transition">Contributors</a>
+      <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white transition border border-white/[0.1]">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold mb-6">
+      <span>🚀 The Next-Gen Windows Spotlight Launcher</span>
+      <span class="text-neutral-500">•</span>
+      <span class="text-white">Built in Rust + React 19 + Tailwind v4</span>
+    </div>
+
+    <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
+      Your Windows Command Center. <br>
+      <span class="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
+        Sub-5ms Fast. Zero Bloat.
+      </span>
+    </h1>
+
+    <p class="text-lg text-neutral-400 max-w-2xl mx-auto mt-6">
+      Supercharge your workflow with instant app search, local AI with Model Context Protocol (MCP), a 1-click dev port killer, clipboard manager, and an in-app community extension store.
+    </p>
+
+    <!-- 1-Click Install Command -->
+    <div class="mt-8 max-w-xl mx-auto">
+      <div class="glass-card rounded-2xl p-2 flex items-center justify-between gap-3 shadow-xl">
+        <div class="flex items-center gap-3 pl-3 text-neutral-300 text-sm font-mono overflow-x-auto whitespace-nowrap">
+          <span class="text-purple-400 select-none">PS &gt;</span>
+          <span id="install-cmd">irm https://altspace.dev/install.ps1 | iex</span>
+        </div>
+        <button id="copy-btn" onclick="copyInstallCmd()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span id="copy-text">Copy</span>
+        </button>
+      </div>
+      <p class="text-xs text-neutral-500 mt-2">Requires Windows 10/11 • 100% Free & Open-Source</p>
+    </div>
+
+    <!-- Launcher Preview Mockup -->
+    <div class="mt-14 max-w-3xl mx-auto glass-card rounded-2xl p-1 shadow-2xl border border-white/[0.12] overflow-hidden">
+      <div class="bg-neutral-950/90 rounded-xl p-4 text-left">
+        <!-- Omnibar -->
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+          <span class="text-neutral-400">🔍</span>
+          <span class="text-white text-sm font-medium">kill port 3000</span>
+          <span class="w-1.5 h-4 bg-purple-400 animate-pulse"></span>
+          <span class="ml-auto text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            ⚡ MCP System Action
+          </span>
+        </div>
+
+        <!-- Result Card -->
+        <div class="mt-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-400 font-bold">✓</span>
+            <div>
+              <div class="font-semibold text-emerald-300">Port 3000 Terminated</div>
+              <div class="text-neutral-400 text-[11px]">Killed node.exe (PID 18420) • Freed in 3.2ms</div>
+            </div>
+          </div>
+          <kbd class="text-[10px] font-mono bg-white/[0.08] px-2 py-1 rounded text-neutral-300 border border-white/[0.1]">↵ Enter</kbd>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Bonding Curve Calculator -->
+  <section id="bonding-curve" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-purple-400">
+        Revolutionary Monetization Model
+      </span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">
+        The Contributor Bonding Curve
+      </h2>
+      <p class="text-neutral-400 text-sm mt-3">
+        Source code is 100% Free Apache-2.0. When community developers ship useful features, the supporter license price dynamically increments by ₹1 — and every single contributor gets ₹1 royalty per sale!
+      </p>
+    </div>
+
+    <!-- Calculator Card -->
+    <div class="glass-card rounded-3xl p-8 max-w-3xl mx-auto border border-purple-500/30 shadow-2xl bg-gradient-to-b from-purple-500/[0.05] to-transparent">
+      <!-- Slider Control -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-neutral-300 font-semibold">Merged Community Features / Extensions:</span>
+          <span id="feature-count-display" class="font-mono text-purple-300 font-bold text-lg bg-purple-500/20 px-3 py-0.5 rounded-lg border border-purple-500/30">
+            7 features
+          </span>
+        </div>
+        <input
+          id="feature-slider"
+          type="range"
+          min="1"
+          max="50"
+          value="7"
+          class="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+          oninput="updateCalculator(this.value)"
+        />
+        <div class="flex justify-between text-[11px] font-mono text-neutral-500">
+          <span>1 feature (₹10)</span>
+          <span>25 features (₹34)</span>
+          <span>50 features (₹59)</span>
+        </div>
+      </div>
+
+      <!-- Live Dynamic Numbers -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/[0.08]">
+        <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div class="text-[11px] uppercase font-semibold text-neutral-400">Base Core Price</div>
+          <div class="text-2xl font-bold text-white mt-1">₹9</div>
+          <div class="text-[11px] text-neutral-500 mt-1">Foundational open core</div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25">
+          <div class="text-[11px] uppercase font-semibold text-purple-300">Contributor Royalty Pool</div>
+          <div id="royalty-pool-display" class="text-2xl font-bold text-purple-300 mt-1">₹7</div>
+          <div class="text-[11px] text-purple-400 mt-1">100% goes to contributors</div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25">
+          <div class="text-[11px] uppercase font-semibold text-emerald-300">1-Year Supporter License</div>
+          <div id="total-price-display" class="text-2xl font-bold text-emerald-300 mt-1">₹16</div>
+          <div class="text-[11px] text-emerald-400 mt-1">~$0.19 USD / year</div>
+        </div>
+      </div>
+
+      <!-- Contributor Payout Simulation Box -->
+      <div class="mt-6 p-4 rounded-2xl bg-neutral-900/80 border border-white/[0.06] flex items-center justify-between text-xs">
+        <div>
+          <span class="text-neutral-400">If 10,000 developers buy a supporter license:</span>
+          <div class="text-white font-semibold text-sm mt-0.5">
+            Your merged PR pays you <span class="text-emerald-400 font-mono font-bold">₹10,000</span> in royalties!
+          </div>
+        </div>
+        <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition shrink-0 cursor-pointer">
+          Build a Feature →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-pink-400">Engineered for Power Users</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Everything You Need at Your Fingertips</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 1. SQLite Frecency -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg">⚡</div>
+        <h3 class="font-bold text-white text-base">Sub-5ms SQLite Frecency</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Powered by Rust and SQLite. Employs exponential time-decay frecency ranking so your most relevant apps and documents appear with zero keystroke delay.
+        </p>
+      </div>
+
+      <!-- 2. Model Context Protocol -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center text-lg">🤖</div>
+        <h3 class="font-bold text-white text-base">Local AI & Native MCP Tools</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Connects to Ollama (Llama 3.2). Native Model Context Protocol (MCP) tool execution lets the AI inspect ports, snap windows, search files, and run commands.
+        </p>
+      </div>
+
+      <!-- 3. Dev Port Killer -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg">💀</div>
+        <h3 class="font-bold text-white text-base">Instant Dev Port Killer</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Type <code class="text-emerald-300 font-mono">:3000</code> to view and terminate rogue Node.js, Vite, or Python servers without opening Task Manager.
+        </p>
+      </div>
+
+      <!-- 4. Community Extension Store -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center text-lg">🔌</div>
+        <h3 class="font-bold text-white text-base">1-Click Community Store</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Browse, install, and uninstall community extensions instantly. Built-in plugins include DNS flusher, Git pruner, Wi-Fi key finder, and JWT inspector.
+        </p>
+      </div>
+
+      <!-- 5. Clipboard Manager -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-lg">📋</div>
+        <h3 class="font-bold text-white text-base">Infinite Clipboard History</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Categorizes clipboard snippets by links, colors, code, and text. Automatic secret masking hides API keys and tokens from prying eyes.
+        </p>
+      </div>
+
+      <!-- 6. Window Snapping -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg">🪟</div>
+        <h3 class="font-bold text-white text-base">Window Tiling & Snapping</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Snap foreground windows to halves, thirds, or quadrants using keyboard shortcuts. Raycast-style multi-monitor window arrangement on Windows.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contributor Wall -->
+  <section id="contributors" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-purple-400">Open Source Hall of Fame</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Community Contributors</h2>
+      <p class="text-neutral-400 text-sm mt-3">
+        Every contributor below has landed merged code and earns ₹1 royalty on every AltSpace Supporter sale.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white text-sm">Anand Verma</span>
+            <span class="text-xs text-neutral-400 font-mono">@anandv</span>
+          </div>
+          <p class="text-xs text-neutral-400 mt-1">Rust SQLite Frecency Engine</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
+          +₹1 / sale
+        </span>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white text-sm">Alex Rivera</span>
+            <span class="text-xs text-neutral-400 font-mono">@alexrivera</span>
+          </div>
+          <p class="text-xs text-neutral-400 mt-1">DNS Cache Flusher Extension</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
+          +₹1 / sale
+        </span>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white text-sm">Sarah Chen</span>
+            <span class="text-xs text-neutral-400 font-mono">@sarahchen</span>
+          </div>
+          <p class="text-xs text-neutral-400 mt-1">Git Branch Pruner Extension</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
+          +₹1 / sale
+        </span>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white text-sm">Dan Kovacs</span>
+            <span class="text-xs text-neutral-400 font-mono">@dankovacs</span>
+          </div>
+          <p class="text-xs text-neutral-400 mt-1">Wi-Fi Key Recovery Tool</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
+          +₹1 / sale
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="max-w-6xl mx-auto px-6 py-12 border-t border-white/[0.08] flex flex-col md:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
+    <div>
+      © 2026 AltSpace Project. Licensed under Apache 2.0. Built for developers worldwide.
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="https://github.com/codecheesee/altspace" class="hover:text-white transition">GitHub</a>
+      <a href="https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md" class="hover:text-white transition">Contributing</a>
+      <a href="https://github.com/codecheesee/altspace/issues" class="hover:text-white transition">Issues</a>
+    </div>
+  </footer>
+
+  <script>
+    function updateCalculator(features) {
+      const basePrice = 9;
+      const count = parseInt(features, 10);
+      const royalty = count * 1;
+      const total = basePrice + royalty;
+
+      document.getElementById('feature-count-display').innerText = count + ' features';
+      document.getElementById('royalty-pool-display').innerText = '₹' + royalty;
+      document.getElementById('total-price-display').innerText = '₹' + total;
+    }
+
+    function copyInstallCmd() {
+      const cmd = document.getElementById('install-cmd').innerText;
+      navigator.clipboard.writeText(cmd);
+      const btnText = document.getElementById('copy-text');
+      btnText.innerText = 'Copied!';
+      setTimeout(() => {
+        btnText.innerText = 'Copy';
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

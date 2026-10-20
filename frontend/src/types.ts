@@ -50,20 +50,38 @@ export interface DriveIndexStats {
   is_indexing: boolean;
 }
 
-export type Mode = "all" | "clipboard" | "ports";
+export type Mode = "all" | "clipboard" | "ports" | "store";
 
 export interface Item {
   id: string;
   title: string;
   subtitle: string;
-  category: "Application" | "File" | "Folder" | "Command" | "Setting" | "Snippet" | "Window Management" | "Game" | "Theme";
-  iconType: "app" | "file" | "folder" | "cmd" | "setting" | "snippet" | "window-snap" | "game" | "theme";
+  category: "Application" | "File" | "Folder" | "Command" | "Setting" | "Snippet" | "Window Management" | "Game" | "Theme" | "Plugin";
+  iconType: "app" | "file" | "folder" | "cmd" | "setting" | "snippet" | "window-snap" | "game" | "theme" | "plugin";
   iconData?: string;
   path: string;
   size?: string;
   updated?: string;
   bannerUrl?: string;
   platform?: string;
+}
+
+export interface StorePluginItem {
+  id: string;
+  name: string;
+  description: string;
+  keyword: string;
+  category: "Dev Tools" | "Productivity" | "System" | "Network" | "Media";
+  author: string;
+  authorGithub: string;
+  version: string;
+  downloads: number;
+  rating: number;
+  royaltyPerSale: number;
+  scriptFilename: string;
+  scriptContent: string;
+  manifestJson: string;
+  icon: string;
 }
 
 export interface PortItem {

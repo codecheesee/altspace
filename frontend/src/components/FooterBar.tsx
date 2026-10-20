@@ -1,4 +1,4 @@
-import { PanelRightClose, PanelRightOpen, Heart } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Heart, Award } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Mode } from "../types";
 
@@ -16,6 +16,7 @@ interface FooterBarProps {
   onToggleSidebar: () => void;
   onOpenActions: () => void;
   onOpenFeedback?: () => void;
+  onOpenLicense?: () => void;
 }
 
 export function FooterBar({
@@ -29,6 +30,7 @@ export function FooterBar({
   onToggleSidebar,
   onOpenActions,
   onOpenFeedback,
+  onOpenLicense,
 }: FooterBarProps) {
   return (
     <div className="h-9 px-4 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs text-neutral-400 font-medium shrink-0">
@@ -40,7 +42,9 @@ export function FooterBar({
             ? `${itemsCount} items`
             : currentMode === "clipboard"
             ? `${clipsCount} clips`
-            : `${portsCount} ports`}
+            : currentMode === "ports"
+            ? `${portsCount} ports`
+            : "Extensions"}
         </span>
         <span className="text-neutral-600">/</span>
         <button
@@ -54,6 +58,20 @@ export function FooterBar({
           />
           <span className="font-mono text-[10.5px]">{activeTheme.name}</span>
         </button>
+
+        {onOpenLicense && (
+          <>
+            <span className="text-neutral-600">/</span>
+            <button
+              onClick={onOpenLicense}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-amber-400/10 text-neutral-300 hover:text-amber-300 transition cursor-pointer border border-transparent hover:border-amber-400/20"
+              title="Supporter License & Contributor Bonding Curve"
+            >
+              <Award className="w-3 h-3 text-amber-400" />
+              <span className="text-[10.5px] font-medium text-amber-300/90">Supporter</span>
+            </button>
+          </>
+        )}
 
         {onOpenFeedback && (
           <>
