@@ -50,8 +50,7 @@
       "nsis": {
         "installMode": "currentUser",
         "startMenuFolder": "AltSpace",
-        "displayLanguageSelector": false,
-        "createDesktopShortcut": true
+        "displayLanguageSelector": false
       }
     }
   }
