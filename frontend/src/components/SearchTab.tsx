@@ -416,10 +416,10 @@ export function SearchTab({
                       onClick={() => setSelectedIndex(effectiveIndex)}
                       onDoubleClick={() => onItemAction(item)}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-all duration-100 group",
+                        "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-75 group relative select-none",
                         isSelected
-                          ? "bg-white/[0.08] text-white shadow-sm border border-white/[0.08]"
-                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-200 border border-transparent"
+                          ? "bg-white/[0.06] text-white shadow-sm border border-white/[0.08] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-white"
+                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-100 border border-transparent"
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 pr-3">
@@ -445,12 +445,12 @@ export function SearchTab({
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
                         {isSelected ? (
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.12] border border-white/[0.18] text-[11px] font-medium text-white shadow-sm animate-in fade-in duration-100">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/80 text-[11px] font-medium text-zinc-200 shadow-sm animate-in fade-in duration-100">
                             <span>Open</span>
-                            <kbd className="text-[10px] font-mono text-neutral-300">↵</kbd>
+                            <kbd className="kbd-cap">↵</kbd>
                           </div>
                         ) : (
-                          <span className="text-[10.5px] font-medium text-neutral-500 px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50 opacity-0 group-hover:opacity-100 transition">
                             {item.category}
                           </span>
                         )}
@@ -481,10 +481,10 @@ export function SearchTab({
                       onClick={() => setSelectedIndex(effectiveIndex)}
                       onDoubleClick={() => onItemAction(item)}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-all duration-100 group",
+                        "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-75 group relative select-none",
                         isSelected
-                          ? "bg-white/[0.08] text-white shadow-sm border border-white/[0.08]"
-                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-200 border border-transparent"
+                          ? "bg-white/[0.06] text-white shadow-sm border border-white/[0.08] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-white"
+                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-100 border border-transparent"
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 pr-3">
@@ -510,12 +510,12 @@ export function SearchTab({
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
                         {isSelected ? (
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.12] border border-white/[0.18] text-[11px] font-medium text-white shadow-sm animate-in fade-in duration-100">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/80 text-[11px] font-medium text-zinc-200 shadow-sm animate-in fade-in duration-100">
                             <span>Open</span>
-                            <kbd className="text-[10px] font-mono text-neutral-300">↵</kbd>
+                            <kbd className="kbd-cap">↵</kbd>
                           </div>
                         ) : (
-                          <span className="text-[10.5px] font-medium text-neutral-500 px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50 opacity-0 group-hover:opacity-100 transition">
                             {item.category}
                           </span>
                         )}
@@ -546,16 +546,16 @@ export function SearchTab({
                       onClick={() => setSelectedIndex(effectiveIndex)}
                       onDoubleClick={() => onItemAction(item)}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-all duration-100 group",
+                        "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-75 group relative select-none",
                         isSelected
-                          ? "bg-white/[0.08] text-white shadow-sm border border-white/[0.08]"
-                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-200 border border-transparent"
+                          ? "bg-white/[0.06] text-white shadow-sm border border-white/[0.08] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-white"
+                          : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-100 border border-transparent"
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 pr-3">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-purple-500/10 text-purple-400 border-purple-500/20">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-zinc-800/80 text-zinc-300 border-zinc-700/60">
                           {item.id === "util-clipboard" ? (
-                            <ClipboardIcon className="w-4 h-4 stroke-[2] text-blue-400" />
+                            <ClipboardIcon className="w-4 h-4 stroke-[2] text-sky-400" />
                           ) : item.id === "util-ports" ? (
                             <Activity className="w-4 h-4 stroke-[2] text-emerald-400" />
                           ) : (
@@ -573,12 +573,12 @@ export function SearchTab({
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
                         {isSelected ? (
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.12] border border-white/[0.18] text-[11px] font-medium text-white shadow-sm animate-in fade-in duration-100">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/80 text-[11px] font-medium text-zinc-200 shadow-sm animate-in fade-in duration-100">
                             <span>Open</span>
-                            <kbd className="text-[10px] font-mono text-neutral-300">↵</kbd>
+                            <kbd className="kbd-cap">↵</kbd>
                           </div>
                         ) : (
-                          <span className="text-[10.5px] font-medium text-neutral-500 px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50 opacity-0 group-hover:opacity-100 transition">
                             Tool
                           </span>
                         )}
@@ -611,10 +611,10 @@ export function SearchTab({
                     onClick={() => setSelectedIndex(effectiveIndex)}
                     onDoubleClick={() => onItemAction(item)}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-all duration-100 group",
+                      "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-75 group relative select-none",
                       isSelected
-                        ? "bg-white/[0.08] text-white shadow-sm border border-white/[0.08]"
-                        : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-200 border border-transparent"
+                        ? "bg-white/[0.06] text-white shadow-sm border border-white/[0.08] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-white"
+                        : "text-neutral-300 hover:bg-white/[0.03] hover:text-neutral-100 border border-transparent"
                     )}
                   >
                     <div className="flex items-center gap-3 min-w-0 pr-3">
@@ -663,12 +663,12 @@ export function SearchTab({
 
                     <div className="shrink-0 flex items-center gap-2">
                       {isSelected ? (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.12] border border-white/[0.18] text-[11px] font-medium text-white shadow-sm animate-in fade-in duration-100">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/80 text-[11px] font-medium text-zinc-200 shadow-sm animate-in fade-in duration-100">
                           <span>{item.category === "Window Management" ? "Snap" : item.category === "Game" ? "Play" : item.category === "Theme" ? "Apply" : "Open"}</span>
-                          <kbd className="text-[10px] font-mono text-neutral-300">↵</kbd>
+                          <kbd className="kbd-cap">↵</kbd>
                         </div>
                       ) : (
-                        <span className="text-[10.5px] font-medium text-neutral-500 px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition">
+                        <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50 opacity-0 group-hover:opacity-100 transition">
                           {item.category === "Game" ? (item.platform || "Game") : item.category}
                         </span>
                       )}

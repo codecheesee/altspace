@@ -24,11 +24,11 @@ type FeedbackType = "rating" | "feature" | "bug" | "contribute";
 
 const STAR_LABELS = [
   "",
-  "Needs work 💔",
-  "Rough edges 😕",
-  "Good start 👍",
-  "Great launcher! ⚡",
-  "Love it! Daily driver ⭐",
+  "Needs work",
+  "Rough edges",
+  "Good start",
+  "Great launcher!",
+  "Daily driver",
 ];
 
 function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -47,9 +47,9 @@ export function FeedbackModal({
   isOpen,
   onClose,
   activeTheme = {
-    cardBg: "#141517",
+    cardBg: "#0c0c0e",
     borderColor: "rgba(255, 255, 255, 0.08)",
-    accentHex: "#e5484d",
+    accentHex: "#ff6363",
   },
   notify,
 }: FeedbackModalProps) {
@@ -99,26 +99,24 @@ export function FeedbackModal({
 
     // 1. Store in local feedback collection
     try {
-      const existingRaw = localStorage.getItem("altspace_user_feedback");
-      const list = existingRaw ? JSON.parse(existingRaw) : [];
-      list.push(payload);
-      localStorage.setItem("altspace_user_feedback", JSON.stringify(list));
+      const stored = JSON.parse(localStorage.getItem("altspace_user_feedback") || "[]");
+      stored.unshift(payload);
+      localStorage.setItem("altspace_user_feedback", JSON.stringify(stored.slice(0, 50)));
       localStorage.setItem("altspace_has_rated", "true");
     } catch (_) {}
 
-    // 2. Deliver to Discord Webhook (Rich Embed format)
-    const activeWebhook = (localStorage.getItem("altspace_feedback_webhook") || DISCORD_WEBHOOK_URL).trim();
-    if (activeWebhook && activeWebhook.startsWith("http")) {
+    // 2. Dispatch to Discord Webhook
+    const targetWebhook = webhookInput.trim() || DISCORD_WEBHOOK_URL;
+    if (targetWebhook && targetWebhook.startsWith("https://discord.com/api/webhooks/")) {
       try {
-        const color = stars >= 4 ? 0x22c55e : stars === 3 ? 0xf59e0b : 0xef4444;
-        await fetch(activeWebhook, {
+        const color = stars >= 4 ? 0x10b981 : stars === 3 ? 0xf59e0b : 0xef4444;
+        await fetch(targetWebhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            username: "AltSpace Feedback",
             embeds: [
               {
-                title: `🌟 New User Feedback: ${type.toUpperCase()}`,
+                title: `New User Feedback: ${type.toUpperCase()}`,
                 color,
                 fields: [
                   {
@@ -196,29 +194,25 @@ ${comment || "No detailed notes provided."}
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-100"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-100 select-none"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border shadow-2xl p-5 flex flex-col gap-4 text-white animate-in zoom-in-95 duration-100 relative"
-        style={{
-          backgroundColor: activeTheme.cardBg,
-          borderColor: activeTheme.borderColor,
-        }}
+        className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-5 flex flex-col gap-4 text-zinc-100 animate-in zoom-in-95 duration-100 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Controls */}
         <div className="absolute top-4 right-4 flex items-center gap-1.5">
           <button
             onClick={() => setShowWebhookConfig((prev) => !prev)}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
             title="Configure Discord Webhook"
           >
             <Settings className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
             title="Close (Esc)"
           >
             <X className="w-4 h-4" />
@@ -236,14 +230,14 @@ ${comment || "No detailed notes provided."}
               Rate & Shape AltSpace
             </h2>
           </div>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-zinc-400 mt-1">
             AltSpace is open-source. Your feedback and ratings directly determine our roadmap.
           </p>
         </div>
 
         {showWebhookConfig && (
-          <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] flex flex-col gap-2 animate-in fade-in">
-            <span className="text-xs font-semibold text-purple-300">
+          <div className="p-3 rounded-xl bg-black/40 border border-white/[0.08] flex flex-col gap-2 animate-in fade-in">
+            <span className="text-xs font-semibold text-zinc-200">
               Private Discord Webhook URL:
             </span>
             <input
@@ -251,20 +245,20 @@ ${comment || "No detailed notes provided."}
               value={webhookInput}
               onChange={(e) => setWebhookInput(e.target.value)}
               placeholder="https://discord.com/api/webhooks/..."
-              className="w-full bg-black/40 border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white placeholder-neutral-500 focus:outline-none"
+              className="w-full bg-zinc-900 border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none"
             />
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setShowWebhookConfig(false)}
-                className="text-[11px] px-2.5 py-1 rounded bg-neutral-800 text-neutral-300 hover:text-white"
+                className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 hover:text-white cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveWebhook}
-                className="text-[11px] px-2.5 py-1 rounded bg-purple-600 hover:bg-purple-500 text-white font-medium"
+                className="text-[11px] px-2.5 py-1 rounded bg-zinc-700 hover:bg-zinc-600 text-white font-medium cursor-pointer"
               >
                 Save Webhook
               </button>
@@ -276,7 +270,7 @@ ${comment || "No detailed notes provided."}
           <div className="py-8 text-center flex flex-col items-center justify-center gap-2 animate-in zoom-in-95">
             <ThumbsUp className="w-10 h-10 text-emerald-400 animate-bounce" />
             <h3 className="text-sm font-semibold text-white">Feedback Recorded!</h3>
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-zinc-400">
               Thank you for helping make Windows developer tools better.
             </p>
           </div>
@@ -298,13 +292,13 @@ ${comment || "No detailed notes provided."}
                       className={`w-7 h-7 transition-colors ${
                         star <= activeStarCount
                           ? "text-amber-400 fill-amber-400"
-                          : "text-neutral-600 hover:text-neutral-400"
+                          : "text-zinc-700 hover:text-zinc-500"
                       }`}
                     />
                   </button>
                 ))}
               </div>
-              <span className="text-xs font-mono text-amber-300 h-4">
+              <span className="text-xs font-mono text-zinc-400 h-4">
                 {STAR_LABELS[activeStarCount]}
               </span>
             </div>
@@ -312,10 +306,10 @@ ${comment || "No detailed notes provided."}
             {/* Category Pills */}
             <div className="flex items-center gap-1.5 justify-center flex-wrap">
               {[
-                { id: "rating", label: "⭐ Review" },
-                { id: "feature", label: "💡 Feature" },
-                { id: "bug", label: "🐛 Bug" },
-                { id: "contribute", label: "🤝 Contribute" },
+                { id: "rating", label: "Review" },
+                { id: "feature", label: "Feature" },
+                { id: "bug", label: "Bug" },
+                { id: "contribute", label: "Contribute" },
               ].map((pill) => (
                 <button
                   key={pill.id}
@@ -323,8 +317,8 @@ ${comment || "No detailed notes provided."}
                   onClick={() => setType(pill.id as FeedbackType)}
                   className={`text-[11px] px-2.5 py-1 rounded-lg transition font-medium border cursor-pointer ${
                     type === pill.id
-                      ? "bg-white/[0.16] text-white border-white/[0.2] shadow-sm"
-                      : "bg-white/[0.04] text-neutral-400 hover:text-white border-transparent hover:bg-white/[0.08]"
+                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                      : "bg-transparent text-zinc-400 hover:text-white border-transparent hover:bg-white/[0.04]"
                   }`}
                 >
                   {pill.label}
@@ -346,7 +340,7 @@ ${comment || "No detailed notes provided."}
                   : "What do you like? What could be faster or better?"
               }
               rows={3}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl p-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/[0.2] resize-none"
+              className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 resize-none"
             />
 
             {/* Optional contact input */}
@@ -354,8 +348,8 @@ ${comment || "No detailed notes provided."}
               type="text"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="Your GitHub username, Discord, or email (optional, for follow-up)"
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/[0.2]"
+              placeholder="Your GitHub username or Discord (optional)"
+              className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
             />
 
             {/* Action Buttons */}
@@ -363,7 +357,7 @@ ${comment || "No detailed notes provided."}
               <button
                 type="button"
                 onClick={handleDirectSubmit}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/[0.12] hover:bg-white/[0.18] text-white text-xs font-medium transition cursor-pointer border border-white/[0.14]"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium transition cursor-pointer border border-zinc-700 shadow-sm"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit Feedback</span>
@@ -372,7 +366,7 @@ ${comment || "No detailed notes provided."}
               <button
                 type="button"
                 onClick={handlePostGitHubIssue}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs font-medium transition cursor-pointer border border-neutral-700"
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium transition cursor-pointer border border-zinc-800"
                 title="Open pre-filled GitHub issue in browser"
               >
                 <GithubIcon className="w-3.5 h-3.5" />
@@ -381,10 +375,10 @@ ${comment || "No detailed notes provided."}
             </div>
 
             {/* Community Links */}
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-neutral-400">
+            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400">
               <button
                 onClick={() => handleOpenUrl(GITHUB_REPO_URL)}
-                className="flex items-center gap-1 hover:text-amber-300 transition cursor-pointer"
+                className="flex items-center gap-1 hover:text-white transition cursor-pointer"
               >
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                 <span>Star on GitHub</span>

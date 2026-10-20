@@ -19,7 +19,6 @@ interface ActionDrawerProps {
 export function ActionDrawer({
   isOpen,
   onClose,
-  activeTheme,
   currentMode,
   selectedItem,
   selectedPort,
@@ -34,15 +33,11 @@ export function ActionDrawer({
 
   return (
     <div
-      className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-end justify-end p-3 z-50 animate-in fade-in duration-100"
+      className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-end justify-end p-3 z-50 animate-in fade-in duration-100 select-none"
       onClick={onClose}
     >
       <div
-        className="w-[360px] max-h-[440px] border rounded-2xl shadow-2xl p-2.5 flex flex-col space-y-2 animate-in zoom-in-95 duration-100"
-        style={{
-          backgroundColor: activeTheme.cardBg,
-          borderColor: activeTheme.borderColor,
-        }}
+        className="w-[360px] max-h-[440px] border border-white/[0.08] bg-[#0c0c0e] rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-2.5 flex flex-col space-y-2 animate-in zoom-in-95 duration-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: Item Title & Esc hint */}
@@ -56,7 +51,7 @@ export function ActionDrawer({
                 ? `Port :${selectedPort?.port}`
                 : "Clipboard"}
             </span>
-            <span className="text-[10px] text-neutral-400 truncate block font-mono">
+            <span className="text-[10px] text-zinc-400 truncate block font-mono">
               {currentMode === "all"
                 ? selectedItem?.category || "Query"
                 : currentMode === "ports"
@@ -64,19 +59,17 @@ export function ActionDrawer({
                 : "Selected Clip"}
             </span>
           </div>
-          <kbd className="text-[10px] font-mono text-neutral-400 bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded shrink-0">
-            Esc
-          </kbd>
+          <kbd className="kbd-cap">Esc</kbd>
         </div>
 
         {/* Scrollable Actions List */}
-        <div className="overflow-y-auto space-y-2.5 px-1 py-1 max-h-[350px] custom-scrollbar">
+        <div className="overflow-y-auto space-y-2.5 px-1 py-1 max-h-[350px]">
           {sections.map((sec) => {
             const sectionActions = actions.filter((a) => a.section === sec);
 
             return (
               <div key={sec} className="space-y-1">
-                <div className="px-2 text-[9.5px] uppercase font-bold tracking-wider text-neutral-500">
+                <div className="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
                   {sec}
                 </div>
                 <div className="space-y-0.5">
@@ -92,20 +85,18 @@ export function ActionDrawer({
                         }}
                         onMouseEnter={() => setActionSelectedIndex(currentGlobalIdx)}
                         className={cn(
-                          "flex items-center justify-between px-2.5 py-1.5 rounded-xl cursor-pointer text-xs transition duration-75",
+                          "flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs transition duration-75 relative",
                           isSelected
-                            ? "bg-white/[0.12] text-white font-medium border border-white/[0.14] shadow-sm"
-                            : "text-neutral-300 hover:bg-white/[0.04] hover:text-white border border-transparent"
+                            ? "bg-white/[0.06] text-white font-medium border border-white/[0.08] shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2.5px] before:rounded-r before:bg-white"
+                            : "text-zinc-300 hover:bg-white/[0.03] hover:text-white border border-transparent"
                         )}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <span className="shrink-0">{action.icon}</span>
+                          <span className="shrink-0 text-zinc-400">{action.icon}</span>
                           <span className="truncate">{action.title}</span>
                         </div>
                         {action.shortcut && (
-                          <kbd className="text-[10px] font-mono text-neutral-300 bg-white/[0.08] border border-white/[0.1] px-1.5 py-0.5 rounded shrink-0 shadow-sm">
-                            {action.shortcut}
-                          </kbd>
+                          <kbd className="kbd-cap">{action.shortcut}</kbd>
                         )}
                       </div>
                     );

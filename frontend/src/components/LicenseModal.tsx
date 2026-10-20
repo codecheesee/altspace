@@ -27,8 +27,10 @@ import {
 } from "../lib/bountySync";
 import {
   getRegionalPricing,
-  openCheckout,
   detectUserCurrency,
+  GITHUB_SPONSORS_URL,
+  POLAR_PROFILE_URL,
+  EVALUATION_LICENSE_KEY,
   type CurrencyCode,
 } from "../lib/checkout";
 import { tauriInvoke } from "../lib/appStorage";
@@ -47,7 +49,6 @@ interface LicenseModalProps {
 export function LicenseModal({
   isOpen,
   onClose,
-  activeTheme,
   notify,
 }: LicenseModalProps) {
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(getLicenseStatus());
@@ -119,7 +120,7 @@ export function LicenseModal({
     notify("License removed. Reverted to Community Free Edition.");
   };
 
-  const handleOpenBounty = (url: string) => {
+  const handleOpenUrl = (url: string) => {
     if (tauriInvoke) {
       tauriInvoke("open_url", { url });
     } else {
@@ -128,40 +129,35 @@ export function LicenseModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div
-        className="relative w-full max-w-xl rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-neutral-200"
-        style={{
-          backgroundColor: activeTheme.bg || "#0f0f13",
-          borderColor: activeTheme.borderColor || "#2a2b36",
-        }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 select-none">
+      <div className="relative w-full max-w-xl rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden flex flex-col max-h-[85vh] text-zinc-200">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between bg-gradient-to-r from-amber-500/[0.12] via-purple-500/[0.08] to-transparent shrink-0">
+        <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between bg-black/30 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300">
+            <div className="p-2 rounded-xl bg-zinc-800/80 border border-zinc-700/80 text-amber-400 shadow-sm">
               <Award className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-white text-base tracking-tight">
-                  AltSpace Supporter & Community Treasury
+                  Supporter Edition & Community Treasury
                 </h3>
                 {licenseStatus.isSupporter && (
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-400 text-black shadow-sm">
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-400 text-black shadow-sm">
                     ★ ACTIVE SUPPORTER
                   </span>
                 )}
               </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Core app is 100% Free Apache-2.0. Supporter licenses fund the Open Source Contributor Bounty Treasury.
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Core app is 100% Free Apache-2.0. Supporter licenses fund open source contributor bounties.
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+            title="Close (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
@@ -170,30 +166,30 @@ export function LicenseModal({
         {/* Modal Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
           {/* Pricing & Regional PPP Breakdown Card */}
-          <div className="p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-between gap-4">
+          <div className="p-4 rounded-xl border border-white/[0.08] bg-zinc-900/60 shadow-sm flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-neutral-400 uppercase tracking-wider font-semibold">
-                  Supporter Edition
+                <span className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold">
+                  Supporter Tier
                 </span>
                 {/* Currency Selector Pill */}
-                <div className="flex items-center bg-white/[0.06] p-0.5 rounded-md border border-white/[0.08]">
+                <div className="flex items-center bg-black/40 p-0.5 rounded-md border border-white/[0.08]">
                   <button
                     onClick={() => setSelectedCurrency("INR")}
-                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono transition cursor-pointer ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition cursor-pointer ${
                       selectedCurrency === "INR"
-                        ? "bg-amber-400 text-black font-semibold"
-                        : "text-neutral-400 hover:text-white"
+                        ? "bg-zinc-700 text-white font-semibold shadow-sm"
+                        : "text-zinc-400 hover:text-white"
                     }`}
                   >
                     ₹ INR
                   </button>
                   <button
                     onClick={() => setSelectedCurrency("USD")}
-                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono transition cursor-pointer ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition cursor-pointer ${
                       selectedCurrency === "USD"
-                        ? "bg-amber-400 text-black font-semibold"
-                        : "text-neutral-400 hover:text-white"
+                        ? "bg-zinc-700 text-white font-semibold shadow-sm"
+                        : "text-zinc-400 hover:text-white"
                     }`}
                   >
                     $ USD
@@ -205,7 +201,7 @@ export function LicenseModal({
                 <span className="text-2xl font-bold text-white tracking-tight">
                   {pricing.formattedPrice}
                 </span>
-                <span className="text-neutral-400">/ year ({pricing.monthlyEquivalent})</span>
+                <span className="text-zinc-400">/ year ({pricing.monthlyEquivalent})</span>
               </div>
               <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-mono">
                 <Gift className="w-3.5 h-3.5" />
@@ -218,22 +214,32 @@ export function LicenseModal({
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>Treasury Active</span>
               </div>
-              <div className="text-[10px] text-neutral-500 mt-1 font-mono">
+              <div className="text-[10px] text-zinc-400 mt-1 font-mono">
                 ₹{treasuryStats.totalFundedINR.toLocaleString()} Allocated
               </div>
             </div>
           </div>
 
-          {/* Checkout CTA Button (If not supporter) */}
+          {/* Quick Actions & Checkout */}
           {!licenseStatus.isSupporter && (
-            <button
-              onClick={() => openCheckout(selectedCurrency)}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/10 active:scale-[0.99]"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Get Supporter License ({pricing.formattedPrice} / year)</span>
-              <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
-            </button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => handleActivate(EVALUATION_LICENSE_KEY)}
+                className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-white font-medium text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-sm active:scale-[0.99]"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Activate Free Evaluation</span>
+              </button>
+
+              <button
+                onClick={() => handleOpenUrl(GITHUB_SPONSORS_URL)}
+                className="py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-100 text-black font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-sm active:scale-[0.99]"
+              >
+                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                <span>Sponsor on GitHub</span>
+                <ExternalLink className="w-3 h-3 text-zinc-600 ml-0.5" />
+              </button>
+            </div>
           )}
 
           {/* Active Status or License Activation Box */}
@@ -244,11 +250,11 @@ export function LicenseModal({
                   <ShieldCheck className="w-4 h-4" />
                   <span>Supporter License Active</span>
                 </div>
-                <div className="text-neutral-300 text-xs font-mono">
+                <div className="text-zinc-300 text-xs font-mono">
                   Key: {licenseStatus.licenseKey?.slice(0, 10)}••••••••••••
                 </div>
                 {licenseStatus.expiresAt && (
-                  <div className="text-[11px] text-neutral-400">
+                  <div className="text-[11px] text-zinc-400">
                     Expires on: {new Date(licenseStatus.expiresAt).toLocaleDateString()}
                     {licenseStatus.daysRemaining !== undefined && (
                       <span className="ml-1 text-emerald-400">
@@ -267,24 +273,24 @@ export function LicenseModal({
             </div>
           ) : (
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-neutral-300">
-                Already have a key? Activate it here
+              <label className="block text-xs font-medium text-zinc-300">
+                Have a license key? Enter it below:
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Key className="w-4 h-4 absolute left-3 top-2.5 text-neutral-500" />
+                  <Key className="w-4 h-4 absolute left-3 top-2.5 text-zinc-500" />
                   <input
                     type="text"
                     value={inputKey}
                     onChange={(e) => setInputKey(e.target.value)}
                     placeholder="ALTSP-SUPPORTER-YYYYMMDD-HASH"
-                    className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-white placeholder-neutral-500 outline-none focus:border-amber-400/50"
+                    className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-500 outline-none focus:border-zinc-400"
                   />
                 </div>
                 <button
                   onClick={() => handleActivate()}
                   disabled={isActivating}
-                  className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs transition cursor-pointer shrink-0 shadow-md disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-medium text-xs transition cursor-pointer shrink-0 shadow-sm disabled:opacity-50"
                 >
                   {isActivating ? "Verifying..." : "Activate"}
                 </button>
@@ -294,25 +300,23 @@ export function LicenseModal({
                 <p className="text-rose-400 text-xs">{errorMsg}</p>
               )}
 
-              {/* Dev Test Quick Activation */}
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-1 text-[11px] text-zinc-400">
                 <button
-                  onClick={() => handleActivate("ALTSP-SUPPORTER-2026")}
-                  className="text-[11px] text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
+                  onClick={() => handleOpenUrl(POLAR_PROFILE_URL)}
+                  className="hover:text-white flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>Test Supporter License Free (Dev Key)</span>
+                  <CreditCard className="w-3 h-3 text-zinc-400" />
+                  <span>Polar.sh Profile</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
                 </button>
 
-                <a
-                  href={pricing.checkoutUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1"
+                <button
+                  onClick={() => handleOpenUrl(pricing.checkoutUrl)}
+                  className="hover:text-white flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Polar.sh Checkout</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                  <span>Sponsorship Guide</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </button>
               </div>
             </div>
           )}
@@ -324,31 +328,31 @@ export function LicenseModal({
                 <span className="font-semibold text-white text-xs uppercase tracking-wide">
                   Live GitHub Feature Bounties
                 </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
                   {treasuryStats.openBountiesCount} Open
                 </span>
               </div>
               <button
                 onClick={loadBounties}
                 title="Sync latest bounties from GitHub"
-                className="text-neutral-400 hover:text-white flex items-center gap-1 text-[11px] transition cursor-pointer"
+                className="text-zinc-400 hover:text-white flex items-center gap-1 text-[11px] transition cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
                 <span>Sync</span>
               </button>
             </div>
 
-            <div className="rounded-xl border border-white/[0.06] divide-y divide-white/[0.05] overflow-hidden bg-white/[0.01]">
+            <div className="rounded-xl border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden bg-black/20">
               {bounties.length > 0 ? (
                 bounties.map((bounty) => (
                   <div
                     key={bounty.id}
-                    onClick={() => handleOpenBounty(bounty.githubIssueUrl)}
+                    onClick={() => handleOpenUrl(bounty.githubIssueUrl)}
                     className="p-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition cursor-pointer group"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-white group-hover:text-purple-300 transition">
+                        <span className="font-medium text-white group-hover:text-sky-300 transition">
                           {bounty.title}
                         </span>
                         <span
@@ -363,10 +367,10 @@ export function LicenseModal({
                           {bounty.status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                      <p className="text-[11px] text-zinc-400 truncate mt-0.5">
                         {bounty.description}
                       </p>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-neutral-500">
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-500">
                         {bounty.assignee ? (
                           <span>Claimed by @{bounty.assignee}</span>
                         ) : (
@@ -376,17 +380,17 @@ export function LicenseModal({
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/25 text-purple-300 font-mono text-xs font-semibold">
+                      <span className="px-2.5 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 font-mono text-xs font-semibold">
                         ₹{bounty.bountyAmountINR.toLocaleString()}
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center text-xs text-neutral-400 space-y-1">
-                  <p className="text-neutral-300 font-medium">No open bounties currently funded.</p>
-                  <p className="text-[11px] text-neutral-500">
-                    Maintainers allocate 20% of Supporter revenue to public GitHub issues labeled <span className="font-mono text-neutral-300">bounty</span>.
+                <div className="p-4 text-center text-xs text-zinc-400 space-y-1">
+                  <p className="text-zinc-300 font-medium">No open bounties currently funded.</p>
+                  <p className="text-[11px] text-zinc-500">
+                    Maintainers allocate 20% of Supporter revenue to public GitHub issues labeled <span className="font-mono text-zinc-300">bounty</span>.
                   </p>
                 </div>
               )}
@@ -395,14 +399,14 @@ export function LicenseModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-white/[0.06] bg-white/[0.02] flex items-center justify-between text-xs text-neutral-400 shrink-0">
+        <div className="px-6 py-3.5 border-t border-white/[0.08] bg-black/30 flex items-center justify-between text-xs text-zinc-400 shrink-0">
           <span className="flex items-center gap-1.5">
             <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400/40" />
             <span>Apache 2.0 Open Source Core • 100% Free Forever</span>
           </span>
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.12] text-white transition cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition cursor-pointer border border-zinc-700/80"
           >
             Close
           </button>

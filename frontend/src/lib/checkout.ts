@@ -20,9 +20,13 @@ export interface RegionalPricing {
 }
 
 export const CHECKOUT_URLS: Record<CurrencyCode, string> = {
-  INR: "https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr",
-  USD: "https://polar.sh/codecheesee/subscriptions/altspace-supporter-usd",
+  INR: "https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr",
+  USD: "https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd",
 };
+
+export const POLAR_PROFILE_URL = "https://polar.sh/codecheesee";
+export const GITHUB_SPONSORS_URL = "https://github.com/sponsors/codecheesee";
+export const EVALUATION_LICENSE_KEY = "ALTSP-SUPPORTER-2026";
 
 /**
  * Detects if the user is in India or international based on browser timezone and language

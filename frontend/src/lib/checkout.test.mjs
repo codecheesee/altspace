@@ -39,7 +39,7 @@ function getRegionalPricing(forcedCurrency, detectedCurrency = 'USD') {
       monthlyEquivalent: '~₹25/mo',
       treasuryAmount: treasury,
       formattedTreasury: '₹60',
-      checkoutUrl: 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr',
+      checkoutUrl: 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr',
     };
   }
 
@@ -53,7 +53,7 @@ function getRegionalPricing(forcedCurrency, detectedCurrency = 'USD') {
     monthlyEquivalent: '$1/mo',
     treasuryAmount: treasury,
     formattedTreasury: '$2.40',
-    checkoutUrl: 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-usd',
+    checkoutUrl: 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd',
   };
 }
 

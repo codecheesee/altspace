@@ -26,46 +26,58 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #090a0f;
-      color: #f3f4f6;
+      background-color: #09090b;
+      color: #f4f4f5;
     }
     code, kbd, pre {
       font-family: 'JetBrains Mono', monospace;
     }
-    .gradient-glow {
-      background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, rgba(236, 72, 153, 0.08) 35%, transparent 70%);
+    .kbd-cap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #27272a;
+      color: #e4e4e7;
+      border: 1px solid #3f3f46;
+      border-bottom: 2px solid #52525b;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
     .glass-card {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(16px);
+      background: #121215;
       border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     }
     .glass-card:hover {
-      border-color: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.16);
     }
   </style>
 </head>
-<body class="min-h-screen relative overflow-x-hidden selection:bg-purple-500 selection:text-white">
-  <!-- Ambient Top Glow -->
-  <div class="absolute top-0 left-0 right-0 h-[650px] gradient-glow pointer-events-none -z-10"></div>
+<body class="min-h-screen relative overflow-x-hidden selection:bg-zinc-700 selection:text-white">
+  <!-- Top Specular Rim Line -->
+  <div class="h-[1px] w-full bg-white/[0.08] pointer-events-none"></div>
 
   <!-- Navigation -->
   <nav class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25">
+      <div class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white shadow-sm">
         Alt
       </div>
       <span class="text-xl font-bold tracking-tight text-white">AltSpace</span>
-      <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/25 ml-1">
+      <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 ml-1">
         v1.0.1 • Apache 2.0
       </span>
     </div>
 
     <div class="flex items-center gap-4 text-sm font-medium">
       <a href="#features" class="text-neutral-400 hover:text-white transition">Features</a>
-      <a href="#treasury" class="text-purple-300 hover:text-purple-200 transition">Bounty Treasury</a>
+      <a href="#treasury" class="text-neutral-300 hover:text-white transition">Bounty Treasury</a>
       <a href="#bounties" class="text-neutral-400 hover:text-white transition">Bounties</a>
-      <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white transition border border-white/[0.1]">
+      <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition border border-zinc-700">
         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         <span>GitHub</span>
       </a>
@@ -74,15 +86,15 @@
 
   <!-- Hero Section -->
   <section class="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
-    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold mb-6">
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/80 border border-zinc-700/80 text-zinc-300 text-xs font-semibold mb-6">
       <span>High-Performance Windows Command Center</span>
-      <span class="text-neutral-500">•</span>
+      <span class="text-zinc-500">•</span>
       <span class="text-white">Rust + React 19 + Tailwind CSS v4</span>
     </div>
 
     <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
       Native Windows Command Palette. <br>
-      <span class="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
+      <span class="text-zinc-400">
         Sub-5ms Latency. 18MB RAM Footprint.
       </span>
     </h1>
@@ -95,10 +107,10 @@
     <div class="mt-8 max-w-xl mx-auto">
       <div class="glass-card rounded-2xl p-2 flex items-center justify-between gap-3 shadow-xl">
         <div class="flex items-center gap-3 pl-3 text-neutral-300 text-sm font-mono overflow-x-auto whitespace-nowrap">
-          <span class="text-purple-400 select-none">PS &gt;</span>
+          <span class="text-zinc-500 select-none">PS &gt;</span>
           <span id="install-cmd">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
         </div>
-        <button id="copy-btn" onclick="copyInstallCmd()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
+        <button id="copy-btn" onclick="copyInstallCmd()" class="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           <span id="copy-text">Copy</span>
         </button>
@@ -108,13 +120,13 @@
 
     <!-- Launcher Preview Mockup -->
     <div class="mt-14 max-w-3xl mx-auto glass-card rounded-2xl p-1 shadow-2xl border border-white/[0.12] overflow-hidden">
-      <div class="bg-neutral-950/90 rounded-xl p-4 text-left">
+      <div class="bg-[#0c0c0e] rounded-xl p-4 text-left">
         <!-- Omnibar -->
-        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-black/40 border border-white/[0.08]">
           <span class="text-neutral-400">🔍</span>
           <span class="text-white text-sm font-medium">kill port 3000</span>
-          <span class="w-1.5 h-4 bg-purple-400 animate-pulse"></span>
-          <span class="ml-auto text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          <span class="w-1.5 h-4 bg-white animate-pulse"></span>
+          <span class="ml-auto text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
             ⚡ MCP System Action
           </span>
         </div>
@@ -128,7 +140,7 @@
               <div class="text-neutral-400 text-[11px]">Killed node.exe (PID 18420) • Freed in 3.2ms</div>
             </div>
           </div>
-          <kbd class="text-[10px] font-mono bg-white/[0.08] px-2 py-1 rounded text-neutral-300 border border-white/[0.1]">↵ Enter</kbd>
+          <kbd class="kbd-cap">↵ Enter</kbd>
         </div>
       </div>
     </div>
@@ -204,14 +216,14 @@
       </div>
 
       <!-- Checkout & Creator Tips Banner -->
-      <div class="mt-6 p-4 rounded-2xl bg-neutral-900/80 border border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+      <div class="mt-6 p-4 rounded-2xl bg-zinc-900 border border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
         <div>
-          <span class="text-neutral-400">Merchant of Record via Polar.sh:</span>
+          <span class="text-neutral-400">Merchant of Record & Sponsorship:</span>
           <div class="text-white font-semibold text-sm mt-0.5">
             Automated tax compliance, instant license keys, and 100% direct creator tipping.
           </div>
         </div>
-        <a id="checkout-link-btn" href="https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr" target="_blank" rel="noreferrer" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-bold text-xs transition shrink-0 cursor-pointer shadow-md shadow-amber-500/20">
+        <a id="checkout-link-btn" href="https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr" target="_blank" rel="noreferrer" class="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition shrink-0 cursor-pointer shadow-md">
           Get Supporter License →
         </a>
       </div>
@@ -330,17 +342,17 @@
       const checkoutBtn = document.getElementById('checkout-link-btn');
 
       if (curr === 'INR') {
-        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold';
+        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
         usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
         priceDisplay.innerText = '₹299';
         pppNote.innerText = '~₹25/mo • Regional PPP Active';
-        checkoutBtn.href = 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-inr';
+        checkoutBtn.href = 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr';
       } else {
-        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold';
+        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
         inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
         priceDisplay.innerText = '$12';
         pppNote.innerText = '$1/mo • Global Supporter Tier';
-        checkoutBtn.href = 'https://polar.sh/codecheesee/subscriptions/altspace-supporter-usd';
+        checkoutBtn.href = 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd';
       }
 
       const sales = document.getElementById('sales-slider').value;

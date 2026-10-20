@@ -1,31 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-raycast-bg: #141517;
-  --color-raycast-card: #1a1b1e;
-  --color-raycast-hover: #24262b;
-  --color-raycast-border: #2a2c33;
-  --color-raycast-accent: #e5484d;
-  --color-raycast-text: #ededed;
-  --color-raycast-subtext: #8f93a0;
+  --color-raycast-bg: #09090b;
+  --color-raycast-card: #121215;
+  --color-raycast-hover: #18181b;
+  --color-raycast-border: rgba(255, 255, 255, 0.08);
+  --color-raycast-accent: #ff6363;
+  --color-raycast-text: #f4f4f5;
+  --color-raycast-subtext: #a1a1aa;
 
-  --shadow-raycast: 0 20px 70px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-glow: 0 0 20px -5px rgba(229, 72, 77, 0.3);
+  --shadow-raycast: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  --shadow-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-transparent text-neutral-100 font-sans antialiased select-none overflow-hidden m-0 p-0;
+    @apply bg-transparent text-zinc-100 font-sans antialiased select-none overflow-hidden m-0 p-0;
     user-select: none;
     -webkit-user-select: none;
   }
 }
 
-/* Custom sleek scrollbar */
+/* 21st.dev Tactile Keycap Badge */
+.kbd-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #27272a;
+  color: #e4e4e7;
+  border: 1px solid #3f3f46;
+  border-bottom: 2px solid #52525b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.01em;
+}
+
+/* 21st.dev Obsidian Surface Elevation */
+.obsidian-dialog {
+  background-color: #0c0c0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Custom sleek 21st.dev scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -35,5 +61,5 @@
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
