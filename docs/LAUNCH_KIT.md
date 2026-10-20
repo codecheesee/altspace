@@ -88,7 +88,7 @@ Key Features:
 1. **Instant Port Inspector**: Type `:3000` into the palette to inspect the process ID, listening status, and terminate hung dev servers in 3ms.
 2. **Resource Efficiency**: Idles at ~18MB RAM by utilizing native Win32 APIs instead of Electron.
 3. **Local AI Execution**: Connects to local Ollama models via Model Context Protocol (MCP) for private, offline assistance.
-4. **Sandboxed Extension Engine**: Write extensions in PowerShell, Node.js, or Python with automated 15-second process timeout controls.
+4. **User-Level Extension Engine**: Write extensions in PowerShell, Node.js, or Python with automated 15-second process timeout controls.
 
 AltSpace is 100% free under the Apache 2.0 license. 20% of optional supporter revenue is deposited into a public GitHub bounty pool for community extension developers.
 
@@ -114,7 +114,7 @@ I would like to share AltSpace, an open-source spotlight launcher and command pa
 - **Frecency Engine**: Backed by embedded SQLite implementing temporal decay:
   Score = VisitCount * (1.0 / (1.0 + DecayFactor * HoursElapsed))
 - **Win32 Message Loop**: Uses raw Win32 bindings (`RegisterHotKey`, `AttachThreadInput`, `ShellExecuteW`) for low-latency invocation and window management.
-- **Process Isolation**: Sandboxed child script execution with strict path verification and automated job object termination timeouts.
+- **Process Safeguards**: User-level child script execution with strict path verification and automated job object termination timeouts.
 
 The full test suite (26 unit and integration tests) runs in CI. Feedback on memory optimization and Win32 safety invariants is appreciated.
 
@@ -143,7 +143,7 @@ We built AltSpace to provide a keyboard-driven productivity launcher for Windows
 
 Technical Design:
 1. Implemented in Rust and Tauri v2 to maintain an active working set under 18MB RAM.
-2. Direct NTFS Master File Table (MFT) indexing via IPC, eliminating persistent background indexing services.
+2. Fast filesystem search via Everything SDK / native indexed search and in-memory fallback scanning, eliminating CPU-heavy indexing services.
 3. Built-in developer tooling: real-time port inspection and termination, token-masked clipboard history, and local AI via Anthropic's Model Context Protocol (MCP).
 4. Sustainable Open-Core Governance: The core app is Apache 2.0. For supporters who purchase an optional license, 20% of revenue is dedicated to public GitHub bounties for extension authors.
 
@@ -198,7 +198,7 @@ We have open-sourced AltSpace (https://github.com/codecheesee/altspace), a nativ
 It addresses common friction points on Windows:
 - Instant port termination (:3000 + Enter) without opening Task Manager
 - Sub-5ms search latency and < 18MB RAM baseline consumption
-- Sandboxed extensions in PowerShell, Node.js, and Python
+- User-level extensions in PowerShell, Node.js, and Python with timeout protection
 - 20% of supporter revenue dedicated to a public GitHub Contributor Treasury
 
 AltSpace is licensed under Apache 2.0 with zero telemetry. We would welcome your thoughts on its architecture and performance.

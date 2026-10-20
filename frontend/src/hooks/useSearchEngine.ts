@@ -388,12 +388,12 @@ export function useSearchEngine({
     if (isPremium) {
       const license = getLicenseStatus();
       if (!isUnlimitedTier(license) && !license.isSupporter) {
-        const usage = consumeAdvancedSearch();
+        const usage = consumeAdvancedSearch(Date.now(), debouncedQuery.trim());
         if (!usage.allowed) {
           const quotaCard: Item = {
             id: "quota-limit-notice",
-            title: "1,000 Free Premium Searches Used",
-            subtitle: "Normal searches remain 100% free forever. Connect GitHub or sponsor to unlock unlimited multi-drive indexing.",
+            title: "100 Advanced Actions Used (30-Day Trial)",
+            subtitle: "Normal local search remains 100% free forever. Connect GitHub or upgrade to unlock unmetered advanced actions.",
             category: "Command",
             iconType: "cmd",
             path: "altspace://license",
@@ -402,7 +402,7 @@ export function useSearchEngine({
           return () => { active = false; };
         }
         if (usage.warning) {
-          onNotify?.(`Premium trial: ${usage.remaining} searches remaining in this 30-day window.`);
+          onNotify?.(`Advanced action trial: ${usage.remaining} actions remaining in this 30-day window.`);
         }
       }
     }

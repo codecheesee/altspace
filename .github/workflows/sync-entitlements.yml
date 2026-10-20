@@ -27,24 +27,27 @@ jobs:
 
             // 1. Maintainer sovereign definition & baseline manifest
             const manifest = {
-              version: 1,
+              version: 2,
               updatedAt: new Date().toISOString(),
               issuer: "https://github.com/codecheesee/altspace",
+              trialPolicy: {
+                limit: 100,
+                windowDays: 30,
+                warningThreshold: 80
+              },
               maintainers: [
                 {
                   login: "codecheesee",
                   id: 66432945,
                   tier: "maintainer",
+                  role: "maintainer",
                   unlimited: true,
                   expiresAt: null
                 }
               ],
               sponsors: [],
-              trialPolicy: {
-                freeSearchLimit: 1000,
-                windowDays: 30,
-                warningThreshold: 900
-              }
+              contributors: [],
+              pro: []
             };
 
             // Preserve existing manual sponsors if present in existing entitlements.json
@@ -53,15 +56,19 @@ jobs:
                 const existing = JSON.parse(fs.readFileSync('entitlements.json', 'utf8'));
                 if (Array.isArray(existing.sponsors)) {
                   for (const s of existing.sponsors) {
-                    if (s.role === 'sponsor' || s.tier === 'supporter') {
-                      manifest.sponsors.push(s);
-                    }
+                    manifest.sponsors.push(s);
+                  }
+                }
+                if (Array.isArray(existing.pro)) {
+                  for (const p of existing.pro) {
+                    manifest.pro.push(p);
                   }
                 }
               }
             } catch (_) {}
 
             // 2. Query closed PRs to count merged PRs per contributor (Rule: >= 2 merged PRs)
+            // Contributors are strictly recorded in the 'contributors' array, completely separate from paid sponsors
             try {
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -82,20 +89,13 @@ jobs:
 
               for (const [login, count] of Object.entries(mergedCounts)) {
                 if (count >= 2) {
-                  // Check if already in sponsors list
-                  const existingIdx = manifest.sponsors.findIndex(s => s.login.toLowerCase() === login);
-                  const entry = {
+                  manifest.contributors.push({
                     login: login,
-                    tier: 'supporter',
+                    tier: 'contributor',
                     role: 'contributor',
                     mergedPRCount: count,
                     expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-                  };
-                  if (existingIdx >= 0) {
-                    manifest.sponsors[existingIdx] = entry;
-                  } else {
-                    manifest.sponsors.push(entry);
-                  }
+                  });
                 }
               }
             } catch (err) {
@@ -103,7 +103,7 @@ jobs:
             }
 
             fs.writeFileSync('entitlements.json', JSON.stringify(manifest, null, 2));
-            console.log("Generated entitlements.json with", manifest.sponsors.length, "entitled users.");
+            console.log("Generated entitlements.json with", manifest.sponsors.length, "sponsors and", manifest.contributors.length, "contributors.");
 
       - name: Commit & Push Updated Entitlements Manifest
         run: |

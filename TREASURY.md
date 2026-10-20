@@ -86,7 +86,7 @@ To claim a funded bounty, contributors must follow this procedural workflow:
    - All automated continuous integration checks must pass:
      - `cargo test` in `frontend/src-tauri` (all unit and integration tests).
      - `npm run build` in `frontend` (zero TypeScript and bundling errors).
-     - Full compliance with extension sandboxing standards (15-second process timeout, path confinement).
+     - Full compliance with extension execution standards (15-second process timeout, path confinement).
 4. **Code Review, Merge, and Disbursement**:
    Upon formal code review approval and merge into the `main` branch, the bounty is released via the connected Polar.sh or Open Collective payout rail.
 

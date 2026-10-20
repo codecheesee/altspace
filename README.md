@@ -8,7 +8,7 @@
 [![Model Context Protocol](https://img.shields.io/badge/AI-Model%20Context%20Protocol%20(MCP)-emerald.svg)](https://github.com/codecheesee/altspace)
 [![Contributor Treasury](https://img.shields.io/badge/Governance-20%25%20Contributor%20Treasury-amber.svg)](TREASURY.md)
 
-AltSpace is a high-performance, keyboard-driven desktop command palette and spotlight launcher designed specifically for Windows 10 and Windows 11 (x64). Built on a native Rust core using Tauri v2, React 19, and Tailwind CSS v4, AltSpace delivers sub-5ms input response times, low baseline memory consumption (< 18MB RAM), and comprehensive developer tooling without background telemetric overhead.
+AltSpace is a high-performance, keyboard-driven desktop command palette and spotlight launcher designed specifically for Windows 10 and Windows 11 (x64). Built on a native Rust core using Tauri v2, React 19, and Tailwind CSS v4, AltSpace delivers instant keystroke responsiveness, low baseline memory consumption (< 18MB RAM), and comprehensive developer tooling without background telemetric overhead.
 
 ---
 
@@ -19,41 +19,36 @@ AltSpace is a high-performance, keyboard-driven desktop command palette and spot
 | **Core Architecture** | Rust 2021 + Tauri v2 + Tokio async runtime | Zero Electron runtime overhead |
 | **UI Layer** | React 19, TypeScript 5.8, Tailwind CSS v4, Vite 8 | Hardware-accelerated WebView2 rendering |
 | **Working Set Memory** | ~18MB RAM idle / ~32MB RAM active search | Evaluated on Windows 11 Pro 23H2 |
-| **Query Response Latency** | < 5ms for in-memory and SQLite frecency index | Cold invocation via native Win32 `RegisterHotKey` |
-| **Filesystem Indexing** | Direct NTFS Master File Table (MFT) IPC | Real-time multi-drive search with zero CPU indexing overhead |
+| **Query Latency** | Instant responsiveness for in-memory & indexed catalog | Cold invocation via native Win32 `RegisterHotKey` |
+| **Filesystem Indexing** | Everything SDK/native indexed search + fallback scanner | Fast multi-drive search with zero CPU indexing overhead |
 | **AI Integration** | Local Ollama (Model Context Protocol / MCP) | Private offline inference with local system action dispatch |
-| **License** | Apache License 2.0 | Free and open source for personal and enterprise use |
+| **License** | Apache License 2.0 (Core) | Free and open source for personal and enterprise use |
 
 ---
 
 ## Installation and Updates
 
-### 1-Line PowerShell Installation
+### Modern Windows Distribution
 
-To install or upgrade AltSpace to the latest release package directly via PowerShell:
+AltSpace is distributed as a native Windows application with several installation paths:
+
+- **Recommended:** Download `AltSpace-Setup-x64.exe` from the [latest GitHub release](https://github.com/codecheesee/altspace/releases). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator access.
+- **Managed environments:** Use `AltSpace-MSI-x64.msi` with your organization's Windows deployment tooling.
+- **Portable:** Download `AltSpace-Portable-x64.zip`, extract it, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
+- **PowerShell:** Run the verified installer script from a trusted PowerShell prompt:
 
 ```powershell
 irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
 ```
 
-#### Automated Setup Steps:
-1. Resolves and downloads the latest release binary and verifies the published SHA-256 checksum (`altspace.exe`) from GitHub Releases.
-2. Deploys executable to `%LOCALAPPDATA%\Programs\AltSpace`.
-3. Registers Start Menu application shortcut and updates the User `PATH` environment variable.
-4. Starts the background tray daemon with global hotkey `Alt + Space`.
+The script resolves the latest GitHub release through the GitHub API, downloads `AltSpace-Portable-x64.zip` and `SHA256SUMS.txt`, verifies the archive with SHA-256, and then installs it to `%LOCALAPPDATA%\Programs\AltSpace`. Do not bypass checksum failures. Release artifacts include `SHA256SUMS.txt`; signed releases may also show a Windows publisher identity after Authenticode signing is configured.
 
-### In-App Self-Update
+### In-App Update Verification
 
 AltSpace includes automated release synchronization. When a new version is published to GitHub:
 1. Summon AltSpace with `Alt + Space`.
 2. Type `:update` in the omnibar and press <kbd>Enter</kbd>.
-3. AltSpace will automatically download the verified update package and restart seamlessly.
-
-Alternatively, re-running the 1-line PowerShell installer script above will upgrade an existing installation in-place.
-
-### Manual Download
-
-Portable zip archives and executable packages are available directly on the [GitHub Releases](https://github.com/codecheesee/altspace/releases) page.
+3. AltSpace will direct you to the verified GitHub release package.
 
 ---
 
@@ -77,15 +72,15 @@ AltSpace connects to local Ollama endpoints (`localhost:11434`) to execute natur
 - Type `? snap window left` to invoke native window tile management.
 - Type `? summarize selection` to query local LLMs using clipboard context.
 
-### 4. User-level Extension Runtime (`:store`)
-The AltSpace extension engine decouples extension execution from the main application binary:
-- **Languages Supported**: PowerShell (`.ps1`), Batch (`.bat`/`.cmd`), Node.js (`.js`), Python (`.py`).
-- **Process Isolation**: Hard 15-second execution timeout enforced via OS job objects to prevent runaway processes.
-- **Path Traversal Protection**: Extension paths are canonicalized and restricted strictly to `%LOCALAPPDATA%\AltSpace\plugins\`.
+### 4. User-Level Extension Runtime (`:store`)
+The AltSpace extension engine runs community scripts as child processes:
+- **Supported Languages**: PowerShell (`.ps1`), Batch (`.bat`/`.cmd`), Node.js (`.js`), Python (`.py`).
+- **Security Notice**: Extensions run as privileged user-level code, **not** inside an OS sandbox or container. Always review script code before execution.
+- **Execution Safeguards**: Hard 15-second execution timeout enforced via OS job objects; script path canonicalization restricted to `%LOCALAPPDATA%\AltSpace\plugins\`.
 - **Direct Creator Sponsorship**: Extension manifests support author attribution and sponsorship endpoints with 0% platform take rates.
 
-### 5. Multi-Drive NTFS MFT Indexing
-Deep search across physical drives (C:, D:, E:, etc.) connects directly to Windows Master File Table indices via native IPC, yielding instant results across millions of files without persistent indexing background services.
+### 5. Multi-Drive Search via Everything SDK
+Deep search across physical drives (C:, D:, E:, etc.) connects to the Everything SDK / native indexed search with an in-memory fallback scanner, yielding instant results across indexed files without CPU-heavy background indexing daemons.
 
 ### 6. In-Memory Clipboard Manager
 Search and restore clipboard history with automated credential masking:
@@ -93,83 +88,67 @@ Search and restore clipboard history with automated credential masking:
 - Passwords, bearer tokens, and private keys are detected and masked in memory to prevent accidental exposure.
 - Fresh installs start empty; clipboard contents are never seeded with demo data and are not persisted to disk.
 
-### 7. First-run privacy defaults
+### 7. First-Run Privacy Defaults
 - The details/context sidebar starts hidden and only changes when the user explicitly toggles it; the preference is persisted locally.
-- Multi-drive indexing starts disabled. C: user folders are the initial scope, and additional drives require an explicit preference action.
+- Multi-drive indexing starts disabled. C: user folders are the initial scope; additional drives require an explicit preference action.
 - Clipboard, listening ports, installed games, and drive data are exposed only in their explicit modes or after a meaningful query.
-- No starter plugin or hard-coded workspace path is created on installation.
+- No starter plugin or hardcoded workspace path is created on installation.
 
 ---
 
 ## Command Palette Syntax
 
-| Query Syntax | Action |
-| :--- | :--- |
-| `<search>` | Search installed applications, indexed files, and system settings |
-| `:<port>` *(e.g. `:3000`)* | Inspect process listening on port and terminate on <kbd>Enter</kbd> |
-| `:store` / `:plugin` | Browse and manage community extensions |
-| `:theme` | Open dynamic theme switcher |
-| `:update` | Check for updates and install latest GitHub release |
-| `?<prompt>` | Query local AI via Model Context Protocol |
-| `Alt + C` | Switch directly to Clipboard History tab |
-| `Alt + P` | Switch directly to Port Inspector tab |
-| `Ctrl + K` | Open contextual Action Drawer for selected item |
-| `Esc` | Clear query or dismiss window to system tray |
+| Query Syntax | Action | Quota Impact |
+| :--- | :--- | :--- |
+| `<search>` | Search installed applications, indexed files, and system settings | **Free Forever** |
+| `:<port>` *(e.g. `:3000`)* | Inspect process listening on port and terminate on <kbd>Enter</kbd> | **Free Forever** |
+| `:store` / `:plugin` | Browse and manage community extensions | **Free Forever** |
+| `:theme` | Open dynamic theme switcher | **Free Forever** |
+| `:update` | Check for updates and open latest GitHub release | **Free Forever** |
+| `Alt + C` | Switch directly to Clipboard History tab | **Free Forever** |
+| `Alt + P` | Switch directly to Port Inspector tab | **Free Forever** |
+| `Ctrl + K` | Open contextual Action Drawer for selected item | **Free Forever** |
+| `?<prompt>` *(or `ai:`)* | Query local/hosted AI via Model Context Protocol | Trial Quota (100 actions / 30 days) |
+| `><cmd>` *(or `cmd:`)* | Execute native terminal shell command | Trial Quota (100 actions / 30 days) |
 
 ---
 
 ## Contributor Economics and Governance
 
-AltSpace operates under a sustainable **Open-Core and Contributor Treasury** governance model:
+AltSpace operates under an **Open-Core and Contributor Treasury** governance model:
 
-- **100% Free Core**: The core desktop application, search indexer, developer port killer, and extension sandbox are distributed under the **Apache License 2.0**.
+- **100% Free Core**: The core desktop application, search indexer, developer port killer, and extension runtime are distributed under the **Apache License 2.0**.
 - **The 70 / 20 / 10 Allocation Model**:
-  - **70% Maintainer Engineering**: Funds full-time core Rust systems development, Win32 API integration, and security maintenance.
+  - **70% Maintainer Engineering**: Funds core Rust systems development, Win32 API integration, and security maintenance.
   - **20% Public Contributor Treasury**: Allocated directly to public community feature bounties on GitHub.
   - **10% Infrastructure Reserve**: Covers Authenticode code signing, build infrastructure, and hosting.
 - **Transparent Bounty Tracking**: All funded community bounties are tracked on public GitHub issues with the [`bounty`](https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty) label.
-- **Tax-Compliant Payouts**: Lemon Squeezy handles Merchant-of-Record checkout and tax collection; contributor treasury payouts still require the operator's configured payout process.
+- **Tax-Compliant Payouts**: Lemon Squeezy handles Merchant-of-Record checkout and tax collection; contributor treasury payouts require operator configuration.
 
 For complete financial, governance, and payout specifications, review [**TREASURY.md**](TREASURY.md).
 
-### Hosted checkout and entitlements
+### Hosted Checkout & Entitlement Policy
 
-AltSpace uses Lemon Squeezy as its planned Merchant of Record. The client contains no payment or provider secrets, does not accept local license keys, and has no development bypass. Basic local launching and ordinary local search remain unlimited and free.
+AltSpace uses Lemon Squeezy as its planned Merchant of Record. The client contains no payment or provider secrets, does not accept local license keys, and has no local development bypass.
+
+- **Free Forever**: App launching, ordinary local search, calculator, Windows settings shortcuts, port inspection, clipboard history, themes, and offline use.
+- **Trial Policy**: 100 premium actions per rolling 30-day window, early warning at 80 actions. No charge for empty queries, typing/debounce, repeated in-flight requests, local app launches, or failed/cancelled requests.
+- **Roles**: Free, Supporter (voluntary funding tier), Pro (paid operational tier), Contributor ($\ge 2$ merged PRs, separate from sponsors), and Maintainer (`@codecheesee` lifetime sovereign access).
+- **Security Boundary**: Local storage cannot grant paid status. Unverifiable or missing endpoints safely fail closed into Free mode.
 
 Deployment configuration:
+- `VITE_CHECKOUT_URL`: The Lemon Squeezy hosted checkout URL.
+- `VITE_ENTITLEMENT_ENDPOINT`: HTTPS endpoint returning provider-verified JSON entitlement payload.
+- `VITE_GITHUB_CLIENT_ID`: GitHub OAuth App Client ID for zero-git browser Device Flow authentication.
 
-- `VITE_CHECKOUT_URL`: the Lemon Squeezy hosted checkout URL for the Supporter variant.
-- `VITE_ENTITLEMENT_ENDPOINT`: an HTTPS endpoint that returns a provider-verified entitlement such as `{ "active": true, "tier": "supporter", "provider": "lemonsqueezy", "expiresAt": "..." }`.
-- The backend must validate the Lemon Squeezy webhook signature and authenticate entitlement requests. This repository includes no provider credentials or webhook handler; payment verification is not claimed until those services are deployed.
+See [docs/LEMON_SQUEEZY_ENTITLEMENTS.md](docs/LEMON_SQUEEZY_ENTITLEMENTS.md) for complete operator instructions.
 
-Advanced search has a 50-search allowance over 14 days, warns at 40, and requires a verified Supporter entitlement after the allowance is exhausted. See [docs/LEMON_SQUEEZY_ENTITLEMENTS.md](docs/LEMON_SQUEEZY_ENTITLEMENTS.md).
+### Local Configuration Sync
 
-### Local configuration sync
-
-The `.altconfig` export/import actions provide local transfer of non-sensitive
-preferences such as theme, custom accent, sidebar visibility, and drive-search
-preference. Clipboard history, frecency/history data, secrets, raw system
-paths, and entitlement state are intentionally excluded. AltSpace does not add
-cloud app-data sync.
+The `.altconfig` export/import actions provide local transfer of non-sensitive preferences such as theme, custom accent, sidebar visibility, and drive-search preference. Clipboard history, frecency/history data, secrets, raw system paths, and entitlement state are intentionally excluded. AltSpace does not add cloud app-data sync.
 
 ---
 
-## Modern Windows Distribution
-
-AltSpace is distributed as a native Windows application with several installation paths:
-
-- **Recommended:** download `AltSpace-Setup-x64.exe` from the [latest GitHub release](https://github.com/codecheesee/altspace/releases). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator access.
-- **Managed environments:** use `AltSpace-MSI-x64.msi` with your organization''s Windows deployment tooling.
-- **Portable:** download `AltSpace-Portable-x64.zip`, extract it, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
-- **PowerShell:** run the verified installer script from a trusted PowerShell prompt:
-
-```powershell
-irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
-```
-
-The script resolves the latest GitHub release through the GitHub API, downloads `AltSpace-Portable-x64.zip` and `SHA256SUMS.txt`, verifies the archive with SHA-256, and then installs it to `%LOCALAPPDATA%\Programs\AltSpace`. Do not bypass checksum failures. Release artifacts include `SHA256SUMS.txt`; signed releases may also show a Windows publisher identity after Authenticode signing is configured.
-
-WinGet and Microsoft Store distribution are planned follow-up channels. Until those channels are published, use the signed installer or the official GitHub release page rather than third-party mirrors.
 ## Building from Source
 
 ### Prerequisites
@@ -194,10 +173,16 @@ npm run tauri dev
 ### Automated Test Suite
 
 ```bash
-# Run frontend unit tests and type checks
+# Run frontend unit tests (quota, entitlements, first-run privacy, bounties)
+node --test src/lib/*.test.mjs ../scripts/*.test.mjs
+
+# Run frontend production build & type checks
 npm run build
 
-# Run Rust unit and integration tests (26 test cases)
+# Run frontend linter
+npm run lint
+
+# Run Rust unit and integration tests
 cd src-tauri
 cargo test
 ```

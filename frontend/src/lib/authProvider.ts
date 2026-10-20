@@ -217,7 +217,7 @@ export function activateSovereignMaintainer(_passkey?: string): UserSession {
  * Will connect to Supabase / Firebase free tier when ready without modifying UI logic.
  */
 export class GoogleAuthProviderSlot implements AuthProvider {
-  id: "google" = "google";
+  id = "google" as const;
   name = "Google Sign-In";
 
   getSession(): UserSession | null {

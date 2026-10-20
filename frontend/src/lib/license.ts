@@ -30,7 +30,7 @@ export const ACTIVE_BOUNTIES: FeatureBounty[] = [];
 
 export interface LicenseStatus {
   isSupporter: boolean;
-  tier: "Free" | "Supporter" | "Maintainer";
+  tier: "Free" | "Supporter" | "Pro" | "Contributor" | "Maintainer";
   isMaintainer?: boolean;
   login?: string;
   avatarUrl?: string;
@@ -42,7 +42,7 @@ export interface LicenseStatus {
 
 export interface VerifiedEntitlement {
   active: boolean;
-  tier: "free" | "supporter" | "maintainer";
+  tier: "free" | "supporter" | "pro" | "contributor" | "maintainer";
   login?: string;
   provider?: string;
   expiresAt?: string;
@@ -58,7 +58,13 @@ const ENTITLEMENT_ENDPOINT =
 
 export function isUnlimitedTier(status?: LicenseStatus | null): boolean {
   if (!status) return false;
-  return status.tier === "Maintainer" || status.isMaintainer === true;
+  return (
+    status.tier === "Maintainer" ||
+    status.isMaintainer === true ||
+    status.tier === "Pro" ||
+    status.tier === "Supporter" ||
+    status.tier === "Contributor"
+  );
 }
 
 export function getStoredGitHubLogin(): string | null {
@@ -91,10 +97,18 @@ function parseEntitlement(value: unknown): VerifiedEntitlement | null {
   if (!value || typeof value !== "object") return null;
   const data = value as Record<string, unknown>;
   if (typeof data.active !== "boolean") return null;
-  if (data.tier !== "free" && data.tier !== "supporter" && data.tier !== "maintainer") return null;
+  if (
+    data.tier !== "free" &&
+    data.tier !== "supporter" &&
+    data.tier !== "pro" &&
+    data.tier !== "contributor" &&
+    data.tier !== "maintainer"
+  ) {
+    return null;
+  }
   return {
     active: data.active,
-    tier: data.tier,
+    tier: data.tier as "free" | "supporter" | "pro" | "contributor" | "maintainer",
     login: typeof data.login === "string" ? data.login : undefined,
     provider: typeof data.provider === "string" ? data.provider : undefined,
     expiresAt: typeof data.expiresAt === "string" ? data.expiresAt : undefined,
@@ -129,7 +143,7 @@ export function getLicenseStatus(): LicenseStatus {
   }
 
   return freeStatus(
-    "Standard Community Edition (Normal searches unlimited forever; 1,000 premium trial uses)."
+    "Standard Community Edition (Normal searches unlimited forever; 100 advanced actions trial)."
   );
 }
 
@@ -181,32 +195,7 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
     if (response.ok) {
       const payload = await response.json();
 
-      // Check if logged-in user is listed in sponsors/contributors
-      if (Array.isArray(payload?.sponsors) && storedLogin) {
-        const match = payload.sponsors.find(
-          (s: any) => String(s?.login || "").toLowerCase() === storedLogin.toLowerCase()
-        );
-        if (match) {
-          const isExpired = match.expiresAt && new Date(match.expiresAt).getTime() < Date.now();
-          if (!isExpired) {
-            return {
-              isSupporter: true,
-              tier: "Supporter",
-              login: storedLogin,
-              avatarUrl: session?.avatarUrl,
-              provider: match.role === "contributor" ? "github-contributor" : "github-sponsors",
-              expiresAt: match.expiresAt,
-              role: match.role || "sponsor",
-              reason:
-                match.role === "contributor"
-                  ? "Verified Code Contributor Entitlement (2+ Merged PRs)"
-                  : "Verified Active GitHub Sponsor Entitlement",
-            };
-          }
-        }
-      }
-
-      // Check maintainers list in manifest
+      // 1. Check maintainers list in manifest
       if (Array.isArray(payload?.maintainers) && storedLogin) {
         const matchMaintainer = payload.maintainers.find(
           (m: any) => String(m?.login || "").toLowerCase() === storedLogin.toLowerCase()
@@ -224,6 +213,72 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
         }
       }
 
+      // 2. Check Pro tier list in manifest
+      if (Array.isArray(payload?.pro) && storedLogin) {
+        const matchPro = payload.pro.find(
+          (p: any) => String(p?.login || "").toLowerCase() === storedLogin.toLowerCase()
+        );
+        if (matchPro) {
+          const isExpired = matchPro.expiresAt && new Date(matchPro.expiresAt).getTime() < Date.now();
+          if (!isExpired) {
+            return {
+              isSupporter: true,
+              tier: "Pro",
+              login: storedLogin,
+              avatarUrl: session?.avatarUrl,
+              provider: matchPro.provider || "lemonsqueezy",
+              expiresAt: matchPro.expiresAt,
+              role: "pro",
+              reason: "Verified Pro Entitlement (Unlimited Advanced Actions)",
+            };
+          }
+        }
+      }
+
+      // 3. Check paid sponsors list in manifest
+      if (Array.isArray(payload?.sponsors) && storedLogin) {
+        const matchSponsor = payload.sponsors.find(
+          (s: any) => String(s?.login || "").toLowerCase() === storedLogin.toLowerCase()
+        );
+        if (matchSponsor) {
+          const isExpired = matchSponsor.expiresAt && new Date(matchSponsor.expiresAt).getTime() < Date.now();
+          if (!isExpired) {
+            return {
+              isSupporter: true,
+              tier: "Supporter",
+              login: storedLogin,
+              avatarUrl: session?.avatarUrl,
+              provider: matchSponsor.provider || "github-sponsors",
+              expiresAt: matchSponsor.expiresAt,
+              role: "sponsor",
+              reason: "Verified Active GitHub Sponsor Entitlement",
+            };
+          }
+        }
+      }
+
+      // 4. Check code contributors list in manifest (strictly separate from paid sponsors)
+      if (Array.isArray(payload?.contributors) && storedLogin) {
+        const matchContributor = payload.contributors.find(
+          (c: any) => String(c?.login || "").toLowerCase() === storedLogin.toLowerCase()
+        );
+        if (matchContributor) {
+          const isExpired = matchContributor.expiresAt && new Date(matchContributor.expiresAt).getTime() < Date.now();
+          if (!isExpired) {
+            return {
+              isSupporter: true,
+              tier: "Contributor",
+              login: storedLogin,
+              avatarUrl: session?.avatarUrl,
+              provider: "github-contributor",
+              expiresAt: matchContributor.expiresAt,
+              role: "contributor",
+              reason: `Verified Code Contributor Entitlement (${matchContributor.mergedPRCount || 2}+ Merged PRs)`,
+            };
+          }
+        }
+      }
+
       const entitlement = parseEntitlement(payload);
       if (entitlement && entitlement.active) {
         if (entitlement.tier === "maintainer") {
@@ -234,6 +289,26 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
             login: entitlement.login || GITHUB_MAINTAINER_LOGIN,
             provider: entitlement.provider || "github-maintainer",
             reason: "Verified Maintainer Entitlement",
+          };
+        }
+        if (entitlement.tier === "pro") {
+          return {
+            isSupporter: true,
+            tier: "Pro",
+            login: entitlement.login || storedLogin || undefined,
+            provider: entitlement.provider || "lemonsqueezy",
+            expiresAt: entitlement.expiresAt,
+            reason: "Verified Pro Entitlement",
+          };
+        }
+        if (entitlement.tier === "contributor") {
+          return {
+            isSupporter: true,
+            tier: "Contributor",
+            login: entitlement.login || storedLogin || undefined,
+            provider: entitlement.provider || "github-contributor",
+            expiresAt: entitlement.expiresAt,
+            reason: "Verified Contributor Entitlement",
           };
         }
         if (entitlement.tier === "supporter") {
@@ -251,8 +326,8 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
 
   return freeStatus(
     storedLogin
-      ? `Connected as @${storedLogin}. Standard Community Edition (Normal searches unlimited forever; 1,000 premium trial uses).`
-      : "Standard Community Edition (Normal searches unlimited forever; 1,000 premium trial uses)."
+      ? `Connected as @${storedLogin}. Standard Community Edition (Normal searches unlimited forever; 100 advanced actions trial).`
+      : "Standard Community Edition (Normal searches unlimited forever; 100 advanced actions trial)."
   );
 }
 

@@ -117,7 +117,8 @@ pub fn validate_script_filename(filename: &str) -> Result<(), String> {
     }
 }
 
-/// Runs a plugin script inside the sandboxed plugins directory with a 15-second execution timeout
+/// Runs a plugin script as a user-level process inside the plugins directory with path validation and a 15-second execution timeout.
+/// NOTE: The execution model is privileged user-level code, not an OS-isolated container or sandbox.
 pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String> {
     let path = PathBuf::from(script_path);
     if !path.exists() {
@@ -131,7 +132,7 @@ pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String
     let canon_dir = fs::canonicalize(&plugins_dir)
         .map_err(|e| format!("Unable to resolve plugin directory safely: {}", e))?;
     if !canon_script.starts_with(&canon_dir) {
-        return Err("Security Sandbox Violation: Script resides outside the AltSpace plugins directory".into());
+        return Err("Security Violation: Script resides outside the AltSpace plugins directory. Extensions run as user-level privileged processes and must reside in the approved plugins directory.".into());
     }
 
     let extension = path

@@ -1,20 +1,23 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-10-21T00:00:00Z",
   "issuer": "https://github.com/codecheesee/altspace",
+  "trialPolicy": {
+    "limit": 100,
+    "windowDays": 30,
+    "warningThreshold": 80
+  },
   "maintainers": [
     {
       "login": "codecheesee",
       "id": 66432945,
       "tier": "maintainer",
+      "role": "maintainer",
       "unlimited": true,
       "expiresAt": null
     }
   ],
   "sponsors": [],
-  "trialPolicy": {
-    "freeSearchLimit": 1000,
-    "windowDays": 30,
-    "warningThreshold": 900
-  }
+  "contributors": [],
+  "pro": []
 }

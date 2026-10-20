@@ -30,9 +30,20 @@ export const FRECENCY_CACHE_KEY = "altspace_frecency_v2";
 export const SIDEBAR_PREFERENCE_KEY = "altspace_sidebar_visible_v1";
 export const DRIVE_SEARCH_PREFERENCE_KEY = "altspace_search_all_drives_v1";
 export const ADVANCED_SEARCH_QUOTA_KEY = "altspace_advanced_search_quota_v1";
-export const ADVANCED_SEARCH_LIMIT = 1000;
-export const ADVANCED_SEARCH_WARNING_THRESHOLD = 900;
-export const ADVANCED_SEARCH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+import {
+  TRIAL_ACTION_LIMIT,
+  TRIAL_WARNING_THRESHOLD,
+  TRIAL_WINDOW_MS,
+  classifyPremiumAction,
+  consumePremiumAction,
+  makeQuotaState,
+  resetExpiredWindow,
+} from "./quotaManager.ts";
+
+export const ADVANCED_SEARCH_LIMIT = TRIAL_ACTION_LIMIT; // 100 actions per 30-day window
+export const ADVANCED_SEARCH_WARNING_THRESHOLD = TRIAL_WARNING_THRESHOLD; // 80 actions
+export const ADVANCED_SEARCH_WINDOW_MS = TRIAL_WINDOW_MS;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function calculateFrecencyScore(record?: FrecencyRecord | number, now = Date.now()): number {
@@ -181,65 +192,41 @@ export function getAdvancedSearchQuota(now = Date.now()): AdvancedSearchQuota {
   try {
     const raw = localStorage.getItem(ADVANCED_SEARCH_QUOTA_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (
-      parsed &&
-      Number.isFinite(parsed.windowStartedAt) &&
-      Number.isFinite(parsed.used) &&
-      now - parsed.windowStartedAt < ADVANCED_SEARCH_WINDOW_MS
-    ) {
-      return {
-        windowStartedAt: parsed.windowStartedAt,
-        used: Math.max(0, Math.floor(parsed.used)),
-      };
+    if (parsed && Number.isFinite(parsed.windowStartedAt) && Number.isFinite(parsed.used)) {
+      return resetExpiredWindow(makeQuotaState(parsed.windowStartedAt, parsed.used), now);
     }
   } catch (_) {}
 
-  return { windowStartedAt: now, used: 0 };
+  return makeQuotaState(now, 0);
 }
 
-export function consumeAdvancedSearch(now = Date.now()): AdvancedSearchQuotaResult {
+export function consumeAdvancedSearch(
+  now = Date.now(),
+  idempotencyKey?: string,
+  role: "free" | "supporter" | "pro" | "contributor" | "maintainer" = "free"
+): AdvancedSearchQuotaResult {
   const current = getAdvancedSearchQuota(now);
-  const next = {
-    windowStartedAt: current.windowStartedAt,
-    used: Math.min(ADVANCED_SEARCH_LIMIT, current.used + 1),
-  };
+  const { result, nextState } = consumePremiumAction(role, current, idempotencyKey, now);
+
   try {
-    localStorage.setItem(ADVANCED_SEARCH_QUOTA_KEY, JSON.stringify(next));
+    localStorage.setItem(ADVANCED_SEARCH_QUOTA_KEY, JSON.stringify(nextState));
   } catch (_) {}
 
   return {
-    ...next,
-    allowed: next.used <= ADVANCED_SEARCH_LIMIT,
-    remaining: Math.max(0, ADVANCED_SEARCH_LIMIT - next.used),
-    warning: next.used >= ADVANCED_SEARCH_WARNING_THRESHOLD && next.used < ADVANCED_SEARCH_LIMIT,
+    windowStartedAt: result.windowStartedAt,
+    used: result.used,
+    allowed: result.allowed,
+    remaining: result.remaining,
+    warning: result.warning,
   };
 }
 
 /**
- * Classifies whether an interaction is a Premium Power Search
- * (Deep Multi-Drive search across secondary/external drives, AI streaming, or Shell runner)
- * vs. a Normal Search (App launching, local file search, calculator, currency/GST, dev ports).
+ * Classifies whether an interaction is a Premium Action (Multi-drive, AI, Shell)
+ * Delegates to centralized classification engine in quotaManager.ts.
  */
 export function isPremiumSearchQuery(query: string, searchAllDrives = false): boolean {
-  const qTrim = query.trim();
-  if (!qTrim || qTrim.length < 2) return false;
-
-  // 1. AI Assistant query (? or ai:)
-  if (qTrim.startsWith("?") || qTrim.toLowerCase().startsWith("ai:")) {
-    return true;
-  }
-
-  // 2. Shell Command Runner (> or cmd: or sh:)
-  if (qTrim.startsWith(">") || qTrim.toLowerCase().startsWith("cmd:") || qTrim.toLowerCase().startsWith("sh:")) {
-    return true;
-  }
-
-  // 3. Deep Multi-Drive Search across non-C: internal/external drives
-  if (searchAllDrives && !qTrim.startsWith(":") && qTrim.length >= 3) {
-    return true;
-  }
-
-  return false;
+  return classifyPremiumAction({ query, searchAllDrives });
 }
 export const UTILITY_ITEMS: Item[] = [
   {

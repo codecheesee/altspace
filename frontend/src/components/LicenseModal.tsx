@@ -258,9 +258,17 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                     <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                       Maintainer
                     </span>
-                  ) : licenseStatus.isSupporter ? (
+                  ) : licenseStatus.tier === "Pro" ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Pro
+                    </span>
+                  ) : licenseStatus.tier === "Contributor" || licenseStatus.role === "contributor" ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      Contributor
+                    </span>
+                  ) : licenseStatus.isSupporter || licenseStatus.tier === "Supporter" ? (
                     <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      {licenseStatus.role === "contributor" ? "Contributor" : "Supporter"}
+                      Supporter
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
@@ -397,13 +405,33 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                 Logged in as @{licenseStatus.login || GITHUB_MAINTAINER_LOGIN} • Permanent Lifetime Sovereign Access (Unlimited Multi-Drive, AI Prompts & Shell Runner).
               </p>
             </div>
-          ) : licenseStatus.isSupporter ? (
+          ) : licenseStatus.tier === "Pro" ? (
+            <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-500/[0.08]">
+              <div className="flex items-center gap-2 text-purple-300 font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4 text-purple-400" />
+                Pro Edition Entitlement Active
+              </div>
+              <p className="text-[11px] text-zinc-300 mt-2">
+                Provider: {licenseStatus.provider || "lemonsqueezy"} • Unmetered Advanced Actions (Multi-drive, AI Prompts & Shell Runner).
+                {licenseStatus.expiresAt ? ` • Valid until ${new Date(licenseStatus.expiresAt).toLocaleDateString()}` : ""}
+              </p>
+            </div>
+          ) : licenseStatus.tier === "Contributor" || licenseStatus.role === "contributor" ? (
+            <div className="p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.08]">
+              <div className="flex items-center gap-2 text-cyan-300 font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                Verified Code Contributor Entitlement (2+ Merged PRs)
+              </div>
+              <p className="text-[11px] text-zinc-300 mt-2">
+                Thank you for contributing to AltSpace! 1-year unmetered advanced actions unlocked.
+                {licenseStatus.expiresAt ? ` • Valid until ${new Date(licenseStatus.expiresAt).toLocaleDateString()}` : ""}
+              </p>
+            </div>
+          ) : licenseStatus.isSupporter || licenseStatus.tier === "Supporter" ? (
             <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06]">
               <div className="flex items-center gap-2 text-emerald-300 font-semibold text-sm">
                 <ShieldCheck className="w-4 h-4" />
-                {licenseStatus.role === "contributor"
-                  ? "Verified Code Contributor Entitlement (2+ Merged PRs)"
-                  : "Provider-verified Supporter Entitlement Active"}
+                Provider-verified Supporter Entitlement Active
               </div>
               <p className="text-[11px] text-zinc-400 mt-2">
                 Provider: {licenseStatus.provider || "configured entitlement service"}
