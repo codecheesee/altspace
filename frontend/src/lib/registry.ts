@@ -301,22 +301,10 @@ export async function installRegistryExtension(
   plugin: ExtensionRegistryItem
 ): Promise<void> {
   const isBuiltin = BUILTIN_EXTENSIONS.some((item) => item.id === plugin.id);
-  if (!isBuiltin && !plugin.scriptSha256) {
+  if (!isBuiltin) {
     throw new Error(
-      "Remote extension installation is deferred until the package has a verified SHA-256 digest."
+      "Remote extension installation is disabled until signed packages and a trusted verification key are available."
     );
-  }
-  if (!isBuiltin && plugin.scriptSha256) {
-    const digest = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(plugin.scriptContent)
-    );
-    const actual = Array.from(new Uint8Array(digest))
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-    if (actual.toLowerCase() !== plugin.scriptSha256.toLowerCase()) {
-      throw new Error("Remote extension integrity verification failed.");
-    }
   }
   await tauriInvoke("install_plugin", {
     pluginId: plugin.id,
