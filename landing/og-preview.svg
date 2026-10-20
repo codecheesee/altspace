@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <!-- Dark Background -->
+  <rect width="1200" height="630" fill="#090a0f" />
+
+  <!-- Ambient Gradients -->
+  <circle cx="600" cy="120" r="380" fill="url(#purpleGlow)" opacity="0.35" />
+  <circle cx="1000" cy="400" r="300" fill="url(#pinkGlow)" opacity="0.2" />
+  <circle cx="200" cy="450" r="280" fill="url(#cyanGlow)" opacity="0.15" />
+
+  <!-- Grid Pattern Overlay -->
+  <defs>
+    <radialGradient id="purpleGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#9333ea" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="pinkGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#181a24" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0e1017" stop-opacity="0.9" />
+    </linearGradient>
+    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- Top Badge: Open Source & Contributor Treasury -->
+  <g transform="translate(425, 45)">
+    <rect width="350" height="36" rx="18" fill="#1e1833" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.5" />
+    <circle cx="20" cy="18" r="5" fill="#10b981" />
+    <text x="35" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#d8b4fe">
+      Apache 2.0 • 20% Contributor Treasury
+    </text>
+  </g>
+
+  <!-- Logo and Header -->
+  <g transform="translate(600, 130)">
+    <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="56" font-weight="800" fill="#ffffff" letter-spacing="-1">
+      AltSpace
+    </text>
+    <text text-anchor="middle" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="500" fill="#9ca3af">
+      The Modern Extensible Raycast for Windows
+    </text>
+  </g>
+
+  <!-- Central Spotlight Launcher Card Mockup -->
+  <g transform="translate(200, 215)" filter="url(#shadowFilter)">
+    <!-- Outer Card Shell -->
+    <rect width="800" height="260" rx="20" fill="url(#cardGrad)" stroke="#272b38" stroke-width="1.5" />
+
+    <!-- Top Search Bar -->
+    <rect x="24" y="24" width="752" height="54" rx="12" fill="#12141c" stroke="#374151" stroke-width="1" />
+    
+    <!-- Search Icon (Flash / Lens) -->
+    <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" fill="#9ca3af">🔍</text>
+    <text x="80" y="58" font-family="'JetBrains Mono', Consolas, monospace" font-size="19" font-weight="600" fill="#f3f4f6">:3000</text>
+    <rect x="145" y="40" width="2" height="22" fill="#a855f7" />
+
+    <text x="640" y="58" font-family="'JetBrains Mono', Consolas, monospace" font-size="12" font-weight="600" fill="#6b7280">Kill Port [Enter]</text>
+
+    <!-- First Result (Active Selection) -->
+    <rect x="24" y="96" width="752" height="64" rx="10" fill="#2d1d4d" stroke="#7e22ce" stroke-width="1.2" />
+    <!-- Port Icon Badge -->
+    <rect x="42" y="110" width="36" height="36" rx="8" fill="#7e22ce" />
+    <text x="52" y="134" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="17" fill="#ffffff">⚡</text>
+    <!-- Title & Subtitle -->
+    <text x="94" y="127" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="700" fill="#ffffff">Kill Zombie Port 3000</text>
+    <text x="94" y="147" font-family="'JetBrains Mono', Consolas, monospace" font-size="12" fill="#c084fc">node.exe (PID 18492) • Listening on 0.0.0.0:3000</text>
+    <!-- Action Tag -->
+    <rect x="670" y="114" width="90" height="28" rx="6" fill="#4c1d95" />
+    <text x="685" y="133" font-family="'JetBrains Mono', Consolas, monospace" font-size="11" font-weight="700" fill="#e9d5ff">Terminate</text>
+
+    <!-- Second Result -->
+    <rect x="24" y="172" width="752" height="56" rx="10" fill="#141620" />
+    <rect x="42" y="184" width="32" height="32" rx="6" fill="#1f2937" />
+    <text x="50" y="206" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" fill="#9ca3af">📋</text>
+    <text x="94" y="198" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" fill="#d1d5db">Clipboard History</text>
+    <text x="94" y="217" font-family="'JetBrains Mono', Consolas, monospace" font-size="11" fill="#6b7280">142 items indexed • Encrypted locally</text>
+  </g>
+
+  <!-- Bottom Feature Pills -->
+  <g transform="translate(150, 520)">
+    <!-- Pill 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="180" height="42" rx="21" fill="#13151f" stroke="#272b38" stroke-width="1" />
+      <text x="90" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#e5e7eb">⚡ Sub-5ms Rust Core</text>
+    </g>
+    <!-- Pill 2 -->
+    <g transform="translate(200, 0)">
+      <rect width="180" height="42" rx="21" fill="#13151f" stroke="#272b38" stroke-width="1" />
+      <text x="90" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#e5e7eb">🧠 Local AI (MCP)</text>
+    </g>
+    <!-- Pill 3 -->
+    <g transform="translate(400, 0)">
+      <rect width="180" height="42" rx="21" fill="#13151f" stroke="#272b38" stroke-width="1" />
+      <text x="90" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#e5e7eb">📦 &lt; 18MB RAM</text>
+    </g>
+    <!-- Pill 4 -->
+    <g transform="translate(600, 0)">
+      <rect width="180" height="42" rx="21" fill="#13151f" stroke="#272b38" stroke-width="1" />
+      <text x="90" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#e5e7eb">💰 ₹299 / $12 Supporter</text>
+    </g>
+  </g>
+
+  <!-- Footer Link -->
+  <g transform="translate(600, 595)">
+    <text text-anchor="middle" font-family="'JetBrains Mono', Consolas, monospace" font-size="13" font-weight="500" fill="#6b7280">
+      github.com/codecheesee/altspace • 1-Line PowerShell Install
+    </text>
+  </g>
+</svg>
