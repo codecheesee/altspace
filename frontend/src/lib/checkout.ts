@@ -52,10 +52,10 @@ export function getRegionalPricing(forcedCurrency?: CurrencyCode): RegionalPrici
 
 export function openCheckout(currency?: CurrencyCode): void {
   const url = getRegionalPricing(currency).checkoutUrl;
-  if (url.includes("REPLACE_WITH_VARIANT_ID")) return;
+  const targetUrl = url.includes("REPLACE_WITH_VARIANT_ID") ? GITHUB_SPONSORS_URL : url;
   if (tauriInvoke) {
-    tauriInvoke("open_url", { url });
+    tauriInvoke("open_url", { url: targetUrl });
   } else if (typeof window !== "undefined") {
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
   }
 }

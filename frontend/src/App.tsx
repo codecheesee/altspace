@@ -110,9 +110,36 @@ export default function App() {
   });
 
   // 3. Dev Ports Inspector Hook
-  const isStoreMode = activeTab === "store" || query.startsWith(":store") || query.startsWith(":plugin") || query.startsWith(":ext");
-  const smartPortMode = !isStoreMode && query.startsWith(":") && !query.startsWith(":theme");
-  const resolvedMode: Mode = isStoreMode ? "store" : smartPortMode ? "ports" : currentMode;
+  const qTrimLower = query.trim().toLowerCase();
+  const isPortMode =
+    activeTab === "ports" ||
+    qTrimLower === ":port" ||
+    qTrimLower === ":ports" ||
+    qTrimLower.startsWith(":port ") ||
+    qTrimLower.startsWith(":ports ") ||
+    /^:\d+/.test(qTrimLower);
+
+  const isStoreMode =
+    activeTab === "store" ||
+    qTrimLower === ":store" ||
+    qTrimLower.startsWith(":store ") ||
+    qTrimLower === ":ext" ||
+    qTrimLower.startsWith(":ext ");
+
+  const isClipboardMode =
+    activeTab === "clipboard" ||
+    qTrimLower === ":clip" ||
+    qTrimLower === ":clipboard" ||
+    qTrimLower.startsWith(":clip ") ||
+    qTrimLower.startsWith(":clipboard ");
+  const smartPortMode = isPortMode;
+  const resolvedMode: Mode = isStoreMode
+    ? "store"
+    : isPortMode
+    ? "ports"
+    : isClipboardMode
+    ? "clipboard"
+    : currentMode;
 
   const {
     filteredPorts,
@@ -538,6 +565,20 @@ export default function App() {
 
   // Global Keyboard Navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showLicenseModal) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowLicenseModal(false);
+        return;
+      }
+    }
+    if (showFeedbackModal) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowFeedbackModal(false);
+        return;
+      }
+    }
     if (showActionsModal) {
       const actions = getContextualActions();
       if (e.key === "ArrowDown") {

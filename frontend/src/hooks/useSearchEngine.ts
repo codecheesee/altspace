@@ -11,11 +11,7 @@ import {
   getCachedOrInitialApps,
   sortByFrequency,
   UTILITY_ITEMS,
-  consumeAdvancedSearch,
-  getAdvancedSearchQuota,
-  ADVANCED_SEARCH_LIMIT,
 } from "../lib/appStorage";
-import { refreshEntitlement } from "../lib/license";
 import { streamOllamaResponse, OLLAMA_DEFAULT_MODEL } from "../lib/ai";
 import type {
   Item,
@@ -384,29 +380,7 @@ export function useSearchEngine({
     let active = true;
     const currentSeq = ++searchSeq.current;
 
-    const quota = getAdvancedSearchQuota();
-    if (quota.used >= ADVANCED_SEARCH_LIMIT) {
-      refreshEntitlement().then((status) => {
-        if (!active || currentSeq !== searchSeq.current) return;
-        if (status.isSupporter) {
-          runAdvancedSearch();
-        } else {
-          onNotify?.("Advanced search trial used 50/50 searches. Open Supporter checkout to continue.");
-          onPremiumRequired?.();
-        }
-      });
-      return () => {
-        active = false;
-      };
-    }
-
-    const usage = consumeAdvancedSearch();
-    if (usage.warning) {
-      onNotify?.(`Advanced search trial: ${usage.remaining} searches remaining in this 14-day window.`);
-    }
-
     runAdvancedSearch();
-
     function runAdvancedSearch() {
       tauriInvoke<any[]>("search", { query: debouncedQuery })
         .then((res) => {
