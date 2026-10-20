@@ -1,7 +1,7 @@
 # AltSpace — Next-Gen Command Palette & Launcher for Windows
 
 [![CI / Release](https://github.com/codecheesee/altspace/actions/workflows/release.yml/badge.svg)](https://github.com/codecheesee/altspace/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform: Windows 10 / 11](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows)](https://github.com/codecheesee/altspace)
 [![Memory: < 45 MB](https://img.shields.io/badge/Idle%20Memory-%3C%2045%20MB-success.svg)](https://github.com/codecheesee/altspace)
 
@@ -142,4 +142,4 @@ git push origin v1.0.1
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). Built for speed, elegance, and developer productivity.
+This project is licensed under the [Apache 2.0 License](LICENSE). Built for speed, elegance, and developer productivity.

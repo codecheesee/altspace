@@ -13,4 +13,4 @@
 <!-- Add before/after screenshots or GIFs for UI changes -->
 
 ## 🤝 Contributor Agreement
-- [ ] By submitting this pull request, I agree to license my contributions under the MIT License of this project.
+- [ ] By submitting this pull request, I agree to license my contributions under the Apache 2.0 License of this project.
