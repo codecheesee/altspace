@@ -1,20 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Download,
-  Trash2,
   Check,
-  Star,
+  Code2,
+  Download,
   ExternalLink,
-  Globe,
   GitBranch,
-  Terminal,
-  Wifi,
-  Code,
-  Volume2,
-  Sparkles,
-  ShoppingBag,
+  Globe2,
   Heart,
-  ShieldCheck,
+  Info,
+  Loader2,
+  Network,
+  PackageOpen,
+  ShieldAlert,
+  Sparkles,
+  Star,
+  Terminal,
+  Trash2,
+  Wifi,
 } from "lucide-react";
 import { GithubIcon } from "./GithubIcon";
 import { cn } from "../lib/utils";
@@ -34,6 +36,20 @@ interface StoreTabProps {
   onRefreshInstalledPlugins?: () => void;
 }
 
+const categories = ["All", "Dev Tools", "System", "Network", "Media"];
+
+function ExtensionIcon({ name }: { name: string }) {
+  const icons: Record<string, ReactNode> = {
+    globe: <Globe2 className="h-5 w-5 text-sky-300" />,
+    git: <GitBranch className="h-5 w-5 text-orange-300" />,
+    code: <Code2 className="h-5 w-5 text-violet-300" />,
+    network: <Network className="h-5 w-5 text-emerald-300" />,
+    terminal: <Terminal className="h-5 w-5 text-amber-300" />,
+    volume: <Wifi className="h-5 w-5 text-pink-300" />,
+  };
+  return icons[name] ?? <Sparkles className="h-5 w-5 text-cyan-300" />;
+}
+
 export function StoreTab({
   query,
   selectedIndex,
@@ -44,26 +60,20 @@ export function StoreTab({
   const [plugins, setPlugins] = useState<ExtensionRegistryItem[]>([]);
   const [installedPluginIds, setInstalledPluginIds] = useState<Set<string>>(new Set());
   const [loadingPluginId, setLoadingPluginId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const categories = ["All", "Dev Tools", "System", "Network", "Media"];
-
-  // Load registry from SWR cache/remote
   useEffect(() => {
-    getExtensionRegistry().then((list) => {
-      setPlugins(list);
-    });
+    getExtensionRegistry().then(setPlugins);
   }, []);
 
-  // Scan installed plugins from backend
   const refreshInstalled = async () => {
     try {
       const installed = await tauriInvoke<{ id: string }[]>("list_plugins");
       if (Array.isArray(installed)) {
-        setInstalledPluginIds(new Set(installed.map((p) => p.id)));
+        setInstalledPluginIds(new Set(installed.map((plugin) => plugin.id)));
       }
-    } catch (_) {
-      // ignore
+    } catch {
+      // The marketplace remains usable when the plugin directory is unavailable.
     }
   };
 
@@ -71,28 +81,30 @@ export function StoreTab({
     refreshInstalled();
   }, []);
 
-  // Filter plugins based on query and selected category
-  const filteredPlugins = plugins.filter((p) => {
-    const matchesCategory =
-      selectedCategory === "All" || p.category === selectedCategory;
-    const matchesQuery =
-      !query.trim() ||
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.description.toLowerCase().includes(query.toLowerCase()) ||
-      p.keyword.toLowerCase().includes(query.toLowerCase()) ||
-      p.author.toLowerCase().includes(query.toLowerCase());
-    return matchesCategory && matchesQuery;
-  });
+  const filteredPlugins = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return plugins.filter((plugin) => {
+      const matchesCategory =
+        selectedCategory === "All" || plugin.category === selectedCategory;
+      const matchesQuery =
+        !normalizedQuery ||
+        [plugin.name, plugin.description, plugin.keyword, plugin.author]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+      return matchesCategory && matchesQuery;
+    });
+  }, [plugins, query, selectedCategory]);
 
   const handleInstall = async (plugin: ExtensionRegistryItem) => {
     setLoadingPluginId(plugin.id);
     try {
       await installRegistryExtension(plugin);
       await refreshInstalled();
-      if (onRefreshInstalledPlugins) onRefreshInstalledPlugins();
+      onRefreshInstalledPlugins?.();
       onCopiedNotification(`Installed ${plugin.name}! Type "${plugin.keyword}" to run`);
-    } catch (err: any) {
-      onCopiedNotification(`Failed to install: ${err?.message || err}`);
+    } catch (error: any) {
+      onCopiedNotification(`Install blocked: ${error?.message || error}`);
     } finally {
       setLoadingPluginId(null);
     }
@@ -103,217 +115,204 @@ export function StoreTab({
     try {
       await uninstallRegistryExtension(plugin.id);
       await refreshInstalled();
-      if (onRefreshInstalledPlugins) onRefreshInstalledPlugins();
+      onRefreshInstalledPlugins?.();
       onCopiedNotification(`Uninstalled ${plugin.name}`);
-    } catch (err: any) {
-      onCopiedNotification(`Failed to uninstall: ${err?.message || err}`);
+    } catch (error: any) {
+      onCopiedNotification(`Failed to uninstall: ${error?.message || error}`);
     } finally {
       setLoadingPluginId(null);
     }
   };
 
-  const handleOpenSponsor = (url: string) => {
+  const openSponsor = (url: string) => {
     if (tauriInvoke) {
       tauriInvoke("open_url", { url });
     } else {
-      window.open(url, "_blank");
-    }
-  };
-
-  const renderIcon = (iconName: string) => {
-    switch (iconName) {
-      case "globe":
-        return <Globe className="w-5 h-5 text-sky-400" />;
-      case "git":
-        return <GitBranch className="w-5 h-5 text-orange-400" />;
-      case "code":
-        return <Code className="w-5 h-5 text-purple-400" />;
-      case "network":
-        return <Wifi className="w-5 h-5 text-emerald-400" />;
-      case "terminal":
-        return <Terminal className="w-5 h-5 text-amber-400" />;
-      case "volume":
-        return <Volume2 className="w-5 h-5 text-pink-400" />;
-      default:
-        return <Sparkles className="w-5 h-5 text-cyan-400" />;
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-black/40 overflow-hidden">
-      {/* Top Banner: Registry Info & Categories */}
-      <div className="px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/[0.08] via-pink-500/[0.05] to-transparent flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300">
-            <ShoppingBag className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white tracking-tight">
-                AltSpace Community Extensions
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                Sandboxed & Verified
-              </span>
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#0d0d11]">
+      <div className="shrink-0 border-b border-white/[0.07] bg-[radial-gradient(circle_at_12%_0%,rgba(139,92,246,0.22),transparent_34%),linear-gradient(120deg,rgba(255,255,255,0.04),transparent_55%)] px-6 pb-4 pt-5">
+        <div className="flex items-start justify-between gap-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200 shadow-[0_0_30px_rgba(139,92,246,0.18)]">
+              <PackageOpen className="h-5 w-5" />
             </div>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              100% Free Open-Source Extensions • Direct Creator Sponsorships • Safe Process Isolation
-            </p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-[15px] font-semibold tracking-tight text-white">
+                  Community extensions
+                </h1>
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-medium text-amber-200">
+                  <ShieldAlert className="h-3 w-3" />
+                  Review before install
+                </span>
+              </div>
+              <p className="mt-1 max-w-[520px] text-xs leading-5 text-zinc-400">
+                Small tools made by the community. Extensions run with your Windows user permissions.
+              </p>
+            </div>
+          </div>
+          <div className="hidden shrink-0 items-center gap-1.5 text-[11px] text-zinc-500 sm:flex">
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">
+              {filteredPlugins.length} available
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">
+              {installedPluginIds.size} installed
+            </span>
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5">
-          {categories.map((cat) => (
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-0.5">
+          {categories.map((category) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              key={category}
+              type="button"
+              onClick={() => setSelectedCategory(category)}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer",
-                selectedCategory === cat
-                  ? "bg-white/[0.12] text-white border border-white/[0.15]"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.04]"
+                "whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-medium transition",
+                selectedCategory === category
+                  ? "border-white/20 bg-white/12 text-white shadow-sm"
+                  : "border-transparent text-zinc-500 hover:border-white/10 hover:bg-white/[0.04] hover:text-zinc-200"
               )}
             >
-              {cat}
+              {category}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Plugins List */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         {filteredPlugins.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-neutral-500 text-sm">
-            <span>No community extensions match "{query}"</span>
+          <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] text-center">
+            <Info className="mb-2 h-5 w-5 text-zinc-600" />
+            <p className="text-sm text-zinc-400">No extensions match this view.</p>
+            <p className="mt-1 text-xs text-zinc-600">Try another category or clear the search.</p>
           </div>
         ) : (
-          filteredPlugins.map((plugin, index) => {
-            const isInstalled = installedPluginIds.has(plugin.id);
-            const isSelected = selectedIndex === index;
-            const isLoading = loadingPluginId === plugin.id;
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {filteredPlugins.map((plugin, index) => {
+              const installed = installedPluginIds.has(plugin.id);
+              const selected = selectedIndex === index;
+              const loading = loadingPluginId === plugin.id;
 
-            return (
-              <div
-                key={plugin.id}
-                onClick={() => setSelectedIndex(index)}
-                className={cn(
-                  "p-3 rounded-xl border transition-all flex items-center justify-between gap-4 cursor-pointer",
-                  isSelected
-                    ? "bg-white/[0.08] border-white/[0.20] shadow-lg shadow-black/20"
-                    : "bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]"
-                )}
-              >
-                {/* Icon & Metadata */}
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] shrink-0">
-                    {renderIcon(plugin.icon)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white text-sm tracking-tight truncate">
-                        {plugin.name}
-                      </span>
-                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/[0.08] text-neutral-300 border border-white/[0.06]">
-                        {plugin.keyword}
-                      </span>
-                      {plugin.verified && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
-                          ✓ Verified
+              return (
+                <article
+                  key={plugin.id}
+                  onClick={() => setSelectedIndex(index)}
+                  className={cn(
+                    "group relative overflow-hidden rounded-2xl border p-4 transition duration-200",
+                    selected
+                      ? "border-violet-300/30 bg-violet-300/[0.08] shadow-[0_14px_36px_rgba(0,0,0,0.22)]"
+                      : "border-white/[0.07] bg-white/[0.025] hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+                      <ExtensionIcon name={plugin.icon} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <h2 className="truncate text-sm font-semibold text-white">{plugin.name}</h2>
+                            <span className="rounded-md border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+                              {plugin.keyword}
+                            </span>
+                          </div>
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-400">
+                            {plugin.description}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-mono text-[10px] text-zinc-600">v{plugin.version}</span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-zinc-500">
+                        <span className="inline-flex items-center gap-1">
+                          <GithubIcon className="h-3 w-3" /> @{plugin.authorGithub}
                         </span>
-                      )}
-                      <span className="text-[10px] text-neutral-500 font-mono">
-                        v{plugin.version}
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-400 truncate mt-0.5">
-                      {plugin.description}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-500">
-                      <span className="flex items-center gap-1 text-neutral-400">
-                        <GithubIcon className="w-3 h-3 text-neutral-400" />
-                        @{plugin.authorGithub}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1 text-amber-400/90 font-medium">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        {plugin.rating}
-                      </span>
-                      <span>•</span>
-                      <span>{plugin.downloads.toLocaleString()} installs</span>
+                        <span className="inline-flex items-center gap-1 text-amber-300/80">
+                          <Star className="h-3 w-3 fill-current" /> {plugin.rating}
+                        </span>
+                        <span>{plugin.downloads.toLocaleString()} installs</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Action Buttons: Direct Sponsor & Install/Uninstall */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {plugin.sponsorUrl && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenSponsor(plugin.sponsorUrl);
-                      }}
-                      title={`Sponsor @${plugin.authorGithub} directly`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-medium transition cursor-pointer"
-                    >
-                      <Heart className="w-3 h-3 text-rose-400 fill-rose-400/30" />
-                      <span>Tip Creator</span>
-                    </button>
-                  )}
-
-                  {isInstalled ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                        <Check className="w-3.5 h-3.5" />
-                        Installed
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUninstall(plugin);
-                        }}
-                        disabled={isLoading}
-                        title="Uninstall plugin"
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+                    <div className="flex min-w-0 items-center gap-1.5 text-[10px] text-zinc-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      {installed ? "Installed locally" : "Community package"}
                     </div>
-                  ) : (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleInstall(plugin);
-                      }}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/[0.12] hover:bg-white/[0.18] text-white text-xs font-medium transition cursor-pointer border border-white/[0.15] active:scale-95"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      {isLoading ? "Installing..." : "Install"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })
+                    <div className="flex items-center gap-2">
+                      {plugin.sponsorUrl && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openSponsor(plugin.sponsorUrl!);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-300/15 bg-rose-300/[0.07] px-2.5 py-1.5 text-[11px] font-medium text-rose-200 transition hover:bg-rose-300/[0.14]"
+                        >
+                          <Heart className="h-3 w-3" />
+                          Sponsor
+                        </button>
+                      )}
+                      {installed ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-300/15 bg-emerald-300/[0.08] px-2.5 py-1.5 text-[11px] font-medium text-emerald-200">
+                            <Check className="h-3 w-3" /> Installed
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleUninstall(plugin);
+                            }}
+                            disabled={loading}
+                            aria-label={`Uninstall ${plugin.name}`}
+                            className="rounded-lg border border-white/10 p-1.5 text-zinc-500 transition hover:border-rose-300/20 hover:bg-rose-300/[0.08] hover:text-rose-200"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleInstall(plugin);
+                          }}
+                          disabled={loading}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-950 transition hover:bg-violet-100 disabled:cursor-wait disabled:opacity-60"
+                        >
+                          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          {loading ? "Checking…" : "Install"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Bottom Contributor Prompt Banner */}
-      <div className="px-5 py-2.5 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between text-xs text-neutral-400 shrink-0">
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-          <span>Build an extension for AltSpace and receive direct sponsorships & community grants!</span>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] bg-white/[0.02] px-5 py-2.5 text-[11px] text-zinc-500">
+        <span className="inline-flex min-w-0 items-center gap-1.5 truncate">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-violet-300" />
+          Build an extension and receive direct creator sponsorships.
         </span>
         <a
           href="https://github.com/codecheesee/altspace#contributing"
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-1 text-purple-300 hover:text-purple-200 font-medium underline underline-offset-2"
+          className="inline-flex shrink-0 items-center gap-1 font-medium text-violet-200 transition hover:text-white"
         >
-          Submit an Extension (PR)
-          <ExternalLink className="w-3 h-3" />
+          Submit <ExternalLink className="h-3 w-3" />
         </a>
       </div>
     </div>
