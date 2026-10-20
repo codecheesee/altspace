@@ -105,36 +105,9 @@ export default function App() {
   });
 
   // 3. Dev Ports Inspector Hook
-  const qTrimLower = query.trim().toLowerCase();
-  const isPortMode =
-    activeTab === "ports" ||
-    qTrimLower === ":port" ||
-    qTrimLower === ":ports" ||
-    qTrimLower.startsWith(":port ") ||
-    qTrimLower.startsWith(":ports ") ||
-    /^:\d+/.test(qTrimLower);
-
-  const isStoreMode =
-    activeTab === "store" ||
-    qTrimLower === ":store" ||
-    qTrimLower.startsWith(":store ") ||
-    qTrimLower === ":ext" ||
-    qTrimLower.startsWith(":ext ");
-
-  const isClipboardMode =
-    activeTab === "clipboard" ||
-    qTrimLower === ":clip" ||
-    qTrimLower === ":clipboard" ||
-    qTrimLower.startsWith(":clip ") ||
-    qTrimLower.startsWith(":clipboard ");
-  const smartPortMode = isPortMode;
-  const resolvedMode: Mode = isStoreMode
-    ? "store"
-    : isPortMode
-    ? "ports"
-    : isClipboardMode
-    ? "clipboard"
-    : activeTab;
+  const isStoreMode = activeTab === "store" || query.startsWith(":store") || query.startsWith(":plugin") || query.startsWith(":ext");
+  const smartPortMode = !isStoreMode && query.startsWith(":") && !query.startsWith(":theme");
+  const resolvedMode: Mode = isStoreMode ? "store" : smartPortMode ? "ports" : currentMode;
 
   const {
     filteredPorts,
@@ -384,16 +357,16 @@ export default function App() {
             tauriInvoke("trigger_app_update")
               .then(() => {
                 notify("Updater running. AltSpace will restart automatically.");
-                setTimeout(() => handleDismissWindow(), 1500);
               })
               .catch((err) => notify(`Update error: ${err}`));
           } else {
-            notify(`AltSpace is up to date (v${info?.current_version || "1.0.3"}).`);
+            notify(`AltSpace is up to date (v${info?.current_version || "1.0.1"}).`);
           }
         })
         .catch((err) => {
           notify(`Update check failed: ${err}`);
         });
+      handleDismissWindow();
     } else if (item.id === "util-community") {
       if (tauriInvoke) {
         tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });

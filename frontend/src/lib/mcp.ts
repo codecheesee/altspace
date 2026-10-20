@@ -102,15 +102,12 @@ export async function executeMCPTool(
       case "kill_port": {
         const port = Number(args.port);
         if (isNaN(port)) throw new Error("Invalid port number");
-        const ports = await tauriInvoke<any[]>("get_listening_ports");
-        const match = (ports || []).find((p) => p.port === port);
-        if (!match) throw new Error(`No active process found listening on port ${port}`);
-        await tauriInvoke("kill_port_process", { pid: match.pid });
-        return { success: true, result: `Port ${port} (PID ${match.pid}) terminated successfully.` };
+        const res = await tauriInvoke<string>("kill_process_by_port", { port });
+        return { success: true, result: res || `Port ${port} terminated successfully.` };
       }
 
       case "list_listening_ports": {
-        const ports = await tauriInvoke<any[]>("get_listening_ports");
+        const ports = await tauriInvoke<any[]>("get_open_ports");
         const formatted = (ports || []).map((p) => ({
           port: p.port,
           process: p.process_name,
@@ -121,7 +118,7 @@ export async function executeMCPTool(
 
       case "search_files": {
         const q = String(args.query || "");
-        const results = await tauriInvoke<any[]>("search", { query: q });
+        const results = await tauriInvoke<any[]>("search_apps_and_files", { query: q });
         return { success: true, result: (results || []).slice(0, 10) };
       }
 
@@ -150,7 +147,7 @@ export async function executeMCPTool(
 
       case "snap_window": {
         const pos = String(args.position || "maximize");
-        await tauriInvoke("snap_window", { position: pos });
+        await tauriInvoke("snap_window_action", { position: pos });
         return { success: true, result: `Window snapped to ${pos}` };
       }
 

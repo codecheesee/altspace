@@ -7,89 +7,93 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$Repo = 'codecheesee/altspace'
+$BinaryPath = Join-Path $TargetDir 'altspace.exe'
+$DllPath = Join-Path $TargetDir 'Everything64.dll'
+$TempRoot = Join-Path ([IO.Path]::GetTempPath()) ("AltSpaceInstaller-" + [Guid]::NewGuid().ToString('N'))
 
-Write-Host "===========================================================" -ForegroundColor DarkCyan
-Write-Host " AltSpace - Native Windows Command Palette & Launcher" -ForegroundColor Cyan
-Write-Host " Architecture: Rust Core (Tauri v2) | License: Apache-2.0" -ForegroundColor Gray
-Write-Host "===========================================================" -ForegroundColor DarkCyan
+Write-Host '===========================================================' -ForegroundColor DarkCyan
+Write-Host ' AltSpace - Native Windows Command Palette & Launcher' -ForegroundColor Cyan
+Write-Host '===========================================================' -ForegroundColor DarkCyan
 
-$BinaryPath = "$TargetDir\altspace.exe"
-$Repo = "codecheesee/altspace"
+function Get-ReleaseAsset([object]$Release, [string]$Name) {
+    $asset = $Release.assets | Where-Object { $_.name -eq $Name } | Select-Object -First 1
+    if (-not $asset) { throw "Release asset '$Name' was not found in the latest AltSpace release." }
+    return $asset
+}
 
-Write-Host "[*] Terminating existing AltSpace instances..." -ForegroundColor Yellow
-Stop-Process -Name altspace -Force -ErrorAction SilentlyContinue
-Stop-Process -Name raycast-windows -Force -ErrorAction SilentlyContinue
-Start-Sleep -Milliseconds 800
+function Assert-Sha256([string]$FilePath, [string]$ChecksumPath, [string]$AssetName) {
+    $line = Get-Content $ChecksumPath | Where-Object { $_ -match ("\s" + [regex]::Escape($AssetName) + "$") } | Select-Object -First 1
+    if (-not $line -or $line -notmatch '^\s*([0-9a-fA-F]{64})\s+') {
+        throw "No valid SHA-256 entry exists for '$AssetName'."
+    }
+    $expected = $Matches[1].ToLowerInvariant()
+    $actual = (Get-FileHash $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -ne $expected) {
+        throw "SHA-256 verification failed for '$AssetName'. Expected $expected but received $actual."
+    }
+}
 
-# 1. Create Target Directory
-if (!(Test-Path $TargetDir)) {
+try {
+    Write-Host '[*] Stopping the existing AltSpace process, if present...' -ForegroundColor Yellow
+    Stop-Process -Name altspace -Force -ErrorAction SilentlyContinue
+    Stop-Process -Name raycast-windows -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 800
+
     New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
-}
+    New-Item -ItemType Directory -Path $TempRoot -Force | Out-Null
 
-# 2. Resolve Binary (Local or Remote Release)
-$LocalBin = "$PSScriptRoot\bin\altspace.exe"
-$LocalDll = "$PSScriptRoot\bin\Everything64.dll"
-$DllPath = "$TargetDir\Everything64.dll"
+    $portableExe = Join-Path $TempRoot 'AltSpace-Portable.exe'
+    $portableZip = Join-Path $TempRoot 'AltSpace-Portable-x64.zip'
+    $checksums = Join-Path $TempRoot 'SHA256SUMS.txt'
 
-if ((Test-Path $LocalBin) -and $LocalOnly) {
-    Write-Host "[*] Installing from local repository binary: $LocalBin" -ForegroundColor Green
-    Copy-Item $LocalBin $BinaryPath -Force
-    if (Test-Path $LocalDll) {
-        Copy-Item $LocalDll $DllPath -Force
+    $localBin = Join-Path $PSScriptRoot 'bin\altspace.exe'
+    $localDll = Join-Path $PSScriptRoot 'bin\Everything64.dll'
+    if ($LocalOnly) {
+        if (-not (Test-Path $localBin)) { throw "Local binary was not found: $localBin" }
+        Write-Host "[*] Installing local binary: $localBin" -ForegroundColor Green
+        Copy-Item $localBin $BinaryPath -Force
+        if (Test-Path $localDll) { Copy-Item $localDll $DllPath -Force }
+    } else {
+        Write-Host "[*] Resolving the latest verified GitHub release for $Repo..." -ForegroundColor Green
+        $headers = @{ 'User-Agent' = 'AltSpace-Installer'; 'Accept' = 'application/vnd.github+json' }
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
+        $zipAsset = Get-ReleaseAsset $release 'AltSpace-Portable-x64.zip'
+        $checksumAsset = Get-ReleaseAsset $release 'SHA256SUMS.txt'
+        Invoke-WebRequest -Uri $zipAsset.browser_download_url -Headers $headers -OutFile $portableZip -UseBasicParsing
+        Invoke-WebRequest -Uri $checksumAsset.browser_download_url -Headers $headers -OutFile $checksums -UseBasicParsing
+        Assert-Sha256 $portableZip $checksums $zipAsset.name
+        Expand-Archive -Path $portableZip -DestinationPath $TempRoot -Force
+        if (-not (Test-Path $portableExe)) { throw 'Verified portable archive did not contain AltSpace-Portable.exe.' }
+        Copy-Item $portableExe $BinaryPath -Force
+        $extractedDll = Join-Path $TempRoot 'Everything64.dll'
+        if (-not (Test-Path $extractedDll)) { throw 'Verified portable archive did not contain Everything64.dll.' }
+        Copy-Item $extractedDll $DllPath -Force
     }
-} else {
-    Write-Host "[*] Downloading verified release from GitHub ($Repo)..." -ForegroundColor Green
-    $PrimaryUrl = "https://github.com/$Repo/releases/latest/download/altspace.exe"
-    $FallbackUrl = "https://github.com/$Repo/releases/download/v1.0.3/altspace.exe"
 
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-        Invoke-WebRequest -Uri $PrimaryUrl -OutFile $BinaryPath -UseBasicParsing
-    } catch {
-        Write-Host "[!] Primary latest endpoint redirected. Attempting release tag fallback..." -ForegroundColor Yellow
-        try {
-            Invoke-WebRequest -Uri $FallbackUrl -OutFile $BinaryPath -UseBasicParsing
-        } catch {
-            Write-Error "Failed to download AltSpace binary: $_"
-            exit 1
-        }
+    $startMenuDir = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\AltSpace'
+    New-Item -ItemType Directory -Path $startMenuDir -Force | Out-Null
+    $wshShell = New-Object -ComObject WScript.Shell
+    $shortcut = $wshShell.CreateShortcut((Join-Path $startMenuDir 'AltSpace.lnk'))
+    $shortcut.TargetPath = $BinaryPath
+    $shortcut.Description = 'AltSpace - Instant Command Palette for Windows'
+    $shortcut.WorkingDirectory = $TargetDir
+    $shortcut.Save()
+
+    $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    $pathEntries = @($currentPath -split ';' | Where-Object { $_ })
+    if ($pathEntries -notcontains $TargetDir) {
+        [Environment]::SetEnvironmentVariable('Path', (($pathEntries + $TargetDir) -join ';'), 'User')
     }
 
-    # Download required Win32 DLL dependency (NTFS MFT file indexing engine)
-    Write-Host "[*] Resolving Win32 dependencies (Everything64.dll)..." -ForegroundColor Green
-    $DllUrl = "https://raw.githubusercontent.com/$Repo/main/bin/Everything64.dll"
-    try {
-        Invoke-WebRequest -Uri $DllUrl -OutFile $DllPath -UseBasicParsing
-    } catch {
-        Write-Warning "Failed to fetch Everything64.dll from repository: $_"
-    }
+    Write-Host '[+] Installation verified. Starting AltSpace...' -ForegroundColor Green
+    Start-Process -FilePath $BinaryPath -WorkingDirectory $TargetDir
+    Write-Host "`nAltSpace is now running." -ForegroundColor Cyan
+    Write-Host 'Default Hotkey: Alt + Space (or Ctrl + Space)' -ForegroundColor Gray
+    Write-Host 'Action Drawer:  Ctrl + K' -ForegroundColor Gray
+} catch {
+    Write-Error "AltSpace installation failed: $_"
+    exit 1
+} finally {
+    if (Test-Path $TempRoot) { Remove-Item $TempRoot -Recurse -Force -ErrorAction SilentlyContinue }
 }
-
-# 3. Create / Update Start Menu Shortcut
-$StartMenuDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\AltSpace"
-if (!(Test-Path $StartMenuDir)) {
-    New-Item -ItemType Directory -Path $StartMenuDir -Force | Out-Null
-}
-
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$StartMenuDir\AltSpace.lnk")
-$Shortcut.TargetPath = $BinaryPath
-$Shortcut.Description = "AltSpace - Instant Command Palette for Windows"
-$Shortcut.WorkingDirectory = $TargetDir
-$Shortcut.Save()
-
-# 4. Configure User PATH
-$CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($CurrentPath -notlike "*$TargetDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$CurrentPath;$TargetDir", "User")
-    Write-Host "[+] Registered $TargetDir in User PATH" -ForegroundColor Green
-}
-
-# 5. Launch AltSpace in Background
-Write-Host "[+] Installation verified. Starting AltSpace..." -ForegroundColor Green
-Start-Process -FilePath $BinaryPath
-
-Write-Host "`nAltSpace is now running." -ForegroundColor Cyan
-Write-Host "Default Hotkey: Alt + Space (or Ctrl + Space)" -ForegroundColor Gray
-Write-Host "Action Drawer:  Ctrl + K" -ForegroundColor Gray
-Write-Host "Updates:        Type ':update' into AltSpace anytime or re-run this script." -ForegroundColor Gray

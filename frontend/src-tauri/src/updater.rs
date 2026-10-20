@@ -32,7 +32,7 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
     let current_version = env!("CARGO_PKG_VERSION").to_string();
 
     // Query GitHub API using PowerShell Invoke-RestMethod for zero extra dependencies
-    let ps_script = r#"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try { $res = Invoke-RestMethod -Uri 'https://api.github.com/repos/codecheesee/altspace/releases/latest' -Headers @{'User-Agent'='AltSpace-Updater'} -TimeoutSec 10; ConvertTo-Json -InputObject @{ tag_name = $res.tag_name; html_url = $res.html_url; body = $res.body } -Compress } catch { Write-Error $_.Exception.Message; exit 1 }"#;
+    let ps_script = r#"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $res = Invoke-RestMethod -Uri 'https://api.github.com/repos/codecheesee/altspace/releases/latest' -Headers @{'User-Agent'='AltSpace-Updater'} -TimeoutSec 5; ConvertTo-Json -InputObject @{ tag_name = $res.tag_name; html_url = $res.html_url; body = $res.body } -Compress"#;
 
     let output = Command::new("powershell.exe")
         .args(["-NoProfile", "-Command", ps_script])
