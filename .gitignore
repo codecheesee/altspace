@@ -14,6 +14,8 @@ dist/
 # Compiled Executables & Distribution Artifacts
 *.exe
 bin/*.exe
+*.old
+bin/*.old
 dist_artifacts/
 
 # Binary & build temp outputs (keep release bins or distribution scripts)

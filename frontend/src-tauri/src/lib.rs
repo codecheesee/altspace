@@ -745,6 +745,23 @@ pub struct MaintainerStatus {
 
 #[tauri::command]
 fn check_maintainer_status() -> Result<MaintainerStatus, String> {
+    // 1. Direct local token check (works without git.exe installed on any Windows PC)
+    if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+        let marker_path = std::path::PathBuf::from(local_appdata).join("AltSpace").join("maintainer.json");
+        if marker_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&marker_path) {
+                if content.contains("\"codecheesee\"") && content.contains("\"maintainer\"") {
+                    return Ok(MaintainerStatus {
+                        is_maintainer: true,
+                        login: "codecheesee".to_string(),
+                        reason: "Verified Maintainer Sovereign Access Token".to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    // 2. Developer machine repository fallback (auto-provisions maintainer.json if git is configured)
     let remote_output = std::process::Command::new("git")
         .args(["config", "--get", "remote.origin.url"])
         .output();
@@ -771,21 +788,6 @@ fn check_maintainer_status() -> Result<MaintainerStatus, String> {
                     login: "codecheesee".to_string(),
                     reason: "Verified Local Maintainer Repository Environment (Lifetime Sovereign Access)".to_string(),
                 });
-            }
-        }
-    }
-
-    if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
-        let marker_path = std::path::PathBuf::from(local_appdata).join("AltSpace").join("maintainer.json");
-        if marker_path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&marker_path) {
-                if content.contains("\"codecheesee\"") && content.contains("\"maintainer\"") {
-                    return Ok(MaintainerStatus {
-                        is_maintainer: true,
-                        login: "codecheesee".to_string(),
-                        reason: "Verified Local Maintainer Credential Token".to_string(),
-                    });
-                }
             }
         }
     }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp, Settings } from "lucide-react";
 import { tauriInvoke } from "../lib/appStorage";
+import { getCurrentSession } from "../lib/authProvider";
 import {
   DISCORD_WEBHOOK_URL,
   GITHUB_REPO_URL,
@@ -57,7 +58,10 @@ export function FeedbackModal({
   const [hoverStars, setHoverStars] = useState<number>(0);
   const [type, setType] = useState<FeedbackType>("rating");
   const [comment, setComment] = useState("");
-  const [contact, setContact] = useState("");
+  const [contact, setContact] = useState(() => {
+    const s = getCurrentSession();
+    return s?.login ? `@${s.login}` : "";
+  });
   const [submitted, setSubmitted] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const [webhookInput, setWebhookInput] = useState(() => {
@@ -184,12 +188,19 @@ export function FeedbackModal({
 ${comment || "No detailed notes provided."}
 `;
 
+    const labels =
+      type === "bug"
+        ? "bug,user-feedback"
+        : type === "feature"
+        ? (stars >= 4 ? "enhancement,community-request,bounty-candidate" : "enhancement,community-request")
+        : "user-feedback";
+
     const body = encodeURIComponent(bodyText);
-    const url = `${GITHUB_ISSUES_URL}/new?title=${title}&body=${body}`;
+    const url = `${GITHUB_ISSUES_URL}/new?title=${title}&body=${body}&labels=${encodeURIComponent(labels)}`;
     handleOpenUrl(url);
     localStorage.setItem("altspace_has_rated", "true");
     onClose();
-    notify("Opened GitHub Issues in your browser!");
+    notify("Opened labeled GitHub Issue draft in browser!");
   };
 
   return (
