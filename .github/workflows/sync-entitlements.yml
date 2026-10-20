@@ -1,0 +1,81 @@
+name: Sync GitHub Sponsors & Entitlements
+
+on:
+  schedule:
+    # Run every 6 hours automatically
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-sponsors:
+    name: Sync Sponsors to Entitlements Manifest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Query GitHub Sponsors & Generate Manifest
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            // 1. Maintainer sovereign definition
+            const manifest = {
+              version: 1,
+              updatedAt: new Date().toISOString(),
+              issuer: "https://github.com/codecheesee/altspace",
+              maintainers: [
+                {
+                  login: "codecheesee",
+                  id: 66432945,
+                  tier: "maintainer",
+                  unlimited: true,
+                  expiresAt: null
+                }
+              ],
+              sponsors: [],
+              trialPolicy: {
+                freeSearchLimit: 1000,
+                windowDays: 30,
+                warningThreshold: 900
+              }
+            };
+
+            // 2. Fetch public repository contributors to award contributor entitlements
+            try {
+              const contributors = await github.rest.repos.listContributors({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 50
+              });
+
+              for (const c of contributors.data) {
+                if (c.login && c.login !== "codecheesee" && !c.login.includes("[bot]")) {
+                  manifest.sponsors.push({
+                    login: c.login,
+                    id: c.id,
+                    tier: "supporter",
+                    role: "contributor",
+                    expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+                  });
+                }
+              }
+            } catch (err) {
+              console.log("Notice: Contributor sync skipped:", err.message);
+            }
+
+            fs.writeFileSync('entitlements.json', JSON.stringify(manifest, null, 2));
+            console.log("Generated entitlements.json with", manifest.sponsors.length, "entitled users.");
+
+      - name: Commit & Push Updated Entitlements Manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add entitlements.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(entitlements): automated sync of sponsors & contributors [skip ci]" && git push)

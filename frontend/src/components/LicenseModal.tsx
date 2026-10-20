@@ -146,7 +146,17 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
             </div>
           </div>
 
-          {licenseStatus.isSupporter ? (
+          {licenseStatus.isMaintainer || licenseStatus.tier === "Maintainer" ? (
+            <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.08]">
+              <div className="flex items-center gap-2 text-amber-300 font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                Maintainer Sovereign Access Active
+              </div>
+              <p className="text-[11px] text-zinc-300 mt-2">
+                Logged in as @{licenseStatus.login || "codecheesee"} • Permanent Full Permission Forever (Unlimited Multi-Drive, AI & Dev Tools).
+              </p>
+            </div>
+          ) : licenseStatus.isSupporter ? (
             <div className="p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06]">
               <div className="flex items-center gap-2 text-emerald-300 font-semibold text-sm">
                 <ShieldCheck className="w-4 h-4" />Provider-verified Supporter entitlement active

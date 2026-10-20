@@ -30,9 +30,9 @@ export const FRECENCY_CACHE_KEY = "altspace_frecency_v2";
 export const SIDEBAR_PREFERENCE_KEY = "altspace_sidebar_visible_v1";
 export const DRIVE_SEARCH_PREFERENCE_KEY = "altspace_search_all_drives_v1";
 export const ADVANCED_SEARCH_QUOTA_KEY = "altspace_advanced_search_quota_v1";
-export const ADVANCED_SEARCH_LIMIT = 50;
-export const ADVANCED_SEARCH_WARNING_THRESHOLD = 40;
-export const ADVANCED_SEARCH_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+export const ADVANCED_SEARCH_LIMIT = 1000;
+export const ADVANCED_SEARCH_WARNING_THRESHOLD = 900;
+export const ADVANCED_SEARCH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function calculateFrecencyScore(record?: FrecencyRecord | number, now = Date.now()): number {
@@ -215,6 +215,32 @@ export function consumeAdvancedSearch(now = Date.now()): AdvancedSearchQuotaResu
   };
 }
 
+/**
+ * Classifies whether an interaction is a Premium Power Search
+ * (Deep Multi-Drive search across secondary/external drives, AI streaming, or Shell runner)
+ * vs. a Normal Search (App launching, local file search, calculator, currency/GST, dev ports).
+ */
+export function isPremiumSearchQuery(query: string, searchAllDrives = false): boolean {
+  const qTrim = query.trim();
+  if (!qTrim || qTrim.length < 2) return false;
+
+  // 1. AI Assistant query (? or ai:)
+  if (qTrim.startsWith("?") || qTrim.toLowerCase().startsWith("ai:")) {
+    return true;
+  }
+
+  // 2. Shell Command Runner (> or cmd: or sh:)
+  if (qTrim.startsWith(">") || qTrim.toLowerCase().startsWith("cmd:") || qTrim.toLowerCase().startsWith("sh:")) {
+    return true;
+  }
+
+  // 3. Deep Multi-Drive Search across non-C: internal/external drives
+  if (searchAllDrives && !qTrim.startsWith(":") && qTrim.length >= 3) {
+    return true;
+  }
+
+  return false;
+}
 export const UTILITY_ITEMS: Item[] = [
   {
     id: "util-clipboard",

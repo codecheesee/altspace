@@ -11,7 +11,10 @@ import {
   getCachedOrInitialApps,
   sortByFrequency,
   UTILITY_ITEMS,
+  consumeAdvancedSearch,
+  isPremiumSearchQuery,
 } from "../lib/appStorage";
+import { getLicenseStatus, isUnlimitedTier } from "../lib/license";
 import { streamOllamaResponse, OLLAMA_DEFAULT_MODEL } from "../lib/ai";
 import type {
   Item,
@@ -379,6 +382,30 @@ export function useSearchEngine({
 
     let active = true;
     const currentSeq = ++searchSeq.current;
+
+    // Premium feature gatekeeper: Normal searches are ALWAYS 100% free and unmetered!
+    const isPremium = isPremiumSearchQuery(debouncedQuery);
+    if (isPremium) {
+      const license = getLicenseStatus();
+      if (!isUnlimitedTier(license) && !license.isSupporter) {
+        const usage = consumeAdvancedSearch();
+        if (!usage.allowed) {
+          const quotaCard: Item = {
+            id: "quota-limit-notice",
+            title: "1,000 Free Premium Searches Used",
+            subtitle: "Normal searches remain 100% free forever. Connect GitHub or sponsor to unlock unlimited multi-drive indexing.",
+            category: "Command",
+            iconType: "cmd",
+            path: "altspace://license",
+          };
+          setItems((prev) => [quotaCard, ...prev]);
+          return () => { active = false; };
+        }
+        if (usage.warning) {
+          onNotify?.(`Premium trial: ${usage.remaining} searches remaining in this 30-day window.`);
+        }
+      }
+    }
 
     runAdvancedSearch();
     function runAdvancedSearch() {
