@@ -11,6 +11,11 @@ frontend/dist/
 dist/
 .vite/
 
+# Compiled Executables & Distribution Artifacts
+*.exe
+bin/*.exe
+dist_artifacts/
+
 # Binary & build temp outputs (keep release bins or distribution scripts)
 *.pdb
 *.obj
