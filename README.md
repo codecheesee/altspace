@@ -1,4 +1,4 @@
-# AltSpace — Next-Gen Command Palette & Launcher for Windows
+# AltSpace — Command Palette & Launcher for Windows
 
 [![CI / Release](https://github.com/codecheesee/altspace/actions/workflows/release.yml/badge.svg)](https://github.com/codecheesee/altspace/actions/workflows/release.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
