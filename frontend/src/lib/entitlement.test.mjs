@@ -6,6 +6,9 @@ import {
   processLemonSqueezyEvent,
   validateEntitlementResponse,
   deriveClientState,
+  createEntitlementLease,
+  verifyEntitlementLease,
+  hasLeaseFeature,
 } from './entitlementContract.ts';
 
 // Helper to compute test HMAC-SHA256 signature
@@ -155,4 +158,79 @@ test('10. Local storage cannot create an authoritative paid entitlement without 
     hasCheckoutUrl: true,
   });
   assert.equal(untrustedState, 'Free');
+});
+
+test('11. Signed entitlement lease is verified with valid signature', async () => {
+  const secret = 'super_secret_entitlement_key_2026';
+  const lease = await createEntitlementLease(
+    {
+      subject: 'octocat',
+      device: 'win11_dev_01',
+      tier: 'pro',
+      features: ['ai.remote', 'sync.multi-device'],
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      keyId: 'entitlement-key-1',
+    },
+    secret
+  );
+
+  assert.ok(lease.signature);
+  const result = await verifyEntitlementLease(lease, secret);
+  assert.equal(result.valid, true);
+});
+
+test('12. Tampered entitlement lease is rejected by signature verification', async () => {
+  const secret = 'super_secret_entitlement_key_2026';
+  const lease = await createEntitlementLease(
+    {
+      subject: 'octocat',
+      device: 'win11_dev_01',
+      tier: 'free',
+      features: [],
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      keyId: 'entitlement-key-1',
+    },
+    secret
+  );
+
+  // Attempt tampering tier to pro without valid signature
+  const tampered = { ...lease, tier: 'pro', features: ['ai.remote'] };
+  const result = await verifyEntitlementLease(tampered, secret);
+  assert.equal(result.valid, false);
+});
+
+test('13. Expired entitlement lease is rejected even if signature was valid', async () => {
+  const secret = 'super_secret_entitlement_key_2026';
+  const lease = await createEntitlementLease(
+    {
+      subject: 'octocat',
+      device: 'win11_dev_01',
+      tier: 'pro',
+      features: ['ai.remote'],
+      expiresAt: new Date(Date.now() - 3600000).toISOString(), // Expired 1 hour ago
+      keyId: 'entitlement-key-1',
+    },
+    secret
+  );
+
+  const result = await verifyEntitlementLease(lease, secret);
+  assert.equal(result.valid, false);
+  assert.ok(result.reason.includes('expired'));
+});
+
+test('14. Feature checks correctly validate capabilities against active lease', () => {
+  const proLease = {
+    subject: 'octocat',
+    device: 'win11_dev_01',
+    tier: 'pro',
+    features: ['ai.remote', 'sync.multi-device'],
+    issuedAt: '',
+    expiresAt: '',
+    keyId: '',
+    signature: '',
+  };
+
+  assert.equal(hasLeaseFeature(proLease, 'ai.remote'), true);
+  assert.equal(hasLeaseFeature(proLease, 'sync.multi-device'), true);
+  assert.equal(hasLeaseFeature(null, 'ai.remote'), false);
 });

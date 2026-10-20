@@ -115,9 +115,12 @@ Search and restore clipboard history with automated credential masking:
 
 ## Contributor Economics and Governance
 
-AltSpace operates under an **Open-Core and Contributor Treasury** governance model:
+AltSpace operates under an **Open-Core and Contributor Treasury** governance model structured around a two-layer product architecture:
 
-- **100% Free Core**: The core desktop application, search indexer, developer port killer, and extension runtime are distributed under the **Apache License 2.0**.
+- **Layer A (100% Free Apache 2.0 Core)**: The desktop application launcher, local search indexer, developer port killer, in-memory clipboard manager, themes, and local Ollama AI integration are distributed under the **Apache License 2.0**. It runs 100% locally and offline without requiring an account.
+- **Layer B (Server-Controlled Commercial Services)**: Hosted cloud AI routing, multi-device sync, team commands, and commercial entitlement leases are enforced behind a secure server-side trust boundary. While forks may modify local client code, they cannot access private hosted APIs without valid cryptographic server authorization.
+- **Trademark Protection**: Apache 2.0 does not grant trademark rights. Official names, logos, and publisher identities are protected. Community forks must use distinct names and icons as specified in [**TRADEMARK.md**](TRADEMARK.md).
+- **Comprehensive Feature Matrix**: For a complete breakdown of what runs locally versus what requires a server, review [**docs/FEATURE_MATRIX.md**](docs/FEATURE_MATRIX.md).
 - **The 70 / 20 / 10 Allocation Model**:
   - **70% Maintainer Engineering**: Funds core Rust systems development, Win32 API integration, and security maintenance.
   - **20% Public Contributor Treasury**: Allocated directly to public community feature bounties on GitHub.

@@ -24,6 +24,7 @@ test('1. Free local search never consumes quota or classifies as premium', () =>
   assert.equal(classifyPremiumAction({ query: '25 * 4' }), false);
   assert.equal(classifyPremiumAction({ query: '$100 in inr' }), false);
   assert.equal(classifyPremiumAction({ query: 'notepad.exe' }), false);
+  assert.equal(classifyPremiumAction({ isLocalAiQuery: true, query: '? local summarize' }), false);
 });
 
 test('2. Empty query or single-character search never classifies as premium', () => {

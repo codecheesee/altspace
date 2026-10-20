@@ -31,6 +31,7 @@ export interface ActionClassificationInput {
   query?: string;
   searchAllDrives?: boolean;
   isAiQuery?: boolean;
+  isLocalAiQuery?: boolean;
   isShellQuery?: boolean;
 }
 
@@ -39,15 +40,18 @@ const processedIdempotencyKeys = new Set<string>();
 
 /**
  * Classifies whether an interaction is a Premium Action
- * ONLY expensive operational features consume quota:
- * - AI requests / streaming prompts (? or ai:)
+ * - Remote / Hosted AI requests consume quota
+ * - Local Ollama queries (localhost:11434) are 100% FREE FOREVER in the open core
  * - Shell Command Runner (> or cmd: or sh:)
  * - Deep Multi-Drive Search across non-C: internal/external drives (searchAllDrives = true)
  *
  * All local app launches, file searches, calculator, dev ports, clipboard,
- * settings, snippets, and themes are 100% FREE FOREVER.
+ * settings, snippets, themes, and local Ollama are 100% FREE FOREVER.
  */
 export function classifyPremiumAction(input: ActionClassificationInput): boolean {
+  // Local Ollama AI queries are 100% FREE and unmetered in the open core
+  if (input.isLocalAiQuery) return false;
+
   if (input.isAiQuery) return true;
   if (input.isShellQuery) return true;
 

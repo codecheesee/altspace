@@ -341,3 +341,102 @@ export function deriveClientState(
 
   return "Free";
 }
+
+export interface SignedEntitlementLease {
+  subject: string;
+  device: string;
+  tier: EntitlementTier;
+  features: string[];
+  issuedAt: string;
+  expiresAt: string;
+  keyId: string;
+  signature: string;
+}
+
+export function canonicalizeLease(lease: Omit<SignedEntitlementLease, "signature">): string {
+  return `${lease.subject}|${lease.device}|${lease.tier}|${lease.features.slice().sort().join(",")}|${lease.issuedAt}|${lease.expiresAt}|${lease.keyId}`;
+}
+
+export async function createEntitlementLease(
+  data: Omit<SignedEntitlementLease, "signature" | "issuedAt">,
+  signingKey: string,
+  now = new Date()
+): Promise<SignedEntitlementLease> {
+  const issuedAt = now.toISOString();
+  const canonical = canonicalizeLease({
+    ...data,
+    issuedAt,
+  });
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(signingKey);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signatureBytes = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(canonical));
+  const signature = Array.from(new Uint8Array(signatureBytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return {
+    ...data,
+    issuedAt,
+    signature,
+  };
+}
+
+export async function verifyEntitlementLease(
+  lease: SignedEntitlementLease,
+  verificationKey: string,
+  now = Date.now()
+): Promise<{ valid: boolean; reason: string }> {
+  if (!lease || !lease.signature) {
+    return { valid: false, reason: "Missing lease signature" };
+  }
+
+  const expEpoch = new Date(lease.expiresAt).getTime();
+  if (!Number.isFinite(expEpoch) || expEpoch <= now) {
+    return { valid: false, reason: "Lease has expired" };
+  }
+
+  const canonical = canonicalizeLease(lease);
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(verificationKey);
+
+  try {
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const sigHex = lease.signature.trim();
+    if (sigHex.length !== 64) {
+      return { valid: false, reason: "Malformed signature length" };
+    }
+
+    const sigBytes = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      sigBytes[i] = parseInt(sigHex.substring(i * 2, i * 2 + 2), 16);
+    }
+
+    const isValid = await crypto.subtle.verify("HMAC", cryptoKey, sigBytes, encoder.encode(canonical));
+    if (!isValid) {
+      return { valid: false, reason: "Invalid cryptographic lease signature" };
+    }
+
+    return { valid: true, reason: "Lease signature and expiration verified successfully" };
+  } catch (err) {
+    return { valid: false, reason: `Verification error: ${err}` };
+  }
+}
+
+export function hasLeaseFeature(lease: SignedEntitlementLease | null, featureKey: string): boolean {
+  if (!lease || !Array.isArray(lease.features)) return false;
+  return lease.features.includes(featureKey) || lease.tier === "maintainer" || lease.tier === "pro";
+}

@@ -12,6 +12,7 @@ mod updater;
 mod windows_mgmt;
 pub mod crypto_vault;
 pub mod broker;
+pub mod named_pipe;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
