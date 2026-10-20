@@ -13,6 +13,9 @@ jobs:
   build-and-release:
     name: Build & Package Windows Release
     runs-on: windows-latest
+    env:
+      WINDOWS_SIGNING_CERTIFICATE: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
+      WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -22,7 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Setup Rust Toolchain
@@ -39,35 +42,82 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run Frontend & TypeScript Build
+      - name: Build Frontend
         working-directory: frontend
         run: npm run build
 
-      - name: Run Unit & Security Tests
+      - name: Run Rust Tests
         working-directory: frontend/src-tauri
         run: cargo test --verbose
 
-      - name: Build Release Binary
-        working-directory: frontend/src-tauri
-        run: cargo build --release
+      - name: Install Tauri CLI
+        shell: pwsh
+        run: cargo install tauri-cli --version '^2' --locked
 
-      - name: Prepare Artifacts
+      - name: Build NSIS and MSI bundles
+        working-directory: frontend/src-tauri
+        run: cargo tauri build --bundles nsis,msi
+
+      - name: Prepare release artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path dist_artifacts -Force
-          Copy-Item frontend/src-tauri/target/release/raycast-windows.exe dist_artifacts/altspace.exe
-          Copy-Item bin/Everything64.dll dist_artifacts/Everything64.dll
-          Copy-Item install.ps1 dist_artifacts/install.ps1
-          Compress-Archive -Path dist_artifacts/altspace.exe, dist_artifacts/Everything64.dll -DestinationPath dist_artifacts/altspace-portable-x64.zip -Force
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path dist_artifacts -Force | Out-Null
+          $binary = 'frontend/src-tauri/target/release/raycast-windows.exe'
+          $nsis = Get-ChildItem 'frontend/src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
+          $msi = Get-ChildItem 'frontend/src-tauri/target/release/bundle/msi/*.msi' | Select-Object -First 1
+          if (-not (Test-Path $binary)) { throw "Release binary not found: $binary" }
+          if (-not $nsis) { throw 'NSIS bundle was not produced.' }
+          if (-not $msi) { throw 'MSI bundle was not produced.' }
+          Copy-Item $binary 'dist_artifacts/altspace.exe'
+          Copy-Item $binary 'dist_artifacts/AltSpace-Portable.exe'
+          Copy-Item $nsis.FullName 'dist_artifacts/AltSpace-Setup-x64.exe'
+          Copy-Item $msi.FullName 'dist_artifacts/AltSpace-MSI-x64.msi'
+          Copy-Item 'bin/Everything64.dll' 'dist_artifacts/Everything64.dll'
+          Copy-Item 'install.ps1' 'dist_artifacts/install.ps1'
+          Compress-Archive -Path 'dist_artifacts/AltSpace-Portable.exe','dist_artifacts/Everything64.dll' -DestinationPath 'dist_artifacts/AltSpace-Portable-x64.zip' -Force
+
+      - name: Sign Windows artifacts when configured
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE)) {
+            Write-Host 'No WINDOWS_SIGNING_CERTIFICATE configured; publishing unsigned artifacts.'
+            exit 0
+          }
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD)) {
+            throw 'WINDOWS_SIGNING_CERTIFICATE_PASSWORD is required when a certificate is configured.'
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'altspace-signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERTIFICATE))
+          $signtool = Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $signtool) { throw 'Windows SDK signtool.exe was not found.' }
+          Get-ChildItem dist_artifacts -File | Where-Object { $_.Extension -in '.exe','.msi' } | ForEach-Object {
+            & $signtool.FullName sign /fd SHA256 /f $pfx /p $env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Signing failed for $($_.Name)." }
+          }
+          Remove-Item $pfx -Force
+
+      - name: Generate SHA-256 checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-ChildItem dist_artifacts -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content dist_artifacts/SHA256SUMS.txt -Encoding ascii
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist_artifacts/altspace.exe
+            dist_artifacts/AltSpace-Setup-x64.exe
+            dist_artifacts/AltSpace-MSI-x64.msi
+            dist_artifacts/AltSpace-Portable-x64.zip
             dist_artifacts/Everything64.dll
-            dist_artifacts/altspace-portable-x64.zip
             dist_artifacts/install.ps1
+            dist_artifacts/SHA256SUMS.txt
           name: AltSpace Release ${{ github.ref_name }}
           draft: false
           prerelease: false
