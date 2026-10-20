@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AltSpace — The Modern Extensible Raycast for Windows</title>
-  <meta name="description" content="Lightning-fast, extensible spotlight launcher for Windows with local AI (MCP), SQLite frecency, dev port killer, and a revolutionary open-source contributor bonding curve." />
+  <meta name="description" content="Lightning-fast, extensible spotlight launcher for Windows with local AI (MCP), SQLite frecency, dev port killer, and a 20% open-source contributor bounty treasury." />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,8 +49,8 @@
 
     <div class="flex items-center gap-4 text-sm font-medium">
       <a href="#features" class="text-neutral-400 hover:text-white transition">Features</a>
-      <a href="#bonding-curve" class="text-purple-300 hover:text-purple-200 transition">Bonding Curve</a>
-      <a href="#contributors" class="text-neutral-400 hover:text-white transition">Contributors</a>
+      <a href="#treasury" class="text-purple-300 hover:text-purple-200 transition">Bounty Treasury</a>
+      <a href="#bounties" class="text-neutral-400 hover:text-white transition">Claim Bounties</a>
       <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white transition border border-white/[0.1]">
         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         <span>GitHub</span>
@@ -89,7 +89,7 @@
           <span id="copy-text">Copy</span>
         </button>
       </div>
-      <p class="text-xs text-neutral-500 mt-2">Requires Windows 10/11 • 100% Free & Open-Source</p>
+      <p class="text-xs text-neutral-500 mt-2">Requires Windows 10/11 • 100% Free Core & Open-Source</p>
     </div>
 
     <!-- Launcher Preview Mockup -->
@@ -120,77 +120,78 @@
     </div>
   </section>
 
-  <!-- Interactive Bonding Curve Calculator -->
-  <section id="bonding-curve" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+  <!-- Contributor Treasury & Bounty Engine -->
+  <section id="treasury" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
     <div class="text-center max-w-2xl mx-auto mb-12">
       <span class="text-xs font-mono font-semibold uppercase tracking-wider text-purple-400">
-        Revolutionary Monetization Model
+        Sustainable Open-Source Economics
       </span>
       <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">
-        The Contributor Bonding Curve
+        The 20% Contributor Bounty Treasury
       </h2>
       <p class="text-neutral-400 text-sm mt-3">
-        Source code is 100% Free Apache-2.0. When community developers ship useful features, the supporter license price dynamically increments by ₹1 — and every single contributor gets ₹1 royalty per sale!
+        Source code is 100% Free Apache-2.0. Supporter licenses (₹99/year) fund development, with <strong>20% of every purchase going directly into the Open Source Feature Bounty Treasury</strong> to pay community developers who build useful extensions!
       </p>
     </div>
 
-    <!-- Calculator Card -->
+    <!-- Interactive Treasury Calculator -->
     <div class="glass-card rounded-3xl p-8 max-w-3xl mx-auto border border-purple-500/30 shadow-2xl bg-gradient-to-b from-purple-500/[0.05] to-transparent">
       <!-- Slider Control -->
       <div class="space-y-4">
         <div class="flex items-center justify-between text-sm">
-          <span class="text-neutral-300 font-semibold">Merged Community Features / Extensions:</span>
-          <span id="feature-count-display" class="font-mono text-purple-300 font-bold text-lg bg-purple-500/20 px-3 py-0.5 rounded-lg border border-purple-500/30">
-            7 features
+          <span class="text-neutral-300 font-semibold">Supporter Licenses Sold:</span>
+          <span id="sales-count-display" class="font-mono text-purple-300 font-bold text-lg bg-purple-500/20 px-3 py-0.5 rounded-lg border border-purple-500/30">
+            5,000 supporters
           </span>
         </div>
         <input
-          id="feature-slider"
+          id="sales-slider"
           type="range"
-          min="1"
-          max="50"
-          value="7"
+          min="1000"
+          max="50000"
+          step="1000"
+          value="5000"
           class="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-          oninput="updateCalculator(this.value)"
+          oninput="updateTreasuryCalculator(this.value)"
         />
         <div class="flex justify-between text-[11px] font-mono text-neutral-500">
-          <span>1 feature (₹10)</span>
-          <span>25 features (₹34)</span>
-          <span>50 features (₹59)</span>
+          <span>1,000 (Launch)</span>
+          <span>25,000 (Trending)</span>
+          <span>50,000 (Scale)</span>
         </div>
       </div>
 
       <!-- Live Dynamic Numbers -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/[0.08]">
         <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-          <div class="text-[11px] uppercase font-semibold text-neutral-400">Base Core Price</div>
-          <div class="text-2xl font-bold text-white mt-1">₹9</div>
-          <div class="text-[11px] text-neutral-500 mt-1">Foundational open core</div>
+          <div class="text-[11px] uppercase font-semibold text-neutral-400">Supporter Price</div>
+          <div class="text-2xl font-bold text-white mt-1">₹99</div>
+          <div class="text-[11px] text-neutral-500 mt-1">~$1.19 USD / year</div>
         </div>
 
         <div class="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25">
-          <div class="text-[11px] uppercase font-semibold text-purple-300">Contributor Royalty Pool</div>
-          <div id="royalty-pool-display" class="text-2xl font-bold text-purple-300 mt-1">₹7</div>
-          <div class="text-[11px] text-purple-400 mt-1">100% goes to contributors</div>
+          <div class="text-[11px] uppercase font-semibold text-purple-300">20% Community Treasury</div>
+          <div id="treasury-pool-display" class="text-2xl font-bold text-purple-300 mt-1">₹1,00,000</div>
+          <div class="text-[11px] text-purple-400 mt-1">100% to contributor bounties</div>
         </div>
 
         <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25">
-          <div class="text-[11px] uppercase font-semibold text-emerald-300">1-Year Supporter License</div>
-          <div id="total-price-display" class="text-2xl font-bold text-emerald-300 mt-1">₹16</div>
-          <div class="text-[11px] text-emerald-400 mt-1">~$0.19 USD / year</div>
+          <div class="text-[11px] uppercase font-semibold text-emerald-300">Funded Bounties</div>
+          <div id="bounties-funded-display" class="text-2xl font-bold text-emerald-300 mt-1">40 Bounties</div>
+          <div class="text-[11px] text-emerald-400 mt-1">@ ₹2,500 average per feature</div>
         </div>
       </div>
 
-      <!-- Contributor Payout Simulation Box -->
+      <!-- Creator Tips Banner -->
       <div class="mt-6 p-4 rounded-2xl bg-neutral-900/80 border border-white/[0.06] flex items-center justify-between text-xs">
         <div>
-          <span class="text-neutral-400">If 10,000 developers buy a supporter license:</span>
+          <span class="text-neutral-400">Direct Creator Tipping:</span>
           <div class="text-white font-semibold text-sm mt-0.5">
-            Your merged PR pays you <span class="text-emerald-400 font-mono font-bold">₹10,000</span> in royalties!
+            Every extension in the Store has a direct <span class="text-rose-400 font-medium">GitHub Sponsors</span> button with 0% platform fee.
           </div>
         </div>
-        <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition shrink-0 cursor-pointer">
-          Build a Feature →
+        <a href="#bounties" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium transition shrink-0 cursor-pointer">
+          View Bounties →
         </a>
       </div>
     </div>
@@ -234,9 +235,9 @@
       <!-- 4. Community Extension Store -->
       <div class="glass-card rounded-2xl p-6 space-y-3">
         <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center text-lg">🔌</div>
-        <h3 class="font-bold text-white text-base">1-Click Community Store</h3>
+        <h3 class="font-bold text-white text-base">1-Click Sandboxed Store</h3>
         <p class="text-neutral-400 text-xs leading-relaxed">
-          Browse, install, and uninstall community extensions instantly. Built-in plugins include DNS flusher, Git pruner, Wi-Fi key finder, and JWT inspector.
+          Decoupled remote extension registry with path boundary verification, 15-second execution timeouts, and direct author tipping buttons.
         </p>
       </div>
 
@@ -260,13 +261,13 @@
     </div>
   </section>
 
-  <!-- Contributor Wall -->
-  <section id="contributors" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+  <!-- Funded Bounties Section -->
+  <section id="bounties" class="max-w-5xl mx-auto px-6 py-20 border-t border-white/[0.08]">
     <div class="text-center max-w-2xl mx-auto mb-12">
-      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-purple-400">Open Source Hall of Fame</span>
-      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Community Contributors</h2>
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-purple-400">Get Paid to Code</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Active Community Bounties</h2>
       <p class="text-neutral-400 text-sm mt-3">
-        Every contributor below has landed merged code and earns ₹1 royalty on every AltSpace Supporter sale.
+        Build any of the features below, pass code review, and receive your bounty directly via Polar.sh / GitHub Sponsors.
       </p>
     </div>
 
@@ -274,52 +275,52 @@
       <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Anand Verma</span>
-            <span class="text-xs text-neutral-400 font-mono">@anandv</span>
+            <span class="font-semibold text-white text-sm">Bluetooth Device Switcher</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>
           </div>
-          <p class="text-xs text-neutral-400 mt-1">Rust SQLite Frecency Engine</p>
+          <p class="text-xs text-neutral-400 mt-1">1-click Bluetooth headphone switcher</p>
         </div>
-        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
-          +₹1 / sale
+        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold">
+          ₹3,000 Bounty
         </span>
       </div>
 
       <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Alex Rivera</span>
-            <span class="text-xs text-neutral-400 font-mono">@alexrivera</span>
+            <span class="font-semibold text-white text-sm">Spotify Desktop Mini-Controller</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Claimed</span>
           </div>
-          <p class="text-xs text-neutral-400 mt-1">DNS Cache Flusher Extension</p>
+          <p class="text-xs text-neutral-400 mt-1">Search tracks and display lyrics in spotlight</p>
         </div>
-        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
-          +₹1 / sale
+        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold">
+          ₹2,500 Bounty
         </span>
       </div>
 
       <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Sarah Chen</span>
-            <span class="text-xs text-neutral-400 font-mono">@sarahchen</span>
+            <span class="font-semibold text-white text-sm">Obsidian Quick Note Appender</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Open Bounty</span>
           </div>
-          <p class="text-xs text-neutral-400 mt-1">Git Branch Pruner Extension</p>
+          <p class="text-xs text-neutral-400 mt-1">Append daily tasks and notes into local vault</p>
         </div>
-        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
-          +₹1 / sale
+        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold">
+          ₹2,000 Bounty
         </span>
       </div>
 
       <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-white text-sm">Dan Kovacs</span>
-            <span class="text-xs text-neutral-400 font-mono">@dankovacs</span>
+            <span class="font-semibold text-white text-sm">Docker Container Live Metrics</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>
           </div>
-          <p class="text-xs text-neutral-400 mt-1">Wi-Fi Key Recovery Tool</p>
+          <p class="text-xs text-neutral-400 mt-1">Live RAM/CPU stats with restart controls</p>
         </div>
-        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold">
-          +₹1 / sale
+        <span class="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-semibold">
+          ₹2,500 Bounty
         </span>
       </div>
     </div>
@@ -338,15 +339,16 @@
   </footer>
 
   <script>
-    function updateCalculator(features) {
-      const basePrice = 9;
-      const count = parseInt(features, 10);
-      const royalty = count * 1;
-      const total = basePrice + royalty;
+    function updateTreasuryCalculator(sales) {
+      const count = parseInt(sales, 10);
+      const price = 99;
+      const treasuryPool = count * 20; // 20% of ₹99 = ~₹20 per license
+      const avgBounty = 2500;
+      const fundedBounties = Math.floor(treasuryPool / avgBounty);
 
-      document.getElementById('feature-count-display').innerText = count + ' features';
-      document.getElementById('royalty-pool-display').innerText = '₹' + royalty;
-      document.getElementById('total-price-display').innerText = '₹' + total;
+      document.getElementById('sales-count-display').innerText = count.toLocaleString() + ' supporters';
+      document.getElementById('treasury-pool-display').innerText = '₹' + treasuryPool.toLocaleString();
+      document.getElementById('bounties-funded-display').innerText = fundedBounties + ' Bounties';
     }
 
     function copyInstallCmd() {

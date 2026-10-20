@@ -1,174 +1,196 @@
 /**
- * AltSpace Progressive Contributor & Supporter License Engine
+ * AltSpace Supporter License & Contributor Treasury Engine (2026 Production Architecture)
  *
- * Bonding-Curve Pricing Model:
- * - Base 1-Year Supporter License: ₹9
- * - For every useful community feature/extension landed, license price increases by ₹1
- * - Every contributor earns ₹1 royalty on EVERY supporter license sold!
- * - Source code remains 100% Free & Apache-2.0 open source.
+ * Monetization Model:
+ * - Open Core: 100% Free Forever under Apache 2.0.
+ * - Supporter Edition: ₹99 / year (~$1.19/yr).
+ * - 20% Contributor Treasury Allocation: ₹20 of every sale goes directly into
+ *   the Community Feature Bounty Pool (managed via Open Collective / Polar.sh).
+ * - Creators of extensions also get 100% of direct tips/sponsorships via GitHub Sponsors.
  */
 
-export interface ContributorFeature {
+export interface FeatureBounty {
   id: string;
-  featureName: string;
-  contributorName: string;
-  githubHandle: string;
-  dateAdded: string;
-  royaltyAmount: number; // in ₹ INR
+  title: string;
   description: string;
+  bountyAmountINR: number;
+  status: "Open" | "Claimed" | "Completed";
+  assignee?: string;
+  githubIssueUrl: string;
 }
 
-export const BASE_LICENSE_PRICE_INR = 9; // Base ₹9
-export const ROYALTY_PER_FEATURE_INR = 1; // +₹1 per merged community feature
+export const SUPPORTER_PRICE_INR = 99; // ₹99/year (~$1.19)
+export const TREASURY_ALLOCATION_PCT = 20; // 20% to Community Treasury
+export const TREASURY_PER_SALE_INR = Math.round((SUPPORTER_PRICE_INR * TREASURY_ALLOCATION_PCT) / 100); // ₹20
 
-export const COMMUNITY_FEATURES: ContributorFeature[] = [
+export const ACTIVE_BOUNTIES: FeatureBounty[] = [
   {
-    id: "frecency-ranking",
-    featureName: "Rust SQLite Frecency Engine",
-    contributorName: "Anand Verma",
-    githubHandle: "anandv",
-    dateAdded: "2026-10-18",
-    royaltyAmount: 1,
-    description: "Time-decay frecency ranking for lightning-fast sub-millisecond app suggestions.",
+    id: "bounty-bluetooth",
+    title: "Bluetooth Device Switcher",
+    description: "1-click connect/disconnect for paired Bluetooth headphones and peripherals.",
+    bountyAmountINR: 3000,
+    status: "Completed",
+    assignee: "alexrivera",
+    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/42",
   },
   {
-    id: "dns-flusher-ext",
-    featureName: "DNS Cache Flusher Extension",
-    contributorName: "Alex Rivera",
-    githubHandle: "alexrivera",
-    dateAdded: "2026-10-19",
-    royaltyAmount: 1,
-    description: "1-click Windows DNS resolver cache flushing for web developers.",
+    id: "bounty-spotify",
+    title: "Spotify Desktop Mini-Controller",
+    description: "Search playlists, skip tracks, and display live lyrics inside AltSpace.",
+    bountyAmountINR: 2500,
+    status: "Claimed",
+    assignee: "sarahchen",
+    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/56",
   },
   {
-    id: "git-pruner-ext",
-    featureName: "Git Branch Pruner Extension",
-    contributorName: "Sarah Chen",
-    githubHandle: "sarahchen",
-    dateAdded: "2026-10-19",
-    royaltyAmount: 1,
-    description: "Automated local branch pruning and dead remote tracking cleanup.",
+    id: "bounty-obsidian",
+    title: "Obsidian Quick Note Appender",
+    description: "Instantly append daily notes, tasks, or bookmarks into local Obsidian vault.",
+    bountyAmountINR: 2000,
+    status: "Open",
+    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/61",
   },
   {
-    id: "wifi-key-ext",
-    featureName: "Wi-Fi Key Recovery Tool",
-    contributorName: "Dan Kovacs",
-    githubHandle: "dankovacs",
-    dateAdded: "2026-10-20",
-    royaltyAmount: 1,
-    description: "Secure local inspection of saved Wi-Fi networks and security passwords.",
-  },
-  {
-    id: "jwt-inspector-ext",
-    featureName: "JWT Token Inspector",
-    contributorName: "Rajat Kapoor",
-    githubHandle: "rajatkapoor",
-    dateAdded: "2026-10-20",
-    royaltyAmount: 1,
-    description: "Instant JSON Web Token decoding and payload formatting from clipboard.",
-  },
-  {
-    id: "docker-pruner-ext",
-    featureName: "Docker System Prune Extension",
-    contributorName: "Elena Rostova",
-    githubHandle: "elenarostova",
-    dateAdded: "2026-10-20",
-    royaltyAmount: 1,
-    description: "Disk space reclamation by pruning stopped containers and dangling images.",
-  },
-  {
-    id: "local-mcp-engine",
-    featureName: "Local AI Model Context Protocol (MCP)",
-    contributorName: "AltSpace Community",
-    githubHandle: "altspace-dev",
-    dateAdded: "2026-10-20",
-    royaltyAmount: 1,
-    description: "System tool execution (port killer, process manager, git status) via Local Ollama AI.",
+    id: "bounty-docker-stats",
+    title: "Docker Container Live Metrics",
+    description: "View CPU/RAM usage of running containers with restart/stop buttons.",
+    bountyAmountINR: 2500,
+    status: "Completed",
+    assignee: "elenarostova",
+    githubIssueUrl: "https://github.com/codecheesee/altspace/issues/73",
   },
 ];
 
-export function calculateCurrentPrice(): {
-  basePrice: number;
-  featureCount: number;
-  totalPrice: number;
-  contributorRoyaltyPool: number;
-} {
-  const featureCount = COMMUNITY_FEATURES.length;
-  const contributorRoyaltyPool = featureCount * ROYALTY_PER_FEATURE_INR;
-  const totalPrice = BASE_LICENSE_PRICE_INR + contributorRoyaltyPool;
-
-  return {
-    basePrice: BASE_LICENSE_PRICE_INR,
-    featureCount,
-    totalPrice,
-    contributorRoyaltyPool,
-  };
-}
-
 export interface LicenseStatus {
   isSupporter: boolean;
-  licenseKey: string | null;
   tier: "Free" | "Supporter";
+  licenseKey: string | null;
   activatedAt?: string;
   expiresAt?: string;
+  daysRemaining?: number;
 }
 
-const STORAGE_KEY = "altspace_supporter_license_v1";
+const STORAGE_KEY = "altspace_supporter_license_v2";
+const SALT = "ALTSPACE_2026_SUPPORTER_SALT_SECURE";
+
+/**
+ * Computes deterministic 6-character hex checksum for license key verification
+ */
+async function computeLicenseChecksum(plan: string, expiryHex: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${plan}:${expiryHex}:${SALT}`);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.slice(0, 3).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
+/**
+ * Validates cryptographic license key format:
+ * Format: ALTSP-<PLAN>-<YYYYMMDD>-<CHECKSUM>
+ * Example: ALTSP-SUPPORTER-20271020-A8F2BC
+ */
+export async function verifyLicenseKey(rawKey: string): Promise<{ valid: boolean; reason?: string; expiresAt?: string }> {
+  const clean = rawKey.trim().toUpperCase();
+
+  // Dev bypass / test key for evaluation
+  if (clean === "ALTSP-DEV-2026" || clean === "ALTSP-SUPPORTER-2026") {
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return { valid: true, expiresAt: nextYear.toISOString() };
+  }
+
+  const parts = clean.split("-");
+  if (parts.length !== 4 || parts[0] !== "ALTSP") {
+    return { valid: false, reason: "License key must follow ALTSP-<PLAN>-<DATE>-<HASH> format" };
+  }
+
+  const [_, plan, dateStr, checksum] = parts;
+  if (plan !== "SUPPORTER" && plan !== "DEV" && plan !== "TEAM") {
+    return { valid: false, reason: "Invalid license tier" };
+  }
+
+  // Parse YYYYMMDD
+  if (!/^\d{8}$/.test(dateStr)) {
+    return { valid: false, reason: "Invalid expiry date in license key" };
+  }
+
+  const year = parseInt(dateStr.slice(0, 4), 10);
+  const month = parseInt(dateStr.slice(4, 6), 10) - 1;
+  const day = parseInt(dateStr.slice(6, 8), 10);
+  const expiryDate = new Date(year, month, day);
+
+  if (isNaN(expiryDate.getTime())) {
+    return { valid: false, reason: "Malformed license timestamp" };
+  }
+
+  if (expiryDate.getTime() < Date.now()) {
+    return { valid: false, reason: "License key has expired" };
+  }
+
+  const expectedChecksum = await computeLicenseChecksum(plan, dateStr);
+  if (checksum !== expectedChecksum) {
+    return { valid: false, reason: "Invalid license key signature / checksum" };
+  }
+
+  return { valid: true, expiresAt: expiryDate.toISOString() };
+}
 
 export function getLicenseStatus(): LicenseStatus {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { isSupporter: false, licenseKey: null, tier: "Free" };
-    }
+    if (!raw) return { isSupporter: false, tier: "Free", licenseKey: null };
+
     const data = JSON.parse(raw);
     if (data && data.key && data.tier === "Supporter") {
+      const expires = data.expiresAt ? new Date(data.expiresAt) : null;
+      const now = new Date();
+
+      if (expires && expires.getTime() < now.getTime()) {
+        deactivateLicense();
+        return { isSupporter: false, tier: "Free", licenseKey: null };
+      }
+
+      const daysRemaining = expires
+        ? Math.max(0, Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : undefined;
+
       return {
         isSupporter: true,
-        licenseKey: data.key,
         tier: "Supporter",
+        licenseKey: data.key,
         activatedAt: data.activatedAt,
         expiresAt: data.expiresAt,
+        daysRemaining,
       };
     }
   } catch (_) {}
-  return { isSupporter: false, licenseKey: null, tier: "Free" };
+
+  return { isSupporter: false, tier: "Free", licenseKey: null };
 }
 
-export function activateLicenseKey(key: string): { success: boolean; message: string } {
-  const cleanKey = key.trim().toUpperCase();
-  if (!cleanKey) {
-    return { success: false, message: "Please enter a valid license key" };
+export async function activateLicenseKey(key: string): Promise<{ success: boolean; message: string }> {
+  const clean = key.trim().toUpperCase();
+  const verifyResult = await verifyLicenseKey(clean);
+
+  if (!verifyResult.valid) {
+    return { success: false, message: verifyResult.reason || "Invalid license key" };
   }
-
-  // Key format check: ALTSP-XXXX-XXXX-XXXX or test keys (e.g. ALTSP-DEV-2026)
-  const isValidFormat =
-    cleanKey.startsWith("ALTSP-") && cleanKey.split("-").length >= 3;
-  const isDevBypass = cleanKey === "ALTSP-DEV-2026" || cleanKey === "SUPPORTER-1YEAR";
-
-  if (!isValidFormat && !isDevBypass) {
-    return {
-      success: false,
-      message: "Invalid license format. Expected ALTSP-XXXX-XXXX-XXXX",
-    };
-  }
-
-  const now = new Date();
-  const expires = new Date();
-  expires.setFullYear(expires.getFullYear() + 1);
 
   const licenseData = {
-    key: cleanKey,
+    key: clean,
     tier: "Supporter",
-    activatedAt: now.toISOString(),
-    expiresAt: expires.toISOString(),
+    activatedAt: new Date().toISOString(),
+    expiresAt: verifyResult.expiresAt,
   };
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(licenseData));
-    return { success: true, message: "Supporter License activated for 1 Year! Thank you!" };
+    return {
+      success: true,
+      message: "🎉 AltSpace Supporter Edition Activated! 20% contributed to the Open Source Bounty Treasury.",
+    };
   } catch (err: any) {
-    return { success: false, message: "Failed to save license: " + err.message };
+    return { success: false, message: "Storage error: " + (err?.message || err) };
   }
 }
 

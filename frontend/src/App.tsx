@@ -10,7 +10,7 @@ import { QuickLookModal } from "./components/QuickLookModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { StoreTab } from "./components/StoreTab";
 import { LicenseModal } from "./components/LicenseModal";
-import { COMMUNITY_PLUGINS } from "./lib/communityPlugins";
+import { BUILTIN_EXTENSIONS } from "./lib/registry";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
 import { useClipboardHistory } from "./hooks/useClipboardHistory";
@@ -501,7 +501,7 @@ export default function App() {
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const maxLen = resolvedMode === "all" ? (specialCard ? items.length + 1 : items.length) : resolvedMode === "ports" ? filteredPorts.length : resolvedMode === "store" ? COMMUNITY_PLUGINS.length : filteredClipboard.length;
+      const maxLen = resolvedMode === "all" ? (specialCard ? items.length + 1 : items.length) : resolvedMode === "ports" ? filteredPorts.length : resolvedMode === "store" ? BUILTIN_EXTENSIONS.length : filteredClipboard.length;
       setSelectedIndex((prev) => (prev < maxLen - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();

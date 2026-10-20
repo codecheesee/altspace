@@ -13,16 +13,18 @@ import {
   Volume2,
   Sparkles,
   ShoppingBag,
+  Heart,
+  ShieldCheck,
 } from "lucide-react";
 import { GithubIcon } from "./GithubIcon";
 import { cn } from "../lib/utils";
 import {
-  COMMUNITY_PLUGINS,
-  installCommunityPlugin,
-  uninstallCommunityPlugin,
-} from "../lib/communityPlugins";
+  getExtensionRegistry,
+  installRegistryExtension,
+  uninstallRegistryExtension,
+  type ExtensionRegistryItem,
+} from "../lib/registry";
 import { tauriInvoke } from "../lib/appStorage";
-import type { StorePluginItem } from "../types";
 
 interface StoreTabProps {
   query: string;
@@ -39,18 +41,26 @@ export function StoreTab({
   onCopiedNotification,
   onRefreshInstalledPlugins,
 }: StoreTabProps) {
+  const [plugins, setPlugins] = useState<ExtensionRegistryItem[]>([]);
   const [installedPluginIds, setInstalledPluginIds] = useState<Set<string>>(new Set());
   const [loadingPluginId, setLoadingPluginId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   const categories = ["All", "Dev Tools", "System", "Network", "Media"];
 
+  // Load registry from SWR cache/remote
+  useEffect(() => {
+    getExtensionRegistry().then((list) => {
+      setPlugins(list);
+    });
+  }, []);
+
   // Scan installed plugins from backend
   const refreshInstalled = async () => {
     try {
-      const plugins = await tauriInvoke<{ id: string }[]>("list_plugins");
-      if (Array.isArray(plugins)) {
-        setInstalledPluginIds(new Set(plugins.map((p) => p.id)));
+      const installed = await tauriInvoke<{ id: string }[]>("list_plugins");
+      if (Array.isArray(installed)) {
+        setInstalledPluginIds(new Set(installed.map((p) => p.id)));
       }
     } catch (_) {
       // ignore
@@ -62,7 +72,7 @@ export function StoreTab({
   }, []);
 
   // Filter plugins based on query and selected category
-  const filteredPlugins = COMMUNITY_PLUGINS.filter((p) => {
+  const filteredPlugins = plugins.filter((p) => {
     const matchesCategory =
       selectedCategory === "All" || p.category === selectedCategory;
     const matchesQuery =
@@ -74,13 +84,13 @@ export function StoreTab({
     return matchesCategory && matchesQuery;
   });
 
-  const handleInstall = async (plugin: StorePluginItem) => {
+  const handleInstall = async (plugin: ExtensionRegistryItem) => {
     setLoadingPluginId(plugin.id);
     try {
-      await installCommunityPlugin(plugin);
+      await installRegistryExtension(plugin);
       await refreshInstalled();
       if (onRefreshInstalledPlugins) onRefreshInstalledPlugins();
-      onCopiedNotification(`Installed ${plugin.name}! Use "${plugin.keyword}" in search`);
+      onCopiedNotification(`Installed ${plugin.name}! Type "${plugin.keyword}" to run`);
     } catch (err: any) {
       onCopiedNotification(`Failed to install: ${err?.message || err}`);
     } finally {
@@ -88,10 +98,10 @@ export function StoreTab({
     }
   };
 
-  const handleUninstall = async (plugin: StorePluginItem) => {
+  const handleUninstall = async (plugin: ExtensionRegistryItem) => {
     setLoadingPluginId(plugin.id);
     try {
-      await uninstallCommunityPlugin(plugin.id);
+      await uninstallRegistryExtension(plugin.id);
       await refreshInstalled();
       if (onRefreshInstalledPlugins) onRefreshInstalledPlugins();
       onCopiedNotification(`Uninstalled ${plugin.name}`);
@@ -99,6 +109,14 @@ export function StoreTab({
       onCopiedNotification(`Failed to uninstall: ${err?.message || err}`);
     } finally {
       setLoadingPluginId(null);
+    }
+  };
+
+  const handleOpenSponsor = (url: string) => {
+    if (tauriInvoke) {
+      tauriInvoke("open_url", { url });
+    } else {
+      window.open(url, "_blank");
     }
   };
 
@@ -123,7 +141,7 @@ export function StoreTab({
 
   return (
     <div className="flex-1 flex flex-col h-full bg-black/40 overflow-hidden">
-      {/* Top Banner: Contributor Bonding Curve & Store Info */}
+      {/* Top Banner: Registry Info & Categories */}
       <div className="px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/[0.08] via-pink-500/[0.05] to-transparent flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300">
@@ -132,14 +150,15 @@ export function StoreTab({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-white tracking-tight">
-                AltSpace Community Extension Store
+                AltSpace Community Extensions
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                100% Free & Open-Source
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                Sandboxed & Verified
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              1-click install community plugins. Every useful plugin merged increases royalties for contributors.
+              100% Free Open-Source Extensions • Direct Creator Sponsorships • Safe Process Isolation
             </p>
           </div>
         </div>
@@ -199,6 +218,11 @@ export function StoreTab({
                       <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/[0.08] text-neutral-300 border border-white/[0.06]">
                         {plugin.keyword}
                       </span>
+                      {plugin.verified && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                          ✓ Verified
+                        </span>
+                      )}
                       <span className="text-[10px] text-neutral-500 font-mono">
                         v{plugin.version}
                       </span>
@@ -218,16 +242,26 @@ export function StoreTab({
                       </span>
                       <span>•</span>
                       <span>{plugin.downloads.toLocaleString()} installs</span>
-                      <span>•</span>
-                      <span className="text-emerald-400/90 font-mono">
-                        ₹{plugin.royaltyPerSale} Royalty / sale
-                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons: Direct Sponsor & Install/Uninstall */}
                 <div className="flex items-center gap-2 shrink-0">
+                  {plugin.sponsorUrl && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSponsor(plugin.sponsorUrl);
+                      }}
+                      title={`Sponsor @${plugin.authorGithub} directly`}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-medium transition cursor-pointer"
+                    >
+                      <Heart className="w-3 h-3 text-rose-400 fill-rose-400/30" />
+                      <span>Tip Creator</span>
+                    </button>
+                  )}
+
                   {isInstalled ? (
                     <div className="flex items-center gap-1.5">
                       <span className="flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
@@ -270,7 +304,7 @@ export function StoreTab({
       <div className="px-5 py-2.5 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between text-xs text-neutral-400 shrink-0">
         <span className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-          <span>Want to build an extension and earn royalties on every AltSpace supporter sale?</span>
+          <span>Build an extension for AltSpace and receive direct sponsorships & community grants!</span>
         </span>
         <a
           href="https://github.com/codecheesee/altspace#contributing"
@@ -278,7 +312,7 @@ export function StoreTab({
           rel="noreferrer"
           className="flex items-center gap-1 text-purple-300 hover:text-purple-200 font-medium underline underline-offset-2"
         >
-          Submit a Plugin (PR)
+          Submit an Extension (PR)
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>

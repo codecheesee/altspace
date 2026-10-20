@@ -74,10 +74,12 @@ export interface StorePluginItem {
   category: "Dev Tools" | "Productivity" | "System" | "Network" | "Media";
   author: string;
   authorGithub: string;
+  sponsorUrl?: string;
   version: string;
   downloads: number;
   rating: number;
-  royaltyPerSale: number;
+  verified?: boolean;
+  royaltyPerSale?: number;
   scriptFilename: string;
   scriptContent: string;
   manifestJson: string;
