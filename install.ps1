@@ -22,6 +22,14 @@ function Get-ReleaseAsset([object]$Release, [string]$Name) {
     return $asset
 }
 
+function Get-ReleaseAssetByNames([object]$Release, [string[]]$Names) {
+    foreach ($name in $Names) {
+        $asset = $Release.assets | Where-Object { $_.name -eq $name } | Select-Object -First 1
+        if ($asset) { return $asset }
+    }
+    throw "None of the expected release assets were found: $($Names -join ', ')"
+}
+
 function Assert-Sha256([string]$FilePath, [string]$ChecksumPath, [string]$AssetName) {
     $line = Get-Content $ChecksumPath | Where-Object { $_ -match ("\s" + [regex]::Escape($AssetName) + "$") } | Select-Object -First 1
     if (-not $line -or $line -notmatch '^\s*([0-9a-fA-F]{64})\s+') {
@@ -44,6 +52,7 @@ try {
     New-Item -ItemType Directory -Path $TempRoot -Force | Out-Null
 
     $portableExe = Join-Path $TempRoot 'AltSpace-Portable.exe'
+    $legacyExe = Join-Path $TempRoot 'altspace.exe'
     $portableZip = Join-Path $TempRoot 'AltSpace-Portable-x64.zip'
     $checksums = Join-Path $TempRoot 'SHA256SUMS.txt'
 
@@ -58,14 +67,19 @@ try {
         Write-Host "[*] Resolving the latest verified GitHub release for $Repo..." -ForegroundColor Green
         $headers = @{ 'User-Agent' = 'AltSpace-Installer'; 'Accept' = 'application/vnd.github+json' }
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
-        $zipAsset = Get-ReleaseAsset $release 'AltSpace-Portable-x64.zip'
+        $zipAsset = Get-ReleaseAssetByNames $release @('AltSpace-Portable-x64.zip', 'altspace-portable-x64.zip')
         $checksumAsset = Get-ReleaseAsset $release 'SHA256SUMS.txt'
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -Headers $headers -OutFile $portableZip -UseBasicParsing
         Invoke-WebRequest -Uri $checksumAsset.browser_download_url -Headers $headers -OutFile $checksums -UseBasicParsing
         Assert-Sha256 $portableZip $checksums $zipAsset.name
         Expand-Archive -Path $portableZip -DestinationPath $TempRoot -Force
-        if (-not (Test-Path $portableExe)) { throw 'Verified portable archive did not contain AltSpace-Portable.exe.' }
-        Copy-Item $portableExe $BinaryPath -Force
+        if (Test-Path $portableExe) {
+            Copy-Item $portableExe $BinaryPath -Force
+        } elseif (Test-Path $legacyExe) {
+            Copy-Item $legacyExe $BinaryPath -Force
+        } else {
+            throw 'Verified portable archive did not contain AltSpace-Portable.exe or altspace.exe.'
+        }
         $extractedDll = Join-Path $TempRoot 'Everything64.dll'
         if (-not (Test-Path $extractedDll)) { throw 'Verified portable archive did not contain Everything64.dll.' }
         Copy-Item $extractedDll $DllPath -Force
