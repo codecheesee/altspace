@@ -1,4 +1,4 @@
-# Contributing to AltSpace ⚡
+# Contributing to AltSpace
 
 Thank you for your interest in contributing to **AltSpace**! We are building a blazing-fast, keyboard-first developer HUD and launcher for Windows.
 
@@ -6,7 +6,7 @@ AltSpace is open-source and welcomes contributions of all kinds: bug fixes, new 
 
 ---
 
-## 🧭 Codebase Architecture
+## Codebase Architecture
 
 AltSpace is built as a lightweight **Tauri v2** application:
 
@@ -26,7 +26,7 @@ altspace/
 
 ---
 
-## 🛠️ Local Development Setup
+##  Local Development Setup
 
 ### Prerequisites
 1. **Node.js**: v18 or later (Node 22+ recommended)
@@ -66,7 +66,7 @@ altspace/
 
 ---
 
-## 💡 Ways to Contribute
+##  Ways to Contribute
 
 ### 1. Good First Issues
 Look for issues labeled [`good first issue`](https://github.com/codecheesee/altspace/labels/good%20first%20issue). These are self-contained tasks perfect for getting familiar with the codebase.
@@ -87,7 +87,7 @@ Have an idea to make AltSpace faster or more useful?
 
 ---
 
-## 📋 Pull Request Guidelines
+##  Pull Request Guidelines
 
 1. **Branch Naming**: Use descriptive branch names:
    * `feat/your-feature-name`
