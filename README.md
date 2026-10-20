@@ -37,7 +37,7 @@ irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | ie
 ```
 
 #### Automated Setup Steps:
-1. Resolves and downloads the latest verified release binary (`altspace.exe`) from GitHub Releases.
+1. Resolves and downloads the latest release binary and verifies the published SHA-256 checksum (`altspace.exe`) from GitHub Releases.
 2. Deploys executable to `%LOCALAPPDATA%\Programs\AltSpace`.
 3. Registers Start Menu application shortcut and updates the User `PATH` environment variable.
 4. Starts the background tray daemon with global hotkey `Alt + Space`.
@@ -77,7 +77,7 @@ AltSpace connects to local Ollama endpoints (`localhost:11434`) to execute natur
 - Type `? snap window left` to invoke native window tile management.
 - Type `? summarize selection` to query local LLMs using clipboard context.
 
-### 4. Sandboxed Extension Runtime (`:store`)
+### 4. User-level Extension Runtime (`:store`)
 The AltSpace extension engine decouples extension execution from the main application binary:
 - **Languages Supported**: PowerShell (`.ps1`), Batch (`.bat`/`.cmd`), Node.js (`.js`), Python (`.py`).
 - **Process Isolation**: Hard 15-second execution timeout enforced via OS job objects to prevent runaway processes.
