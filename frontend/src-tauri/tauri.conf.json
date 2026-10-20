@@ -29,7 +29,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "resources": {
       "../../bin/Everything64.dll": "Everything64.dll"
     },
@@ -43,13 +46,13 @@
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "startMenuFolder": "AltSpace",
+        "displayLanguageSelector": false,
+        "createDesktopShortcut": true
       }
-    },
-    "nsis": {
-      "installMode": "currentUser",
-      "startMenuFolder": "AltSpace",
-      "displayLanguageSelector": false,
-      "createDesktopShortcut": true
     }
   }
 }
