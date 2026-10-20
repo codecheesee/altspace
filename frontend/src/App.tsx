@@ -11,6 +11,9 @@ import { FeedbackModal } from "./components/FeedbackModal";
 import { StoreTab } from "./components/StoreTab";
 import { LicenseModal } from "./components/LicenseModal";
 import { ShellConfirmationModal } from "./components/ShellConfirmationModal";
+import { ActionTimelineDrawer } from "./components/ActionTimelineDrawer";
+import { ActionApprovalModal } from "./components/ActionApprovalModal";
+import type { ActionRequest, ActionEvaluation } from "./lib/actionBroker";
 import { BUILTIN_EXTENSIONS } from "./lib/registry";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
@@ -49,6 +52,12 @@ export default function App() {
   // Notification Toast State
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState<{
+    request: ActionRequest;
+    evaluation: ActionEvaluation;
+    resolve: (approved: boolean) => void;
+  } | null>(null);
   const notify = useCallback((msg: string) => {
     setCopiedNotification(msg);
     setTimeout(() => setCopiedNotification(null), 2500);
@@ -575,6 +584,13 @@ export default function App() {
         return;
       }
     }
+        if (showTimelineDrawer) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowTimelineDrawer(false);
+        return;
+      }
+    }
     if (showFeedbackModal) {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -664,6 +680,9 @@ export default function App() {
       e.preventDefault();
       setShowActionsModal((prev) => !prev);
       setActionSelectedIndex(0);
+    } else if ((e.key?.toLowerCase() === "h" || e.code === "KeyH") && e.altKey) {
+      e.preventDefault();
+      setShowTimelineDrawer((prev) => !prev);
     } else if (e.key === "Escape") {
       if (quickLookOpen) setQuickLookOpen(false);
       else if (showActionsModal) setShowActionsModal(false);
@@ -777,6 +796,7 @@ export default function App() {
         onToggleSidebar={toggleSidebar}
         onOpenFeedback={() => setShowFeedbackModal(true)}
         onOpenLicense={() => setShowLicenseModal(true)}
+        onOpenTimeline={() => setShowTimelineDrawer((prev) => !prev)}
         onOpenActions={() => {
           setShowActionsModal((prev) => !prev);
           setActionSelectedIndex(0);
@@ -802,6 +822,24 @@ export default function App() {
         filePreview={filePreview}
         onLaunch={handleLaunch}
         onCopiedNotification={notify}
+      />
+
+            <ActionTimelineDrawer
+        isOpen={showTimelineDrawer}
+        onClose={() => setShowTimelineDrawer(false)}
+      />
+
+      <ActionApprovalModal
+        request={pendingApproval?.request ?? null}
+        evaluation={pendingApproval?.evaluation ?? null}
+        onApprove={() => {
+          pendingApproval?.resolve(true);
+          setPendingApproval(null);
+        }}
+        onCancel={() => {
+          pendingApproval?.resolve(false);
+          setPendingApproval(null);
+        }}
       />
 
       <FeedbackModal

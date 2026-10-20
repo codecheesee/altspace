@@ -1,4 +1,4 @@
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, History } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Mode } from "../types";
 
@@ -19,6 +19,7 @@ interface FooterBarProps {
   onOpenActions: () => void;
   onOpenFeedback?: () => void;
   onOpenLicense?: () => void;
+  onOpenTimeline?: () => void;
 }
 
 export function FooterBar({
@@ -31,6 +32,7 @@ export function FooterBar({
   isSidebarVisible,
   onToggleSidebar,
   onOpenActions,
+  onOpenTimeline,
 }: FooterBarProps) {
   return (
     <footer
@@ -77,6 +79,17 @@ export function FooterBar({
           <span className="text-zinc-400">Preview</span>
           <kbd className="kbd-cap">Space</kbd>
         </div>
+
+                {onOpenTimeline && (
+          <button
+            onClick={onOpenTimeline}
+            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            title="Execution Timeline (Alt+H)"
+          >
+            <History className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden lg:inline">Timeline</span>
+          </button>
+        )}
 
         <button
           onClick={onOpenActions}

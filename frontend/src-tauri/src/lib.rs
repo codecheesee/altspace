@@ -10,6 +10,8 @@ mod terminal_runner;
 mod frecency;
 mod updater;
 mod windows_mgmt;
+pub mod crypto_vault;
+pub mod broker;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
@@ -800,6 +802,47 @@ fn check_maintainer_status() -> Result<MaintainerStatus, String> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[tauri::command]
+fn broker_evaluate_action(request: broker::ActionRequest) -> Result<broker::ActionEvaluation, String> {
+    Ok(broker::evaluate_action(&request))
+}
+
+#[tauri::command]
+fn broker_execute_action(request: broker::ActionRequest) -> Result<broker::ActionResult, String> {
+    Ok(broker::execute_action(&request))
+}
+
+#[tauri::command]
+fn broker_remember_session_approval(action_type: String, target: String) -> Result<(), String> {
+    broker::remember_session_approval(&action_type, &target);
+    Ok(())
+}
+
+#[tauri::command]
+fn broker_undo_action(action_id: String) -> Result<String, String> {
+    broker::undo_action(&action_id)
+}
+
+#[tauri::command]
+fn broker_get_ledger() -> Result<Vec<broker::LedgerEntry>, String> {
+    Ok(broker::get_action_ledger())
+}
+
+#[tauri::command]
+fn vault_store_secret(key: String, value: String) -> Result<(), String> {
+    crypto_vault::store_secret(&key, &value)
+}
+
+#[tauri::command]
+fn vault_retrieve_secret(key: String) -> Result<Option<String>, String> {
+    crypto_vault::retrieve_secret(&key)
+}
+
+#[tauri::command]
+fn vault_delete_secret(key: String) -> Result<bool, String> {
+    crypto_vault::delete_secret(&key)
+}
+
 pub fn run() {
     // Single-Instance Named Event Guard:
     // If AltSpace is already running in background, signal it to pop up and exit second instance in <10ms!
@@ -897,7 +940,15 @@ pub fn run() {
             record_frecency_usage,
             get_frecency_scores,
             import_legacy_frecency,
-            check_maintainer_status
+            check_maintainer_status,
+            broker_evaluate_action,
+            broker_execute_action,
+            broker_remember_session_approval,
+            broker_undo_action,
+            broker_get_ledger,
+            vault_store_secret,
+            vault_retrieve_secret,
+            vault_delete_secret
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));
