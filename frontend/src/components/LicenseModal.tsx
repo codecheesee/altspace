@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ExternalLink,
   Gift,
+  RefreshCw,
 } from "lucide-react";
 import {
   SUPPORTER_PRICE_INR,
@@ -18,7 +19,14 @@ import {
   activateLicenseKey,
   deactivateLicense,
   type LicenseStatus,
+  type FeatureBounty,
 } from "../lib/license";
+import {
+  fetchLiveBounties,
+  calculateTreasuryStats,
+  type TreasuryStats,
+} from "../lib/bountySync";
+import { tauriInvoke } from "../lib/appStorage";
 
 interface LicenseModalProps {
   isOpen: boolean;
@@ -42,10 +50,33 @@ export function LicenseModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isActivating, setIsActivating] = useState(false);
 
+  // Live Bounties & Treasury State
+  const [bounties, setBounties] = useState<FeatureBounty[]>(ACTIVE_BOUNTIES);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [treasuryStats, setTreasuryStats] = useState<TreasuryStats>(() =>
+    calculateTreasuryStats(ACTIVE_BOUNTIES)
+  );
+
+  const loadBounties = async () => {
+    setIsRefreshing(true);
+    try {
+      const list = await fetchLiveBounties();
+      if (list && list.length > 0) {
+        setBounties(list);
+        setTreasuryStats(calculateTreasuryStats(list));
+      }
+    } catch (_) {
+      // fallback preserved
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setLicenseStatus(getLicenseStatus());
       setErrorMsg(null);
+      loadBounties();
     }
   }, [isOpen]);
 
@@ -75,6 +106,14 @@ export function LicenseModal({
     deactivateLicense();
     setLicenseStatus(getLicenseStatus());
     notify("License removed. Reverted to Community Free Edition.");
+  };
+
+  const handleOpenBounty = (url: string) => {
+    if (tauriInvoke) {
+      tauriInvoke("open_url", { url });
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   return (
@@ -141,6 +180,9 @@ export function LicenseModal({
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-medium text-xs">
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>Treasury Active</span>
+              </div>
+              <div className="text-[10px] text-neutral-500 mt-1 font-mono">
+                ₹{treasuryStats.totalFundedINR.toLocaleString()} Allocated
               </div>
             </div>
           </div>
@@ -229,23 +271,36 @@ export function LicenseModal({
           {/* Active Community Feature Bounties */}
           <div className="space-y-2.5 pt-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-white text-xs uppercase tracking-wide">
-                Funded Community Feature Bounties
-              </span>
-              <span className="text-[11px] text-neutral-400">
-                Claim a bounty by submitting a PR
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-white text-xs uppercase tracking-wide">
+                  Live GitHub Feature Bounties
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                  {treasuryStats.openBountiesCount} Open
+                </span>
+              </div>
+              <button
+                onClick={loadBounties}
+                title="Sync latest bounties from GitHub"
+                className="text-neutral-400 hover:text-white flex items-center gap-1 text-[11px] transition cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                <span>Sync</span>
+              </button>
             </div>
 
             <div className="rounded-xl border border-white/[0.06] divide-y divide-white/[0.05] overflow-hidden bg-white/[0.01]">
-              {ACTIVE_BOUNTIES.map((bounty) => (
+              {bounties.map((bounty) => (
                 <div
                   key={bounty.id}
-                  className="p-3 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition"
+                  onClick={() => handleOpenBounty(bounty.githubIssueUrl)}
+                  className="p-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition cursor-pointer group"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-white">{bounty.title}</span>
+                      <span className="font-medium text-white group-hover:text-purple-300 transition">
+                        {bounty.title}
+                      </span>
                       <span
                         className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
                           bounty.status === "Completed"
@@ -261,11 +316,13 @@ export function LicenseModal({
                     <p className="text-[11px] text-neutral-400 truncate mt-0.5">
                       {bounty.description}
                     </p>
-                    {bounty.assignee && (
-                      <div className="text-[10px] text-neutral-500 mt-1">
-                        Built by @{bounty.assignee}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-neutral-500">
+                      {bounty.assignee ? (
+                        <span>Claimed by @{bounty.assignee}</span>
+                      ) : (
+                        <span className="text-sky-400">Click to view & claim on GitHub →</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right shrink-0">
