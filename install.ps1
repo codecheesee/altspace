@@ -28,10 +28,15 @@ if (!(Test-Path $TargetDir)) {
 
 # 2. Resolve Binary (Local or Remote Release)
 $LocalBin = "$PSScriptRoot\bin\altspace.exe"
+$LocalDll = "$PSScriptRoot\bin\Everything64.dll"
+$DllPath = "$TargetDir\Everything64.dll"
 
 if ((Test-Path $LocalBin) -and ($LocalOnly -or -not $PSScriptRoot -eq "")) {
     Write-Host "[*] Installing from local repository binary: $LocalBin" -ForegroundColor Green
     Copy-Item $LocalBin $BinaryPath -Force
+    if (Test-Path $LocalDll) {
+        Copy-Item $LocalDll $DllPath -Force
+    }
 } else {
     Write-Host "[*] Downloading verified release from GitHub ($Repo)..." -ForegroundColor Green
     $PrimaryUrl = "https://github.com/$Repo/releases/latest/download/altspace.exe"
@@ -48,6 +53,15 @@ if ((Test-Path $LocalBin) -and ($LocalOnly -or -not $PSScriptRoot -eq "")) {
             Write-Error "Failed to download AltSpace binary: $_"
             exit 1
         }
+    }
+
+    # Download required Win32 DLL dependency (NTFS MFT file indexing engine)
+    Write-Host "[*] Resolving Win32 dependencies (Everything64.dll)..." -ForegroundColor Green
+    $DllUrl = "https://raw.githubusercontent.com/$Repo/main/bin/Everything64.dll"
+    try {
+        Invoke-WebRequest -Uri $DllUrl -OutFile $DllPath -UseBasicParsing
+    } catch {
+        Write-Warning "Failed to fetch Everything64.dll from repository: $_"
     }
 }
 
