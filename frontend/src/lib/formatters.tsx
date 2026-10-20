@@ -10,7 +10,7 @@ export function renderHighlightedText(text: string, query: string): React.ReactN
     return (
       <>
         {text.slice(0, subIdx)}
-        <span className="text-amber-400 font-semibold bg-amber-400/20 px-0.5 rounded">
+        <span className="text-sky-300 font-semibold bg-sky-500/20 px-0.5 rounded">
           {text.slice(subIdx, subIdx + q.length)}
         </span>
         {text.slice(subIdx + q.length)}
@@ -27,7 +27,7 @@ export function renderHighlightedText(text: string, query: string): React.ReactN
     const char = text[i];
     if (qIdx < q.length && char.toLowerCase() === q[qIdx]) {
       chars.push(
-        <span key={i} className="text-amber-400 font-semibold bg-amber-400/20 px-0.5 rounded">
+        <span key={i} className="text-sky-300 font-semibold bg-sky-500/20 px-0.5 rounded">
           {char}
         </span>
       );
@@ -37,6 +37,13 @@ export function renderHighlightedText(text: string, query: string): React.ReactN
     }
   }
   return chars;
+}
+
+export function formatMiddleTruncatedPath(path: string, maxLength = 45): string {
+  if (!path || path.length <= maxLength) return path;
+  const startChars = Math.floor((maxLength - 5) / 2);
+  const endChars = Math.ceil((maxLength - 5) / 2);
+  return `${path.slice(0, startChars)} ... ${path.slice(path.length - endChars)}`;
 }
 
 export function formatDisplayPath(path: string): string {

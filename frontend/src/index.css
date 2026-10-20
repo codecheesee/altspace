@@ -1,18 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-raycast-bg: #09090b;
-  --color-raycast-card: #121215;
-  --color-raycast-hover: #18181b;
+  --color-raycast-bg: #111114;
+  --color-raycast-card: #18181c;
+  --color-raycast-hover: #22222a;
   --color-raycast-border: rgba(255, 255, 255, 0.08);
-  --color-raycast-accent: #ff6363;
-  --color-raycast-text: #f4f4f5;
+  --color-raycast-accent: #38bdf8;
+  --color-raycast-text: #f4f4f6;
   --color-raycast-subtext: #a1a1aa;
 
-  --shadow-raycast: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  --shadow-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  /* Windows 11 graphite command palette design tokens */
+  --color-cmd-canvas: #111114;
+  --color-cmd-surface: #18181c;
+  --color-cmd-elevated: #1f1f25;
+  --color-cmd-hover: #24242c;
+  --color-cmd-selected: #282933;
+  --color-cmd-accent: #38bdf8;
+  --color-cmd-text-primary: #f4f4f6;
+  --color-cmd-text-secondary: #a1a1aa;
+  --color-cmd-text-muted: #71717a;
+  --color-cmd-border-subtle: rgba(255, 255, 255, 0.07);
+  --color-cmd-border-strong: rgba(255, 255, 255, 0.14);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --shadow-raycast: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  --shadow-cmd-window: 0 32px 64px -16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --font-sans: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
 }
 
 @layer base {
@@ -23,35 +36,67 @@
   }
 }
 
-/* 21st.dev Tactile Keycap Badge */
+/* Tactile Keycap Badge */
 .kbd-cap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 500;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 2.5px 6px;
   border-radius: 4px;
-  background: #27272a;
-  color: #e4e4e7;
-  border: 1px solid #3f3f46;
-  border-bottom: 2px solid #52525b;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  background: #232328;
+  color: #d4d4d8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   letter-spacing: -0.01em;
 }
 
-/* 21st.dev Obsidian Surface Elevation */
+/* Graphite Command Dialog Elevation */
 .obsidian-dialog {
-  background-color: #0c0c0e;
+  background-color: #121215;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 28px 56px -12px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.09);
 }
 
-/* Custom sleek 21st.dev scrollbar */
+/* Restrained Transitions <= 200ms */
+.cmd-motion {
+  transition-property: background-color, border-color, color, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* High Contrast Mode Support */
+@media (forced-colors: active) {
+  .obsidian-dialog {
+    border: 2px solid CanvasText !important;
+  }
+  .kbd-cap {
+    border: 1px solid CanvasText !important;
+  }
+  [role="option"][aria-selected="true"] {
+    outline: 2px solid Highlight !important;
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+}
+
+/* Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Sleek Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -61,5 +106,5 @@
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.24);
 }

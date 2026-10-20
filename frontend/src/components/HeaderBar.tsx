@@ -43,16 +43,16 @@ export function HeaderBar({
   onDismiss,
 }: HeaderBarProps) {
   return (
-    <>
-      {/* 21st.dev Specular Top Highlight Rim */}
+    <header className="shrink-0 select-none">
+      {/* Specular Highlight Rim */}
       <div className="h-[1px] w-full bg-white/[0.08] shrink-0" />
 
-      {/* Top Drag Region & 21st.dev Raycast Omnibar */}
+      {/* Top Drag Region & Omnibar */}
       <div
         data-tauri-drag-region
-        className="flex items-center px-4 py-3 border-b border-white/[0.08] gap-3 cursor-move bg-black/25 select-none shrink-0"
+        className="flex items-center px-4 py-3 border-b border-white/[0.08] gap-3 cursor-move bg-[#131317] select-none shrink-0"
       >
-        <Search className="w-4 h-4 text-zinc-400 shrink-0 stroke-[2]" />
+        <Search className="w-4 h-4 text-sky-400 shrink-0 stroke-[2]" />
 
         {/* Mode Pill Badges */}
         {currentMode === "clipboard" && (
@@ -67,6 +67,7 @@ export function HeaderBar({
               }}
               className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer"
               title="Return to Search (Esc)"
+              aria-label="Return to Search"
             >
               <X className="w-3 h-3" />
             </button>
@@ -85,6 +86,7 @@ export function HeaderBar({
               }}
               className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer"
               title="Return to Search (Esc)"
+              aria-label="Return to Search"
             >
               <X className="w-3 h-3" />
             </button>
@@ -103,6 +105,7 @@ export function HeaderBar({
               }}
               className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer"
               title="Return to Search (Esc)"
+              aria-label="Return to Search"
             >
               <X className="w-3 h-3" />
             </button>
@@ -143,25 +146,28 @@ export function HeaderBar({
             }}
             className="p-1 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200 transition shrink-0 cursor-pointer"
             title="Clear query"
+            aria-label="Clear query"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
 
-        {/* 21st.dev Tactile Menu Action Button */}
+        {/* Command Menu Action Button */}
         <button
           onClick={onOpenMenu}
           title="Command Palette Menu (Ctrl+K)"
+          aria-label="Command Palette Menu"
           className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/[0.06] text-xs font-medium text-zinc-400 hover:text-zinc-100 transition cursor-pointer shrink-0"
         >
           <span>Menu</span>
           <kbd className="kbd-cap">Ctrl K</kbd>
         </button>
 
-        {/* Minimalist Dismiss Button */}
+        {/* Dismiss Button */}
         <button
           onClick={onDismiss}
-          title="Dismiss / Hide (Esc)"
+          title="Dismiss (Esc)"
+          aria-label="Dismiss Command Palette"
           className="p-1 rounded hover:bg-white/[0.08] text-zinc-500 hover:text-zinc-200 transition shrink-0 cursor-pointer"
         >
           <X className="w-4 h-4" />
@@ -175,7 +181,7 @@ export function HeaderBar({
             <Skull className="w-3.5 h-3.5 text-emerald-400" />
             {portStatusMsg}
           </span>
-          <button onClick={() => setPortStatusMsg(null)} className="cursor-pointer">
+          <button onClick={() => setPortStatusMsg(null)} className="cursor-pointer" aria-label="Dismiss notification">
             <X className="w-3 h-3 text-emerald-400" />
           </button>
         </div>
@@ -187,11 +193,11 @@ export function HeaderBar({
             <Check className="w-3.5 h-3.5 text-sky-400" />
             {copiedNotification}
           </span>
-          <button onClick={() => setCopiedNotification(null)} className="cursor-pointer">
+          <button onClick={() => setCopiedNotification(null)} className="cursor-pointer" aria-label="Dismiss notification">
             <X className="w-3 h-3 text-sky-400" />
           </button>
         </div>
       )}
-    </>
+    </header>
   );
 }

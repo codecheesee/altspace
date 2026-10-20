@@ -1,6 +1,6 @@
 [package]
 name = "raycast-windows"
-version = "1.0.1"
+version = "1.0.2"
 description = "AltSpace — High-performance desktop command palette and launcher for Windows"
 authors = ["Narayan Gorai <66432945+codecheesee@users.noreply.github.com>"]
 edition = "2021"

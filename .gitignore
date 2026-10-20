@@ -42,3 +42,8 @@ update_shortcuts.ps1
 *.txt
 out.txt
 err.txt
+
+# Local Agent Workspace & Skills
+.agents/
+.altspace/
+
