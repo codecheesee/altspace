@@ -21,6 +21,7 @@ import {
 import { GithubIcon } from "./GithubIcon";
 import { cn } from "../lib/utils";
 import {
+  BUILTIN_EXTENSIONS,
   getExtensionRegistry,
   installRegistryExtension,
   uninstallRegistryExtension,
@@ -195,6 +196,7 @@ export function StoreTab({
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {filteredPlugins.map((plugin, index) => {
               const installed = installedPluginIds.has(plugin.id);
+              const isBuiltin = BUILTIN_EXTENSIONS.some((item) => item.id === plugin.id);
               const selected = selectedIndex === index;
               const loading = loadingPluginId === plugin.id;
 
@@ -271,7 +273,7 @@ export function StoreTab({
                               event.stopPropagation();
                               handleUninstall(plugin);
                             }}
-                            disabled={loading}
+                            disabled={loading || !isBuiltin}
                             aria-label={`Uninstall ${plugin.name}`}
                             className="rounded-lg border border-white/10 p-1.5 text-zinc-500 transition hover:border-rose-300/20 hover:bg-rose-300/[0.08] hover:text-rose-200"
                           >
@@ -289,7 +291,7 @@ export function StoreTab({
                           className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-950 transition hover:bg-violet-100 disabled:cursor-wait disabled:opacity-60"
                         >
                           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                          {loading ? "Checking…" : "Install"}
+                          {loading ? "Checking…" : isBuiltin ? "Install" : "Awaiting signing"}
                         </button>
                       )}
                     </div>
