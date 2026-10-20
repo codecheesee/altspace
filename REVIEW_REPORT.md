@@ -1,6 +1,6 @@
-# AltSpace — v1.0.2 Reliability, Security, and Edge-Case Review
+# AltSpace — v1.0.3 Reliability, Security, and Edge-Case Review
 
-**Reviewed commit:** `e0d23c1` (`v1.0.2`)  
+**Reviewed baseline:** `v1.0.2` plus the v1.0.3 release hardening
 **Review date:** October 20, 2026  
 **Platform:** Windows 10/11 x64  
 **Scope:** Latest UI redesign, tray lifecycle, security-sensitive commands, plugins, updater, process handling, tests, and feature boundaries.
