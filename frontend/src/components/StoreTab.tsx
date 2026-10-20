@@ -17,8 +17,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { GithubIcon } from "./GithubIcon";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { cn } from "../lib/utils";
 import {
+  BUILTIN_EXTENSIONS,
   getExtensionRegistry,
   installRegistryExtension,
   uninstallRegistryExtension,
@@ -41,7 +43,7 @@ export function StoreTab({
   onCopiedNotification,
   onRefreshInstalledPlugins,
 }: StoreTabProps) {
-  const [plugins, setPlugins] = useState<ExtensionRegistryItem[]>([]);
+  const [plugins, setPlugins] = useState<ExtensionRegistryItem[]>(BUILTIN_EXTENSIONS);
   const [installedPluginIds, setInstalledPluginIds] = useState<Set<string>>(new Set());
   const [loadingPluginId, setLoadingPluginId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -72,15 +74,16 @@ export function StoreTab({
   }, []);
 
   // Filter plugins based on query and selected category
+  const cleanQuery = query.replace(/^:(store|ext|plugins?)\s*/i, "").trim().toLowerCase();
   const filteredPlugins = plugins.filter((p) => {
     const matchesCategory =
       selectedCategory === "All" || p.category === selectedCategory;
     const matchesQuery =
-      !query.trim() ||
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.description.toLowerCase().includes(query.toLowerCase()) ||
-      p.keyword.toLowerCase().includes(query.toLowerCase()) ||
-      p.author.toLowerCase().includes(query.toLowerCase());
+      !cleanQuery ||
+      p.name.toLowerCase().includes(cleanQuery) ||
+      p.description.toLowerCase().includes(cleanQuery) ||
+      p.keyword.toLowerCase().includes(cleanQuery) ||
+      p.author.toLowerCase().includes(cleanQuery);
     return matchesCategory && matchesQuery;
   });
 
@@ -140,6 +143,7 @@ export function StoreTab({
   };
 
   return (
+    <ErrorBoundary label="Community Extension Store">
     <div className="flex-1 flex flex-col h-full bg-black/40 overflow-hidden">
       {/* Top Banner: Registry Info & Categories */}
       <div className="px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/[0.08] via-pink-500/[0.05] to-transparent flex items-center justify-between shrink-0">
@@ -233,15 +237,15 @@ export function StoreTab({
                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-500">
                       <span className="flex items-center gap-1 text-neutral-400">
                         <GithubIcon className="w-3 h-3 text-neutral-400" />
-                        @{plugin.authorGithub}
+                        @{plugin.authorGithub || "altspace"}
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1 text-amber-400/90 font-medium">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        {plugin.rating}
+                        {plugin.rating ?? 5.0}
                       </span>
                       <span>•</span>
-                      <span>{plugin.downloads.toLocaleString()} installs</span>
+                      <span>{(plugin.downloads ?? 0).toLocaleString()} installs</span>
                     </div>
                   </div>
                 </div>
@@ -254,7 +258,7 @@ export function StoreTab({
                         e.stopPropagation();
                         handleOpenSponsor(plugin.sponsorUrl);
                       }}
-                      title={`Sponsor @${plugin.authorGithub} directly`}
+                      title={`Sponsor @${plugin.authorGithub || "creator"} directly`}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-medium transition cursor-pointer"
                     >
                       <Heart className="w-3 h-3 text-rose-400 fill-rose-400/30" />
@@ -317,5 +321,6 @@ export function StoreTab({
         </a>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

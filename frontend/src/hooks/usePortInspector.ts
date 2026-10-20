@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { tauriInvoke, DEMO_PORTS } from "../lib/appStorage";
 import type { PortItem } from "../types";
 
-export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
+export function usePortInspector(query: string, _isSmartPortPrefix?: boolean) {
   const [ports, setPorts] = useState<PortItem[]>(DEMO_PORTS);
   const [portStatusMsg, setPortStatusMsg] = useState<string | null>(null);
 
@@ -16,7 +16,10 @@ export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
   }, []);
 
   const filteredPorts = useMemo(() => {
-    const rawFilter = isSmartPortPrefix ? query.slice(1).trim().toLowerCase() : query.trim().toLowerCase();
+    let rawFilter = query.trim().toLowerCase();
+    if (rawFilter.startsWith(":")) {
+      rawFilter = rawFilter.replace(/^:(ports?|port)?\s*/i, "");
+    }
     if (!rawFilter) return ports;
     return ports.filter(
       (p) =>
@@ -24,7 +27,7 @@ export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
         p.process_name.toLowerCase().includes(rawFilter) ||
         p.pid.toString().includes(rawFilter)
     );
-  }, [ports, query, isSmartPortPrefix]);
+  }, [ports, query]);
 
   const handleKillPort = useCallback(async (pid: number, port: number) => {
     if (tauriInvoke) {

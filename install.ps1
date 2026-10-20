@@ -31,7 +31,7 @@ $LocalBin = "$PSScriptRoot\bin\altspace.exe"
 $LocalDll = "$PSScriptRoot\bin\Everything64.dll"
 $DllPath = "$TargetDir\Everything64.dll"
 
-if ((Test-Path $LocalBin) -and ($LocalOnly -or -not $PSScriptRoot -eq "")) {
+if ((Test-Path $LocalBin) -and $LocalOnly) {
     Write-Host "[*] Installing from local repository binary: $LocalBin" -ForegroundColor Green
     Copy-Item $LocalBin $BinaryPath -Force
     if (Test-Path $LocalDll) {
