@@ -29,13 +29,27 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "msi"],
+    "resources": {
+      "../../bin/Everything64.dll": "Everything64.dll"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    },
+    "nsis": {
+      "installMode": "currentUser",
+      "startMenuFolder": "AltSpace",
+      "displayLanguageSelector": false,
+      "createDesktopShortcut": true
+    }
   }
 }
