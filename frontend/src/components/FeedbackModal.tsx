@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp } from "lucide-react";
+import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp, Settings } from "lucide-react";
 import { tauriInvoke } from "../lib/appStorage";
+import {
+  DISCORD_WEBHOOK_URL,
+  GITHUB_REPO_URL,
+  GITHUB_DISCUSSIONS_URL,
+  GITHUB_ISSUES_URL,
+  GITHUB_CONTRIBUTING_URL,
+} from "../feedbackConfig";
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -52,6 +59,10 @@ export function FeedbackModal({
   const [comment, setComment] = useState("");
   const [contact, setContact] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [showWebhookConfig, setShowWebhookConfig] = useState(false);
+  const [webhookInput, setWebhookInput] = useState(() => {
+    return localStorage.getItem("altspace_feedback_webhook") || DISCORD_WEBHOOK_URL;
+  });
 
   if (!isOpen) return null;
 
@@ -63,6 +74,12 @@ export function FeedbackModal({
     } else {
       window.open(url, "_blank");
     }
+  };
+
+  const handleSaveWebhook = () => {
+    localStorage.setItem("altspace_feedback_webhook", webhookInput.trim());
+    setShowWebhookConfig(false);
+    notify("Discord Webhook saved!");
   };
 
   const handleDirectSubmit = async () => {
@@ -89,19 +106,47 @@ export function FeedbackModal({
       localStorage.setItem("altspace_has_rated", "true");
     } catch (_) {}
 
-    // 2. Check for user-configured Discord / Webhook endpoint
-    const customWebhook = localStorage.getItem("altspace_feedback_webhook");
-    if (customWebhook) {
+    // 2. Deliver to Discord Webhook (Rich Embed format)
+    const activeWebhook = (localStorage.getItem("altspace_feedback_webhook") || DISCORD_WEBHOOK_URL).trim();
+    if (activeWebhook && activeWebhook.startsWith("http")) {
       try {
-        await fetch(customWebhook, {
+        const color = stars >= 4 ? 0x22c55e : stars === 3 ? 0xf59e0b : 0xef4444;
+        await fetch(activeWebhook, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            content: `🌟 **AltSpace User Feedback** [${type.toUpperCase()}]\n**Rating**: ${"⭐".repeat(
-              stars
-            )} (${stars}/5)\n**User**: ${payload.contact}\n**Note**: ${
-              comment || "(No text)"
-            }`,
+            username: "AltSpace Feedback",
+            embeds: [
+              {
+                title: `🌟 New User Feedback: ${type.toUpperCase()}`,
+                color,
+                fields: [
+                  {
+                    name: "Rating",
+                    value: `${"⭐".repeat(stars || 1)} (${stars}/5)`,
+                    inline: true,
+                  },
+                  {
+                    name: "Category",
+                    value: type,
+                    inline: true,
+                  },
+                  {
+                    name: "User / Contact",
+                    value: payload.contact,
+                    inline: true,
+                  },
+                  {
+                    name: "Feedback / Notes",
+                    value: comment || "*(No detailed comments provided)*",
+                  },
+                ],
+                footer: {
+                  text: "AltSpace Desktop • Windows",
+                },
+                timestamp: new Date().toISOString(),
+              },
+            ],
           }),
         });
       } catch (err) {
@@ -142,7 +187,7 @@ ${comment || "No detailed notes provided."}
 `;
 
     const body = encodeURIComponent(bodyText);
-    const url = `https://github.com/codecheesee/altspace/issues/new?title=${title}&body=${body}`;
+    const url = `${GITHUB_ISSUES_URL}/new?title=${title}&body=${body}`;
     handleOpenUrl(url);
     localStorage.setItem("altspace_has_rated", "true");
     onClose();
@@ -162,14 +207,23 @@ ${comment || "No detailed notes provided."}
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition"
-          title="Close (Esc)"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {/* Top Controls */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+          <button
+            onClick={() => setShowWebhookConfig((prev) => !prev)}
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition"
+            title="Configure Discord Webhook"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.08] transition"
+            title="Close (Esc)"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Modal Header */}
         <div>
@@ -186,6 +240,37 @@ ${comment || "No detailed notes provided."}
             AltSpace is open-source. Your feedback and ratings directly determine our roadmap.
           </p>
         </div>
+
+        {showWebhookConfig && (
+          <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] flex flex-col gap-2 animate-in fade-in">
+            <span className="text-xs font-semibold text-purple-300">
+              Private Discord Webhook URL:
+            </span>
+            <input
+              type="text"
+              value={webhookInput}
+              onChange={(e) => setWebhookInput(e.target.value)}
+              placeholder="https://discord.com/api/webhooks/..."
+              className="w-full bg-black/40 border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white placeholder-neutral-500 focus:outline-none"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowWebhookConfig(false)}
+                className="text-[11px] px-2.5 py-1 rounded bg-neutral-800 text-neutral-300 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveWebhook}
+                className="text-[11px] px-2.5 py-1 rounded bg-purple-600 hover:bg-purple-500 text-white font-medium"
+              >
+                Save Webhook
+              </button>
+            </div>
+          </div>
+        )}
 
         {submitted ? (
           <div className="py-8 text-center flex flex-col items-center justify-center gap-2 animate-in zoom-in-95">
@@ -298,7 +383,7 @@ ${comment || "No detailed notes provided."}
             {/* Community Links */}
             <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-neutral-400">
               <button
-                onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace")}
+                onClick={() => handleOpenUrl(GITHUB_REPO_URL)}
                 className="flex items-center gap-1 hover:text-amber-300 transition cursor-pointer"
               >
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -306,7 +391,7 @@ ${comment || "No detailed notes provided."}
               </button>
 
               <button
-                onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace/discussions")}
+                onClick={() => handleOpenUrl(GITHUB_DISCUSSIONS_URL)}
                 className="flex items-center gap-1 hover:text-white transition cursor-pointer"
               >
                 <MessageSquare className="w-3 h-3" />
@@ -314,11 +399,7 @@ ${comment || "No detailed notes provided."}
               </button>
 
               <button
-                onClick={() =>
-                  handleOpenUrl(
-                    "https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md"
-                  )
-                }
+                onClick={() => handleOpenUrl(GITHUB_CONTRIBUTING_URL)}
                 className="flex items-center gap-1 hover:text-white transition cursor-pointer"
               >
                 <ExternalLink className="w-3 h-3" />
