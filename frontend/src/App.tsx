@@ -20,7 +20,10 @@ import { useContextualActions } from "./hooks/useContextualActions";
 import {
   tauriInvoke,
   recordItemUsage,
-  getItemFrequencies,
+  getStoredBoolean,
+  saveStoredBoolean,
+  SIDEBAR_PREFERENCE_KEY,
+  DRIVE_SEARCH_PREFERENCE_KEY,
 } from "./lib/appStorage";
 import { refreshCurrencyRates } from "./lib/calc";
 import type {
@@ -45,6 +48,7 @@ export default function App() {
 
   // Notification Toast State
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const notify = useCallback((msg: string) => {
     setCopiedNotification(msg);
     setTimeout(() => setCopiedNotification(null), 2500);
@@ -101,6 +105,7 @@ export default function App() {
     currentMode,
     currentThemeId,
     onNotify: notify,
+    onPremiumRequired: () => setShowLicenseModal(true),
     onConfirmShellCommand: requestShellConfirmation,
   });
 
@@ -137,11 +142,12 @@ export default function App() {
   const [quickLookOpen, setQuickLookOpen] = useState(false);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [gitInfo, setGitInfo] = useState<GitInfo | null>(null);
-  const [manualSidebarToggle, setManualSidebarToggle] = useState<boolean | null>(null);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() =>
+    getStoredBoolean(SIDEBAR_PREFERENCE_KEY, false)
+  );
 
   // Input Modal State (replaces prompt/alert)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
     title: string;
     description?: string;
@@ -169,7 +175,8 @@ export default function App() {
       })
       .catch(() => {});
 
-    tauriInvoke<DriveIndexStats>("get_drive_settings")
+    const searchAllDrives = getStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, false);
+    tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: searchAllDrives })
       .then((stats) => {
         if (stats) setDriveStats(stats);
       })
@@ -407,7 +414,13 @@ export default function App() {
     (selectedSpecial) ||
     (selectedItem && (selectedItem.category === "File" || selectedItem.category === "Folder" || selectedItem.category === "Game"))
   );
-  const isSidebarVisible = manualSidebarToggle !== null ? manualSidebarToggle : isAutoRich;
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarVisible((previous) => {
+      const next = !previous;
+      saveStoredBoolean(SIDEBAR_PREFERENCE_KEY, next);
+      return next;
+    });
+  }, []);
 
   // Custom accent prompt modal
   const openCustomAccentModal = () => {
@@ -427,12 +440,14 @@ export default function App() {
   const handleExportConfig = () => {
     const config = {
       app: "AltSpace",
-      version: "1.0.0",
+      config_version: 2,
+      version: "2.0.0",
       exported_at: new Date().toISOString(),
       theme_id: currentThemeId,
       custom_accent: customAccent,
       autostart,
-      item_frequencies: getItemFrequencies(),
+      sidebar_visible: isSidebarVisible,
+      search_all_drives: driveStats?.search_all_drives ?? false,
     };
     navigator.clipboard.writeText(JSON.stringify(config, null, 2));
     notify("AltSpace Config copied (.altconfig JSON)!");
@@ -449,6 +464,19 @@ export default function App() {
         try {
           const parsed = JSON.parse(input.trim());
           if (parsed.theme_id) handleSelectTheme(parsed.theme_id);
+          if (typeof parsed.custom_accent === "string") handleSetCustomAccent(parsed.custom_accent);
+          if (typeof parsed.sidebar_visible === "boolean") {
+            setIsSidebarVisible(parsed.sidebar_visible);
+            saveStoredBoolean(SIDEBAR_PREFERENCE_KEY, parsed.sidebar_visible);
+          }
+          if (typeof parsed.search_all_drives === "boolean") {
+            saveStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, parsed.search_all_drives);
+            tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: parsed.search_all_drives })
+              .then((stats) => {
+                if (stats) setDriveStats(stats);
+              })
+              .catch(() => notify("Drive preference could not be applied"));
+          }
           notify("Config imported successfully!");
         } catch {
           notify("Invalid config JSON — import failed");
@@ -475,7 +503,7 @@ export default function App() {
     onOpenFolder: handleOpenFolder,
     onKillPort: handleKillPort,
     onPurgeDevServers: handlePurgeAllDevServers,
-    onToggleSidebar: () => setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev)),
+    onToggleSidebar: toggleSidebar,
     onCycleTheme: handleCycleTheme,
     onSelectTheme: handleSelectTheme,
     onSetCustomAccent: openCustomAccentModal,
@@ -489,8 +517,12 @@ export default function App() {
       notify(next ? "Autostart on Boot: Enabled" : "Autostart on Boot: Disabled");
     },
     onToggleAllDrives: async () => {
-      const updated = await tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: !(driveStats?.search_all_drives ?? true) });
-      if (updated) setDriveStats(updated);
+      const enabled = !(driveStats?.search_all_drives ?? false);
+      const updated = await tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled });
+      if (updated) {
+        setDriveStats(updated);
+        saveStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, enabled);
+      }
       notify("Multi-Drive Search toggled");
     },
     onRescanDrives: async () => {
@@ -537,7 +569,7 @@ export default function App() {
 
     if ((e.ctrlKey || e.metaKey) && (e.key?.toLowerCase() === "b" || e.code === "KeyB")) {
       e.preventDefault();
-      setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev));
+      toggleSidebar();
       return;
     }
 
@@ -698,7 +730,7 @@ export default function App() {
         activeTheme={activeTheme}
         onCycleTheme={handleCycleTheme}
         isSidebarVisible={isSidebarVisible}
-        onToggleSidebar={() => setManualSidebarToggle((prev) => (prev === null ? !isAutoRich : !prev))}
+        onToggleSidebar={toggleSidebar}
         onOpenFeedback={() => setShowFeedbackModal(true)}
         onOpenLicense={() => setShowLicenseModal(true)}
         onOpenActions={() => {

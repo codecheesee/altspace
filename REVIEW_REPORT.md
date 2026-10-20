@@ -1,6 +1,6 @@
-# AltSpace — v1.0.3 Reliability, Security, and Edge-Case Review
+# AltSpace — v2.0 Reliability, Security, and Edge-Case Review
 
-**Reviewed baseline:** `v1.0.2` plus the v1.0.3 release hardening
+**Reviewed baseline:** `v1.0.3` plus the v2.0 first-run, monetization, and release preparation changes
 **Review date:** October 20, 2026  
 **Platform:** Windows 10/11 x64  
 **Scope:** Latest UI redesign, tray lifecycle, security-sensitive commands, plugins, updater, process handling, tests, and feature boundaries.
@@ -11,7 +11,7 @@ The v1.0.2 UI redesign builds successfully and the existing frontend and Rust te
 
 The hardening pass also adds mandatory confirmation for AI-routed shell commands, a 30-second timeout with process-tree cleanup for direct PowerShell execution, stricter plugin path and manifest validation, semantic update-version comparison, and safer port-process checks. Remote extensions without a SHA-256 script digest are now deferred rather than installed.
 
-The application is in a substantially better state, but updater artifact signing and a full end-to-end UI/runtime test harness remain follow-up work. The local supporter license remains a client-side cosmetic entitlement and must not be treated as authorization.
+The application is in a substantially better state, but updater artifact signing and a full end-to-end UI/runtime test harness remain follow-up work. First-run state no longer contains demo clipboard/port/workspace/plugin data, details and multi-drive search are opt-in, and broad system data is only shown through explicit modes or meaningful queries.
 
 ## Changes implemented
 
@@ -96,7 +96,8 @@ The updater still uses the existing PowerShell installer flow. Release artifact 
 | Extensions | Working with restrictions | Built-ins work; unsigned remote scripts are deferred |
 | Local Ollama AI | Working | Streaming responses and local action intents |
 | AI shell execution | Hardened | Explicit confirmation plus timeout |
-| Supporter licensing | Working as local entitlement | Not a server-enforced authorization boundary |
+| Supporter licensing | Lemon Squeezy hosted checkout foundation | Client accepts no license keys or dev bypass; provider webhook/backend and deployment secrets remain required for verified entitlements |
+| Advanced search | 50 searches / 14 days | Warning at 40; verified Supporter entitlement required after exhaustion; local search and launching remain unlimited |
 | Self-update | Working with integrity limitation | Version comparison hardened; artifact signing remains |
 | Tray lifecycle | Fixed | Explicit exit now bypasses hide-to-tray behavior |
 
@@ -119,20 +120,27 @@ The updater still uses the existing PowerShell installer flow. Release artifact 
 - Clipboard secret classification
 - Local license expiration and storage fallback
 - Ordinary window close versus explicit application exit
+- Empty fresh-install clipboard, port, workspace, and plugin state
+- Sidebar preference persistence and hidden-by-default behavior
+- Multi-drive search opt-in and persisted preference
 
 ## Validation performed
 
 | Check | Result |
 |---|---|
-| `npm run build` | Passed |
-| Frontend TypeScript check | Passed |
-| Vite production bundle | Passed |
-| Node tests | 13 passed |
+| `npm run build` (frontend v2.0.0) | Passed |
+| Frontend TypeScript check and Vite production bundle | Passed |
+| Node tests (frontend, quota, bounties, launch kit) | 15 passed |
 | Rust tests | 27 passed |
 | `cargo clippy --all-targets --all-features -- -D warnings` | Passed |
 | `git diff --check` | Passed |
+| Standalone artifact/checksum validator | Passed with synthetic release fixture |
 
-The Rust suite increased from 26 to 27 tests due to updater version-comparison coverage.
+The Rust suite remains at 27 tests. The release workflow now validates the
+portable archive, NSIS/MSI/executable/DLL/installer assets, and SHA-256
+manifest before publishing. Local NSIS/MSI bundling requires the Tauri CLI and
+Windows signing secrets for production publication; those credentials are not
+present in this worktree.
 
 ## Remaining risks and recommended follow-up
 
@@ -140,7 +148,7 @@ The Rust suite increased from 26 to 27 tests due to updater version-comparison c
 2. **Remote plugin trust:** move from unsigned registry metadata to signed manifests or a trusted package-signing key.
 3. **Runtime integration tests:** add a Windows UI test that opens the tray menu, selects Exit, and verifies process termination.
 4. **Shell policy:** consider adding a command audit log and a stricter policy for high-impact commands even after confirmation.
-5. **License semantics:** keep supporter status cosmetic unless validation moves to signed, server-issued entitlements.
+5. **Monetization deployment:** configure the Lemon Squeezy Supporter variant, `VITE_CHECKOUT_URL`, deploy `VITE_ENTITLEMENT_ENDPOINT`, and implement provider webhook/signature validation before enabling paid entitlements. No Lemon Squeezy credentials are present in this repository.
 6. **Silent failures:** replace remaining broad empty catches with structured logs and user-visible diagnostics where the failure affects functionality.
 7. **Accessibility:** add automated keyboard/focus tests for modals, listbox navigation, and the shell confirmation dialog.
 

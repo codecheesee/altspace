@@ -1,17 +1,15 @@
 import { useState, useCallback, useMemo } from "react";
-import { tauriInvoke, DEMO_CLIPBOARD } from "../lib/appStorage";
+import { tauriInvoke } from "../lib/appStorage";
 import type { ClipboardHistoryItem } from "../types";
 
 export function useClipboardHistory(query: string, onNotify?: (msg: string) => void) {
-  const [clipboardItems, setClipboardItems] = useState<ClipboardHistoryItem[]>(DEMO_CLIPBOARD);
+  const [clipboardItems, setClipboardItems] = useState<ClipboardHistoryItem[]>([]);
   const [clipboardFilter, setClipboardFilter] = useState<"all" | "code" | "url" | "color" | "text">("all");
 
   const fetchClipboard = useCallback(async () => {
     try {
       const res = await tauriInvoke<ClipboardHistoryItem[]>("get_clipboard_history");
-      if (res && Array.isArray(res) && res.length > 0) {
-        setClipboardItems(res);
-      }
+      if (res && Array.isArray(res)) setClipboardItems(res);
     } catch (_) {}
   }, []);
 

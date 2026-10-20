@@ -11,7 +11,11 @@ import {
   getCachedOrInitialApps,
   sortByFrequency,
   UTILITY_ITEMS,
+  consumeAdvancedSearch,
+  getAdvancedSearchQuota,
+  ADVANCED_SEARCH_LIMIT,
 } from "../lib/appStorage";
+import { refreshEntitlement } from "../lib/license";
 import { streamOllamaResponse, OLLAMA_DEFAULT_MODEL } from "../lib/ai";
 import type {
   Item,
@@ -34,11 +38,13 @@ export function useSearchEngine({
   currentMode,
   currentThemeId,
   onNotify,
+  onPremiumRequired,
   onConfirmShellCommand,
 }: {
   currentMode: Mode;
   currentThemeId: string;
   onNotify?: (msg: string) => void;
+  onPremiumRequired?: () => void;
   onConfirmShellCommand?: (command: string) => Promise<boolean>;
 }) {
   const [query, setQuery] = useState("");
@@ -340,12 +346,19 @@ export function useSearchEngine({
         setItems(sortByFrequency(fallbackList));
       } else {
         const q = qTrim.toLowerCase();
+        const utilityMatches = q.startsWith(":")
+          ? UTILITY_ITEMS.filter((item) =>
+              item.title.toLowerCase().includes(q.slice(1)) ||
+              item.path.toLowerCase().includes(q)
+            )
+          : [];
         const filtered = fallbackList.filter(
           (item) =>
             item.title.toLowerCase().includes(q) ||
             item.subtitle.toLowerCase().includes(q)
         );
         setItems([
+          ...utilityMatches,
           ...pluginItems,
           ...themeItems,
           ...gameItems,
@@ -371,42 +384,67 @@ export function useSearchEngine({
     let active = true;
     const currentSeq = ++searchSeq.current;
 
-    tauriInvoke<any[]>("search", { query: debouncedQuery })
-      .then((res) => {
-        if (!active || currentSeq !== searchSeq.current || !res || !Array.isArray(res) || res.length === 0) return;
+    const quota = getAdvancedSearchQuota();
+    if (quota.used >= ADVANCED_SEARCH_LIMIT) {
+      refreshEntitlement().then((status) => {
+        if (!active || currentSeq !== searchSeq.current) return;
+        if (status.isSupporter) {
+          runAdvancedSearch();
+        } else {
+          onNotify?.("Advanced search trial used 50/50 searches. Open Supporter checkout to continue.");
+          onPremiumRequired?.();
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }
 
-        const mapped: Item[] = res.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          subtitle: r.subtitle,
-          category: r.category,
-          iconType: r.icon_type,
-          iconData: r.icon_data || undefined,
-          path: r.path,
-          size: r.size || undefined,
-          updated: r.updated || undefined,
-        }));
+    const usage = consumeAdvancedSearch();
+    if (usage.warning) {
+      onNotify?.(`Advanced search trial: ${usage.remaining} searches remaining in this 14-day window.`);
+    }
 
-        setItems((prev) => {
-          const nonL2 = prev.filter(
-            (i) =>
-              i.category === "Setting" ||
-              i.category === "Snippet" ||
-              i.category === "Window Management" ||
-              i.category === "Game" ||
-              i.category === "Theme"
-          );
-          const appsOnly = mapped.filter((i) => i.category === "Application");
-          if (appsOnly.length > 0) saveCachedApps(appsOnly);
-          return [...nonL2, ...mapped];
-        });
-      })
-      .catch(() => {});
+    runAdvancedSearch();
+
+    function runAdvancedSearch() {
+      tauriInvoke<any[]>("search", { query: debouncedQuery })
+        .then((res) => {
+          if (!active || currentSeq !== searchSeq.current || !res || !Array.isArray(res) || res.length === 0) return;
+
+          const mapped: Item[] = res.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            subtitle: r.subtitle,
+            category: r.category,
+            iconType: r.icon_type,
+            iconData: r.icon_data || undefined,
+            path: r.path,
+            size: r.size || undefined,
+            updated: r.updated || undefined,
+          }));
+
+          setItems((prev) => {
+            const nonL2 = prev.filter(
+              (i) =>
+                i.category === "Setting" ||
+                i.category === "Snippet" ||
+                i.category === "Window Management" ||
+                i.category === "Game" ||
+                i.category === "Theme"
+            );
+            const appsOnly = mapped.filter((i) => i.category === "Application");
+            if (appsOnly.length > 0) saveCachedApps(appsOnly);
+            return [...nonL2, ...mapped];
+          });
+        })
+        .catch(() => {});
+    }
 
     return () => {
       active = false;
     };
-  }, [debouncedQuery, currentMode]);
+  }, [debouncedQuery, currentMode, onNotify, onPremiumRequired]);
 
   // Recommendations
   const frequentApps = useMemo(() => {
@@ -415,20 +453,11 @@ export function useSearchEngine({
 
   const recentWorkspaces = useMemo(() => {
     if (suggestedProjects.length > 0) return suggestedProjects.slice(0, 6);
-    return [
-      {
-        id: "proj-altspace",
-        title: "altspace [Drive C:]",
-        subtitle: "C:\\Users\\Public\\Projects\\altspace",
-        category: "Folder" as const,
-        iconType: "folder" as const,
-        path: "C:\\Users\\Public\\Projects\\altspace",
-      },
-    ];
+    return [];
   }, [suggestedProjects]);
 
   const activeSuggestionsList = useMemo(() => {
-    return [...frequentApps, ...recentWorkspaces, ...UTILITY_ITEMS];
+    return [...frequentApps, ...recentWorkspaces];
   }, [frequentApps, recentWorkspaces]);
 
   const activeList = !query.trim() ? activeSuggestionsList : items.slice(0, 30);

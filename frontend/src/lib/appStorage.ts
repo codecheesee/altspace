@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Item, PortItem, ClipboardHistoryItem } from "../types";
+import type { Item } from "../types";
 
 export async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, any>): Promise<T | null> {
   try {
@@ -27,6 +27,12 @@ export interface FrecencyRecord {
 }
 
 export const FRECENCY_CACHE_KEY = "altspace_frecency_v2";
+export const SIDEBAR_PREFERENCE_KEY = "altspace_sidebar_visible_v1";
+export const DRIVE_SEARCH_PREFERENCE_KEY = "altspace_search_all_drives_v1";
+export const ADVANCED_SEARCH_QUOTA_KEY = "altspace_advanced_search_quota_v1";
+export const ADVANCED_SEARCH_LIMIT = 50;
+export const ADVANCED_SEARCH_WARNING_THRESHOLD = 40;
+export const ADVANCED_SEARCH_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function calculateFrecencyScore(record?: FrecencyRecord | number, now = Date.now()): number {
@@ -145,42 +151,69 @@ export function getCachedOrInitialApps(): Item[] {
   return sortByFrequency(DEFAULT_APPS);
 }
 
-export const DEMO_PORTS: PortItem[] = [
-  { port: 3000, pid: 14208, process_name: "node.exe", state: "LISTENING" },
-  { port: 5173, pid: 8940, process_name: "vite.exe", state: "LISTENING" },
-  { port: 8080, pid: 21304, process_name: "java.exe", state: "LISTENING" },
-  { port: 5432, pid: 4912, process_name: "postgres.exe", state: "LISTENING" }
-];
-
-export const DEMO_CLIPBOARD: ClipboardHistoryItem[] = [
-  {
-    id: "clip-1",
-    content: "const fetchUser = async (id: string) => {\n  const res = await api.get(`/users/${id}`);\n  return res.data;\n};",
-    preview: "const fetchUser = async (id: string) => { ...",
-    content_type: "code",
-    timestamp: "11:42 PM",
-    char_count: 88,
-    line_count: 4
-  },
-  {
-    id: "clip-2",
-    content: "#3B82F6",
-    preview: "#3B82F6",
-    content_type: "color",
-    timestamp: "11:39 PM",
-    char_count: 7,
-    line_count: 1
-  },
-  {
-    id: "clip-3",
-    content: "https://linear.app/features/command-palette",
-    preview: "https://linear.app/features/command-palette",
-    content_type: "url",
-    timestamp: "11:35 PM",
-    char_count: 43,
-    line_count: 1
+export function getStoredBoolean(key: string, fallback: boolean): boolean {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === "true";
+  } catch (_) {
+    return fallback;
   }
-];
+}
+
+export function saveStoredBoolean(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch (_) {}
+}
+
+export interface AdvancedSearchQuota {
+  windowStartedAt: number;
+  used: number;
+}
+
+export interface AdvancedSearchQuotaResult extends AdvancedSearchQuota {
+  allowed: boolean;
+  remaining: number;
+  warning: boolean;
+}
+
+export function getAdvancedSearchQuota(now = Date.now()): AdvancedSearchQuota {
+  try {
+    const raw = localStorage.getItem(ADVANCED_SEARCH_QUOTA_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (
+      parsed &&
+      Number.isFinite(parsed.windowStartedAt) &&
+      Number.isFinite(parsed.used) &&
+      now - parsed.windowStartedAt < ADVANCED_SEARCH_WINDOW_MS
+    ) {
+      return {
+        windowStartedAt: parsed.windowStartedAt,
+        used: Math.max(0, Math.floor(parsed.used)),
+      };
+    }
+  } catch (_) {}
+
+  return { windowStartedAt: now, used: 0 };
+}
+
+export function consumeAdvancedSearch(now = Date.now()): AdvancedSearchQuotaResult {
+  const current = getAdvancedSearchQuota(now);
+  const next = {
+    windowStartedAt: current.windowStartedAt,
+    used: Math.min(ADVANCED_SEARCH_LIMIT, current.used + 1),
+  };
+  try {
+    localStorage.setItem(ADVANCED_SEARCH_QUOTA_KEY, JSON.stringify(next));
+  } catch (_) {}
+
+  return {
+    ...next,
+    allowed: next.used <= ADVANCED_SEARCH_LIMIT,
+    remaining: Math.max(0, ADVANCED_SEARCH_LIMIT - next.used),
+    warning: next.used >= ADVANCED_SEARCH_WARNING_THRESHOLD && next.used < ADVANCED_SEARCH_LIMIT,
+  };
+}
 
 export const UTILITY_ITEMS: Item[] = [
   {
