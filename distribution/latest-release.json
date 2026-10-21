@@ -3,7 +3,7 @@
   "name": "AltSpace 2.0.0 — Developer Control Plane",
   "published_at": "2026-10-21T21:45:00Z",
   "download_url": "https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Setup-x64.exe",
-  "release_url": "https://github.com/codecheesee/altspace/releases",
+  "release_url": "https://github.com/codecheesee/altspace/releases/tag/v2.0.0",
   "features": [
     "Unified Capability Matrix with Option A Settings & Option C Omnibar hot-toggles (> toggle <id>)",
     "Intelligent Port & Process Recovery with Toolhelp32 process tree forensics and TCP table polling",

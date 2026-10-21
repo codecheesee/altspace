@@ -33,7 +33,8 @@ AltSpace is a high-performance, keyboard-driven desktop command palette and spot
 AltSpace is distributed as a native Windows application with several installation paths:
 
 - **Official Web Landing Page:** Visit [**https://codecheesee.github.io/altspace/**](https://codecheesee.github.io/altspace/) to explore features, download installers, and view live contributor bounties.
-- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe) (v2.0.0-preview, 3.7 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
+- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Setup-x64.exe) (v2.0.0, 4.1 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
+- **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-MSI-x64.msi) (v2.0.0, 6.5 MB) for enterprise WiX Group Policy deployments.
 - **Windows Package Manager (Winget):**
   ```powershell
   winget install codecheesee.altspace
@@ -43,7 +44,7 @@ AltSpace is distributed as a native Windows application with several installatio
   irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
   ```
   The script resolves the latest GitHub release, downloads `AltSpace-Portable-x64.zip`, verifies the archive with SHA-256 against `SHA256SUMS.txt`, creates desktop shortcuts, and launches AltSpace.
-- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Portable-x64.zip) (4.9 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
+- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Portable-x64.zip) (5.3 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
 
 > [!TIP]
 > **Windows SmartScreen Note**: AltSpace is an independent, community-driven open-source project. If Windows SmartScreen displays *"Windows protected your PC"*, click **More info** &rarr; **Run anyway**. All binaries are built openly and checksum-verified on GitHub Actions.
