@@ -1,4 +1,4 @@
-# Rohan Builds — Discord Community Architecture & Operational Blueprint
+# Codecheesee Builds — Discord Community Architecture & Operational Blueprint
 
 > **Creator-Led Community System for AltSpace and Future Product Areas**  
 > *Author: Rohan (@codecheesee) / Community & Security Engineering*  
@@ -11,13 +11,13 @@
 ### The Creator-Led Model
 A common failure in indie software is creating an isolated Discord server for every app. This fragments attention, forces community members to join multiple servers, multiplies moderation overhead, and leaves new products launching to an empty audience.
 
-Instead, we deploy a **creator-led product studio community** under the umbrella **`Rohan Builds`**. 
+Instead, we deploy a **creator-led product studio community** under the umbrella **`Codecheesee Builds`**. 
 - **The Trust Layer**: Rohan as the creator and systems developer building fast, private developer tools for Windows and beyond.
 - **The Discovery Layer**: Individual product areas (`AltSpace`, followed by future developer utilities).
 - **The Operational Boundary**: The desktop application (`AltSpace`) and the Discord server remain decoupled. AltSpace works 100% offline with zero Discord dependency. Discord roles provide community recognition and beta channels, but **never** act as the cryptographic licensing authority.
 
 ```
-Rohan Builds (Creator Umbrella Server)
+Codecheesee Builds (Creator Umbrella Server)
 ├── 📢 START HERE            (Rules, announcements, global roadmap, intros)
 ├── 💬 DEVELOPER COMMUNITY   (Windows, Rust, Local AI, Docker/WSL, lounge)
 ├── 🚀 ALTSPACE              (Start here, support, bug forums, feature forums, releases)
@@ -32,12 +32,12 @@ Rohan Builds (Creator Umbrella Server)
 
 | Candidate Name | Pros | Cons | Recommendation |
 | :--- | :--- | :--- | :--- |
-| **`Rohan Builds`** | Active, personal, developer-focused, implies continuous creation and craftsmanship. | Less corporate. | **Selected & Recommended** |
+| **`Codecheesee Builds`** | Active, personal, developer-focused, implies continuous creation and craftsmanship. | Less corporate. | **Selected & Recommended** |
 | **`Rohan's Lab`** | Strong R&D/experimental vibe, great for open-source exploration. | Can feel informal or non-commercial. | Strong alternative |
 | **`Rohan Labs`** | Sound like an established software studio. | Slightly generic; creates expectation of a larger firm. | Corporate fallback |
 
 ### Public Server Positioning
-> **Server Name**: `Rohan Builds`  
+> **Server Name**: `Codecheesee Builds`  
 > **Server Tagline**: *Fast, private developer tools for Windows and beyond.*  
 > **Server Description**:  
 > "A developer community for fast, private Windows tools built by Rohan. Get support for AltSpace, explore local AI and systems engineering, join beta tests, share workflows, and help shape the roadmap."
@@ -190,7 +190,7 @@ Using native **Discord Community Onboarding** ensures new members only see chann
 
 ### Onboarding Flow Questions
 
-#### Question 1: What brings you to Rohan Builds? *(Multi-select)*
+#### Question 1: What brings you to Codecheesee Builds? *(Multi-select)*
 - `[ ]` I am using AltSpace on Windows *(Assigns `@AltSpace User`, reveals `#altspace-*`)*
 - `[ ]` I want to test pre-release builds *(Assigns `@AltSpace Beta`, reveals `#altspace-beta`)*
 - `[ ]` I am an open-source contributor *(Assigns `@Verified Contributor` review queue)*
@@ -232,7 +232,7 @@ Using native **Discord Community Onboarding** ensures new members only see chann
 7. **Moderator Discretion**: Staff enforce rules according to their intent. Attempts to lawyer edge cases will not be entertained.
 
 ### Free vs. Pro Community Policy
-> **Community First**: The `Rohan Builds` server is a public engineering space. Free and open-source users have full access to general support, bug reporting, feature voting, and public releases. `AltSpace Pro` is a financial and operational license that unlocks cosmetic recognition (`@AltSpace Pro`), access to early development previews (`#altspace-beta`), and expedited triage—it **never** paywalls essential troubleshooting or community knowledge.
+> **Community First**: The `Codecheesee Builds` server is a public engineering space. Free and open-source users have full access to general support, bug reporting, feature voting, and public releases. `AltSpace Pro` is a financial and operational license that unlocks cosmetic recognition (`@AltSpace Pro`), access to early development previews (`#altspace-beta`), and expedited triage—it **never** paywalls essential troubleshooting or community knowledge.
 
 ---
 
@@ -252,7 +252,7 @@ Using native **Discord Community Onboarding** ensures new members only see chann
           "(?:https?://)?(?:www\\.)?(?:discord\\.(?:gg|io|me|li)|discordapp\\.com/invite)/[a-zA-Z0-9]+"
         ],
         "allowList": [
-          "https://discord.gg/rohanbuilds",
+          "https://discord.gg/codecheesee",
           "https://discord.gg/altspace"
         ]
       },
@@ -324,7 +324,7 @@ Using native **Discord Community Onboarding** ensures new members only see chann
 
 ## 8. Discord Bot Command Specification
 
-The umbrella bot is titled **`Rohan Builds Community`**. It runs via **Discord Interactions (Slash Commands)** over HTTPS, avoiding privileged Gateway Intents (0 message content intent required).
+The umbrella bot is titled **`Codecheesee Builds Community`**. It runs via **Discord Interactions (Slash Commands)** over HTTPS, avoiding privileged Gateway Intents (0 message content intent required).
 
 ```
 /help                     -> Displays command overview and official resources.
@@ -440,7 +440,7 @@ Account linking connects a user's Discord profile with their purchase/sponsor en
 
 ### Security Boundary
 - The desktop app **never** handles Discord OAuth secrets.
-- Flow is initiated from the studio website (`https://account.rohanbuilds.dev/connect/discord`).
+- Flow is initiated from the studio website (`https://account.codecheesee.dev/connect/discord`).
 - CSRF protection uses an encrypted, short-lived `state` parameter containing a cryptographically random nonce and customer ID.
 
 ```
@@ -507,7 +507,7 @@ export function buildReleasePayload(tag: string, name: string, body: string, htm
           { name: "Platform", value: "Windows 10 / 11 (x64, arm64)", inline: true },
           { name: "Download", value: `[Direct Installer](${htmlUrl})`, inline: true },
         ],
-        footer: { text: "Rohan Builds • Verified Release Feed" },
+        footer: { text: "Codecheesee Builds • Verified Release Feed" },
         timestamp: new Date().toISOString(),
       },
     ],
@@ -526,7 +526,7 @@ Inside AltSpace (`Alt + Space`), typing `:community` reveals quick action items:
 
 | Command | Action | Executed Operation |
 | :--- | :--- | :--- |
-| `:community` | Join the Community | Opens `https://discord.gg/rohanbuilds` via default browser |
+| `:community` | Join the Community | Opens `https://discord.gg/codecheesee` via default browser |
 | `:community support` | Get Help | Opens `https://discord.com/channels/.../#altspace-support` |
 | `:community report-bug` | Report a Bug | Opens `#altspace-bug-reports` forum or GitHub Issues |
 | `:community feature-request` | Request a Feature | Opens `#altspace-feature-reqs` forum |
@@ -644,7 +644,7 @@ When launching Product #2 (e.g., `PortPulse` or `LocalVault`):
 ## 16. Launch Checklist
 
 ### Pre-Launch (T-7 to T-1)
-- [ ] Create Discord server `Rohan Builds`.
+- [ ] Create Discord server `Codecheesee Builds`.
 - [ ] Enable **Community Server** settings.
 - [ ] Configure **Rules Screening** with the copy from Section 6.
 - [ ] Configure **AutoMod** rules with surgical secret regexes.

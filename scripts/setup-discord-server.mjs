@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Rohan Builds — Automated Discord Server Provisioning Script
+ * Codecheesee Builds — Automated Discord Server Provisioning Script
  * 
  * Automates the creation and configuration of:
  * - Server Roles & Permissions (Hierarchy, Colors)
@@ -35,7 +35,7 @@ const { values } = parseArgs({
 
 if (values.help) {
   console.log(`
-Rohan Builds Discord Provisioner
+Codecheesee Builds Discord Provisioner
 
 Options:
   --token <token>    Discord Bot Token (or set DISCORD_BOT_TOKEN env var)
@@ -73,7 +73,7 @@ const SERVER_BLUEPRINT = {
     {
       name: 'START HERE',
       channels: [
-        { name: 'welcome', type: 0, topic: 'Welcome to Rohan Builds. Start here for links and guidelines.' },
+        { name: 'welcome', type: 0, topic: 'Welcome to Codecheesee Builds. Start here for links and guidelines.' },
         { name: 'rules', type: 0, topic: 'Community safety, rules, and privacy policies.' },
         { name: 'announcements', type: 5, topic: 'Official product launches and studio announcements.' }, // Announcement
         { name: 'roadmap', type: 0, topic: 'High-level roadmap and progress updates.' },
@@ -136,7 +136,7 @@ const SERVER_BLUEPRINT = {
     {
       name: 'FUTURE PRODUCTS',
       channels: [
-        { name: 'future-products-hub', type: 0, topic: 'Preview new tools from Rohan Builds.' },
+        { name: 'future-products-hub', type: 0, topic: 'Preview new tools from Codecheesee Builds.' },
         { name: 'product-ideas', type: 0, topic: 'Discuss ideas for upcoming developer utilities.' },
         { name: 'beta-waitlists', type: 0, topic: 'Opt-in for upcoming product private betas.' },
       ],
@@ -205,7 +205,7 @@ async function discordRequest(endpoint, method = 'GET', body = null) {
     headers: {
       Authorization: `Bot ${BOT_TOKEN}`,
       'Content-Type': 'application/json',
-      'User-Agent': 'RohanBuildsProvisioner/1.0',
+      'User-Agent': 'CodecheeseeBuildsProvisioner/1.0',
     },
   };
   if (body) {
@@ -234,7 +234,7 @@ async function discordRequest(endpoint, method = 'GET', body = null) {
 
 async function main() {
   console.log(`\n======================================================`);
-  console.log(`🚀 Rohan Builds Discord Provisioner`);
+  console.log(`🚀 Codecheesee Builds Discord Provisioner`);
   console.log(`======================================================`);
 
   if (IS_DRY_RUN && (!BOT_TOKEN || BOT_TOKEN === 'mock_token')) {
@@ -354,7 +354,19 @@ async function main() {
           if (chanDef.default_reaction_emoji) payload.default_reaction_emoji = chanDef.default_reaction_emoji;
         }
 
-        await discordRequest(`/guilds/${GUILD_ID}/channels`, 'POST', payload);
+        try {
+          await discordRequest(`/guilds/${GUILD_ID}/channels`, 'POST', payload);
+        } catch (err) {
+          if ((chanDef.type === 15 || chanDef.type === 5) && err.message.includes('50035')) {
+            console.log(`     ⚠️  Server does not have Community enabled yet. Falling back #${chanDef.name} to Text channel.`);
+            payload.type = 0;
+            delete payload.available_tags;
+            delete payload.default_reaction_emoji;
+            await discordRequest(`/guilds/${GUILD_ID}/channels`, 'POST', payload);
+          } else {
+            throw err;
+          }
+        }
       }
     }
   }
@@ -380,7 +392,7 @@ async function main() {
 
   console.log(`\n======================================================`);
   console.log(`✅ Provisioning Complete!`);
-  console.log(`Your "Rohan Builds" Discord community structure is live.`);
+  console.log(`Your "Codecheesee Builds" Discord community structure is live.`);
   console.log(`======================================================\n`);
 }
 

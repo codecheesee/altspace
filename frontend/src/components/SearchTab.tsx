@@ -447,11 +447,18 @@ export function SearchTab({
                   Query: {specialCard.data.prompt}
                 </div>
                 <div className="text-[11px] text-zinc-400 truncate font-mono">
-                  {specialCard.data.isLoading
-                    ? "Generating response via local Ollama..."
-                    : specialCard.data.response
-                    ? specialCard.data.response.slice(0, 60)
-                    : "Offline inference • Zero cloud data leakage"}
+                  {specialCard.data.isLoading ? (
+                    <span className="text-sky-300 animate-pulse">Generating response via local Ollama...</span>
+                  ) : specialCard.data.error ? (
+                    <span className="text-amber-400 font-semibold flex items-center gap-1.5">
+                      <span>⚡ Local Ollama is offline</span>
+                      <span className="text-zinc-500 font-normal">• See setup guide &rarr;</span>
+                    </span>
+                  ) : specialCard.data.response ? (
+                    <span className="text-zinc-300">{specialCard.data.response.slice(0, 60)}</span>
+                  ) : (
+                    "Offline inference • Zero cloud data leakage"
+                  )}
                 </div>
               </div>
             </div>
@@ -460,12 +467,18 @@ export function SearchTab({
               <span
                 className={cn(
                   "text-[10px] font-medium px-2 py-0.5 rounded border uppercase tracking-wider font-mono",
-                  isSpecialSelected
+                  specialCard.data.error
+                    ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                    : isSpecialSelected
                     ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
                     : "bg-white/[0.04] text-zinc-400 border-white/[0.06]"
                 )}
               >
-                {specialCard.data.isLoading ? "STREAMING" : specialCard.data.model}
+                {specialCard.data.isLoading
+                  ? "STREAMING"
+                  : specialCard.data.error
+                  ? "OFFLINE"
+                  : specialCard.data.model}
               </span>
               <ChevronRight
                 className={cn(
@@ -554,7 +567,7 @@ export function SearchTab({
       </div>
 
       {/* Right Pane: Contextual Inspector / Preview */}
-      {isSidebarVisible && (selectedSpecial || selectedItem) && (
+      {(isSidebarVisible || (selectedSpecial && (selectedSpecial.kind === "ai" || selectedSpecial.kind === "plan" || selectedSpecial.kind === "terminal" || selectedSpecial.kind === "transform"))) && (selectedSpecial || selectedItem) && (
         <ResultPreview
           selectedSpecial={selectedSpecial}
           selectedItem={selectedItem}

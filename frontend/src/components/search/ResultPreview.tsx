@@ -481,7 +481,7 @@ export function ResultPreview({
 
     if (selectedSpecial.kind === "ai") {
       return (
-        <div className="w-[300px] border-l border-white/[0.08] bg-[#141418] p-4 flex flex-col justify-between overflow-hidden">
+        <div className="w-[360px] border-l border-white/[0.08] bg-[#141418] p-4 flex flex-col justify-between overflow-hidden">
           <div className="space-y-3 min-h-0 flex flex-col flex-1">
             <div className="flex flex-col items-center text-center p-3 rounded-xl bg-purple-500/[0.06] border border-purple-500/20 shrink-0">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-sm border bg-purple-500/10 text-purple-400 border-purple-500/25 font-bold text-sm">
@@ -499,16 +499,62 @@ export function ResultPreview({
 
             <div className="flex-1 bg-black/60 border border-white/[0.08] rounded-xl p-3 font-mono text-[11px] leading-relaxed text-zinc-200 overflow-y-auto select-text shadow-inner">
               {selectedSpecial.data.error ? (
-                <div className="space-y-2 text-zinc-300 text-[10.5px]">
-                  <p className="text-rose-400 font-semibold">⚡ Ollama Not Running on localhost:11434</p>
-                  <p className="text-zinc-400">To enable 100% free offline AI in AltSpace:</p>
-                  <ol className="list-decimal pl-4 space-y-1 text-zinc-400 font-sans text-[10px]">
-                    <li>Install free Ollama: <code className="text-purple-300">winget install Ollama.Ollama</code></li>
-                    <li>Start model: <code className="text-purple-300">ollama run llama3.2</code></li>
-                  </ol>
+                <div className="space-y-3 text-zinc-300 text-[11px] font-sans">
+                  <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span>Ollama is not running on localhost:11434</span>
+                  </div>
+                  <p className="text-zinc-400 text-[10.5px] leading-relaxed">
+                    AltSpace provides 100% free, private local AI using Ollama. To start asking questions:
+                  </p>
+
+                  <div className="p-2.5 rounded-lg bg-zinc-900 border border-white/[0.06] space-y-2">
+                    <div className="text-[10px] uppercase font-mono tracking-wider text-purple-400 font-semibold">
+                      Step 1: Install Free Ollama
+                    </div>
+                    <div className="flex items-center justify-between font-mono bg-black/50 p-1.5 rounded border border-white/[0.04]">
+                      <span className="text-zinc-300 text-[10px] select-all">winget install Ollama.Ollama</span>
+                      <button
+                        onClick={() => {
+                          onCopyClipboard("winget install Ollama.Ollama");
+                          onCopiedNotification("Copied install command!");
+                        }}
+                        className="px-2 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[9.5px] font-semibold cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+
+                    <div className="text-[10px] uppercase font-mono tracking-wider text-purple-400 font-semibold mt-1">
+                      Step 2: Run Lightweight Model
+                    </div>
+                    <div className="flex items-center justify-between font-mono bg-black/50 p-1.5 rounded border border-white/[0.04]">
+                      <span className="text-zinc-300 text-[10px] select-all">ollama run llama3.2</span>
+                      <button
+                        onClick={() => {
+                          onCopyClipboard("ollama run llama3.2");
+                          onCopiedNotification("Copied run command!");
+                        }}
+                        className="px-2 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[9.5px] font-semibold cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-sky-500/[0.06] border border-sky-500/20 text-[10.5px] text-zinc-300 space-y-1">
+                    <span className="text-sky-300 font-semibold">Prefer Claude 3.7 or GPT-4o?</span>
+                    <p className="text-zinc-400 text-[10px]">
+                      Add your cloud API key in Settings (<kbd className="px-1 py-0.5 rounded bg-white/10 font-mono">Ctrl+,</kbd>) under Local Copilot.
+                    </p>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20 text-[10px] text-emerald-300">
+                    💡 <strong>Offline fast path works right now!</strong> Try: <code className="text-white font-mono">? fix 5173</code> or <code className="text-white font-mono">? reclaim memory</code>
+                  </div>
                 </div>
               ) : selectedSpecial.data.response ? (
-                <div className="whitespace-pre-wrap text-zinc-200/90 break-words">
+                <div className="whitespace-pre-wrap text-zinc-200/90 break-words font-sans text-xs leading-relaxed">
                   {selectedSpecial.data.response}
                 </div>
               ) : (
