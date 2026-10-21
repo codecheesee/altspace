@@ -186,78 +186,127 @@
       </div>
     </section>
 
-    <!-- Interactive Live Simulator Section (21st.dev Style) -->
-    <section id="demo" class="max-w-4xl mx-auto px-6 py-6 scroll-mt-20">
+    <!-- Interactive Live Simulator Section (21st.dev Raycast Style) -->
+        <!-- Interactive Live Simulator Section (Windows 11 Fluent Design) -->
+    <section id="demo" class="max-w-5xl mx-auto px-6 py-6 scroll-mt-20">
       <div class="text-center mb-4">
-        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Interactive Simulator</span>
+        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Interactive Windows Simulator</span>
         <h2 class="text-xl sm:text-2xl font-bold text-white mt-1">Try AltSpace directly in your browser</h2>
-        <p class="text-xs text-zinc-400 mt-1">Use <kbd class="kbd-cap">↑</kbd> <kbd class="kbd-cap">↓</kbd> arrows and <kbd class="kbd-cap">↵ Enter</kbd> to test live desktop actions</p>
+        <p class="text-xs text-zinc-400 mt-1">Experience native Windows 11 speed — calculate math, kill active ports, search files, or test dev utilities</p>
       </div>
 
-      <!-- Mockup Window -->
-      <div class="specular-card rounded-2xl overflow-hidden border border-white/[0.12] shadow-2xl bg-[#0e0e12] relative">
-        <!-- Live Toast Notification Banner -->
-        <div id="sim-toast" class="hidden absolute top-14 left-4 right-4 z-20 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center justify-between shadow-xl backdrop-blur-md transition-all">
-          <span id="sim-toast-msg" class="flex items-center gap-2">✓ Action executed</span>
-          <button onclick="hideToast()" class="text-emerald-400 hover:text-white cursor-pointer">✕</button>
+      <!-- Windows 11 Mockup Window (Mica / Acrylic Glass) -->
+      <div class="rounded-xl overflow-hidden border border-white/[0.14] shadow-[0_20px_50px_rgba(0,0,0,0.6)] bg-[#18181c]/95 backdrop-blur-2xl relative">
+        <!-- Windows 11 Fluent Toast Notification -->
+        <div id="sim-toast" class="hidden absolute top-12 left-4 right-4 z-30 p-2.5 rounded-lg bg-[#202024]/95 border border-[#60cdff]/40 text-white text-xs font-medium flex items-center justify-between shadow-2xl backdrop-blur-xl transition-all">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-[#60cdff] shadow-[0_0_8px_#60cdff]"></span>
+            <span id="sim-toast-msg">✓ Action executed successfully</span>
+          </div>
+          <button onclick="hideToast()" class="text-zinc-400 hover:text-white cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.08]">✕</button>
         </div>
 
-        <!-- Window Top Bar -->
-        <div class="px-4 py-3 bg-[#131317] border-b border-white/[0.08] flex items-center justify-between">
+        <!-- Windows 11 Title Bar -->
+        <div class="h-9 px-3 bg-[#1f1f24] border-b border-white/[0.08] flex items-center justify-between select-none">
+          <!-- Left: App Icon & Title -->
           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
-            <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
-            <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-            <span class="text-[11px] font-mono text-zinc-400 ml-2">AltSpace Omnibar</span>
+            <img src="./logo.png" alt="AltSpace" class="w-4 h-4 rounded shadow-sm" />
+            <span class="text-xs text-zinc-200 font-medium">AltSpace</span>
+            <span class="text-zinc-600 font-mono text-[11px]">•</span>
+            <span class="text-[11px] text-zinc-400 font-mono">v2.0.0 (x64)</span>
           </div>
-          <div class="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
-            <span>Latency:</span>
-            <span id="sim-latency" class="text-emerald-400 font-bold">0.8 ms</span>
+
+          <!-- Center: Latency & RAM -->
+          <div class="hidden sm:flex items-center gap-3 text-[11px] font-mono text-zinc-400">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+              <span>Sub-5ms Rust Core:</span>
+              <span id="sim-latency" class="text-emerald-400 font-bold">0.8 ms</span>
+            </div>
+            <span class="text-zinc-600">|</span>
+            <span class="text-zinc-400">18.4 MB RAM</span>
+          </div>
+
+          <!-- Right: Windows 11 Caption Controls (Minimize, Maximize, Close) -->
+          <div class="flex items-center -mr-3">
+            <button title="Minimize" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-white/[0.08] hover:text-white transition">
+              <svg class="w-2.5 h-2.5" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+            </button>
+            <button title="Maximize" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-white/[0.08] hover:text-white transition">
+              <svg class="w-2.5 h-2.5" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+            </button>
+            <button title="Close" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-[#c42b1c] hover:text-white transition">
+              <svg class="w-2.5 h-2.5" viewBox="0 0 10 10"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.1"/></svg>
+            </button>
           </div>
         </div>
 
-        <!-- Omnibar Input -->
-        <div class="p-4 border-b border-white/[0.06] flex items-center gap-3 bg-[#111116]">
-          <svg class="w-5 h-5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input
-            id="demo-search-input"
-            type="text"
-            placeholder="Search apps, files, ports, calculate (e.g. 42*1337), or filter..."
-            oninput="handleDemoSearch(this.value)"
-            onkeydown="handleDemoKeydown(event)"
-            class="w-full bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 outline-none font-sans"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <kbd class="kbd-cap hidden sm:inline-flex">ESC</kbd>
+        <!-- Windows 11 Omnibar Search Box -->
+        <div class="p-3 bg-[#18181c] border-b border-white/[0.06]">
+          <div class="relative flex items-center bg-[#202024] rounded-lg border border-white/[0.1] focus-within:border-[#60cdff] focus-within:ring-1 focus-within:ring-[#60cdff]/40 transition shadow-inner">
+            <svg class="w-4 h-4 text-[#60cdff] shrink-0 ml-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input
+              id="demo-search-input"
+              type="text"
+              placeholder="Search files, calculate (e.g. 42*1337 or 15% of 850), kill :3000, type 'uuid', 'color'..."
+              oninput="handleDemoSearch(this.value)"
+              onkeydown="handleDemoKeydown(event)"
+              class="w-full bg-transparent px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none font-sans"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <div class="flex items-center gap-1.5 mr-2.5">
+              <kbd class="kbd-cap text-[10px] hidden sm:inline-flex cursor-pointer" onclick="clearDemoSearch()">ESC</kbd>
+            </div>
+          </div>
         </div>
 
-        <!-- Filter Pill Chips -->
-        <div class="px-4 py-2 bg-[#0c0c10] border-b border-white/[0.04] flex items-center gap-2 text-xs overflow-x-auto">
-          <button onclick="setDemoFilter('all', this)" class="demo-tab px-2.5 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer">All</button>
-          <button onclick="setDemoFilter('ports', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Ports</button>
-          <button onclick="setDemoFilter('clipboard', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Clipboard</button>
-          <button onclick="setDemoFilter('files', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Files</button>
-          <button onclick="setDemoFilter('ai', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Local AI</button>
+        <!-- Trending Suggestion Chips -->
+        <div class="px-4 py-2 bg-[#141418] border-b border-white/[0.04] flex items-center gap-1.5 text-[11px] overflow-x-auto select-none">
+          <span class="text-zinc-500 font-mono shrink-0 mr-1">Quick Try:</span>
+          <button onclick="applyQuery('42 * 1337')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-[#60cdff]/20 hover:text-[#60cdff] text-zinc-300 font-mono transition cursor-pointer shrink-0">42 * 1337</button>
+          <button onclick="applyQuery('15% of 850')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-[#60cdff]/20 hover:text-[#60cdff] text-zinc-300 font-mono transition cursor-pointer shrink-0">15% of 850</button>
+          <button onclick="applyQuery(':3000')" class="px-2 py-0.5 rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-mono transition cursor-pointer shrink-0">:3000 (Kill)</button>
+          <button onclick="applyQuery('uuid')" class="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-mono transition cursor-pointer shrink-0">uuid</button>
+          <button onclick="applyQuery('timestamp')" class="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-mono transition cursor-pointer shrink-0">timestamp</button>
+          <button onclick="applyQuery('#38bdf8')" class="px-2 py-0.5 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-mono transition cursor-pointer shrink-0">#38bdf8</button>
+          <button onclick="applyQuery('package.json')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 font-mono transition cursor-pointer shrink-0">package.json</button>
         </div>
 
-        <!-- Interactive Results Feed -->
-        <div id="demo-results" class="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-          <!-- Populated by JavaScript -->
+        <!-- Filter Pill Chips (Windows 11 Segmented Navigation) -->
+        <div class="px-4 py-2 bg-[#121215] border-b border-white/[0.04] flex items-center gap-1.5 text-xs overflow-x-auto">
+          <button onclick="setDemoFilter('all', this)" class="demo-tab px-3 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer">All</button>
+          <button onclick="setDemoFilter('ports', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Ports & Servers</button>
+          <button onclick="setDemoFilter('clipboard', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Clipboard</button>
+          <button onclick="setDemoFilter('files', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">NTFS Files</button>
+          <button onclick="setDemoFilter('utils', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Dev Utilities</button>
+          <button onclick="setDemoFilter('ai', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Local AI</button>
         </div>
 
-        <!-- Simulator Footer Bar -->
-        <div class="px-4 py-2.5 bg-[#09090c] border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+        <!-- Two-Column Workspace: Results Feed (Left) + Rich Inspector (Right) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 min-h-[350px]">
+          <!-- Interactive Results Feed -->
+          <div id="demo-results" class="md:col-span-7 lg:col-span-8 p-2 space-y-1 max-h-[350px] overflow-y-auto border-r border-white/[0.04]">
+            <!-- Populated by JavaScript -->
+          </div>
+
+          <!-- Windows 11 Task Inspector Panel -->
+          <div id="demo-inspector" class="hidden md:flex md:col-span-5 lg:col-span-4 p-4 flex-col justify-between bg-[#121216]/90 text-xs text-zinc-300">
+            <!-- Populated dynamically based on selectedIndex -->
+          </div>
+        </div>
+
+        <!-- Windows 11 Status Bar -->
+        <div class="px-4 py-2 bg-[#16161a] border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400 font-mono">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Everything SDK Active (Drives: C:, D:, E:)</span>
+            <span id="sim-footer-status">Windows Everything NTFS Index Active (C:, D:, E:)</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span>Use</span>
+          <div class="flex items-center gap-2 text-zinc-500">
+            <span>Navigate</span>
             <kbd class="kbd-cap">↑</kbd>
             <kbd class="kbd-cap">↓</kbd>
-            <span>then</span>
+            <span>Execute</span>
             <kbd class="kbd-cap">↵</kbd>
           </div>
         </div>
@@ -600,22 +649,421 @@
     </div>
   </footer>
 
-  <!-- Interactive Demo, Bento & Pricing Scripts -->
+    <!-- Interactive Demo, Bento & Pricing Scripts -->
   <script>
-    const DEMO_ITEMS = [
-      { id: 1, title: 'Visual Studio Code', subtitle: 'App • C:\\Program Files\\Microsoft VS Code\\Code.exe', mode: 'all', badge: 'App', icon: '💻' },
-      { id: 2, title: 'node.exe (Port :3000)', subtitle: 'Port • PID 18402 • Listening on localhost:3000', mode: 'ports', badge: 'Port', icon: '⚡', action: 'Kill' },
-      { id: 3, title: 'python.exe (Port :8000)', subtitle: 'Port • PID 24910 • FastAPI dev server', mode: 'ports', badge: 'Port', icon: '⚡', action: 'Kill' },
-      { id: 4, title: 'git clone https://github.com/codecheesee/altspace', subtitle: 'Clipboard • Copied 2 mins ago', mode: 'clipboard', badge: 'Clip', icon: '📋' },
-      { id: 5, title: 'Q1_Financial_Report_2026.xlsx', subtitle: 'File • D:\\Work\\Finance\\Q1_Financial_Report_2026.xlsx', mode: 'files', badge: 'File', icon: '📁' },
-      { id: 6, title: 'Explain this error in clipboard context', subtitle: 'AI Prompt • Local Ollama (llama3:8b)', mode: 'ai', badge: 'AI', icon: '🤖' },
-      { id: 7, title: 'Windows Calculator', subtitle: 'Result: 42 * 1337 = 56,154', mode: 'all', badge: 'Calc', icon: '🔢' },
-      { id: 8, title: 'Snap Active Window Left Half', subtitle: 'System • Snap current window to left 50%', mode: 'all', badge: 'Snap', icon: '🪟' }
+    // Windows 11 Dynamic Catalog of Developer, System & Productivity Tools
+    const BASE_DEMO_ITEMS = [
+      {
+        id: 'port-3000',
+        title: 'node.exe (Port :3000)',
+        subtitle: 'Next.js Dev Server • PID 18402 • 127.0.0.1:3000',
+        mode: 'ports',
+        badge: 'Port',
+        icon: '⚡',
+        action: 'Kill',
+        details: {
+          category: 'Active Port Listener',
+          protocol: 'TCP (IPv4)',
+          port: ':3000',
+          pid: 18402,
+          process: 'node.exe (Next.js v15.2)',
+          memory: '142 MB',
+          cpu: '0.4%',
+          uptime: '1h 24m',
+          status: 'LISTENING',
+          command: 'npm run dev -- --port 3000'
+        }
+      },
+      {
+        id: 'port-8000',
+        title: 'python.exe (Port :8000)',
+        subtitle: 'FastAPI Dev Server • PID 24910 • 0.0.0.0:8000',
+        mode: 'ports',
+        badge: 'Port',
+        icon: '⚡',
+        action: 'Kill',
+        details: {
+          category: 'Active Port Listener',
+          protocol: 'TCP (IPv4)',
+          port: ':8000',
+          pid: 24910,
+          process: 'uvicorn main:app --reload',
+          memory: '88 MB',
+          cpu: '0.1%',
+          uptime: '38m',
+          status: 'LISTENING',
+          command: 'python -m uvicorn api:app --port 8000'
+        }
+      },
+      {
+        id: 'port-5432',
+        title: 'postgres.exe (Port :5432)',
+        subtitle: 'PostgreSQL Database • PID 9120 • Localhost',
+        mode: 'ports',
+        badge: 'Port',
+        icon: '🐘',
+        action: 'Kill',
+        details: {
+          category: 'Database Service',
+          protocol: 'TCP (IPv4)',
+          port: ':5432',
+          pid: 9120,
+          process: 'postgres.exe (v16.1)',
+          memory: '230 MB',
+          cpu: '0.2%',
+          uptime: '14h 10m',
+          status: 'LISTENING',
+          command: 'docker-compose up -d postgres'
+        }
+      },
+      {
+        id: 'clip-git',
+        title: 'gh repo clone codecheesee/altspace',
+        subtitle: 'Clipboard • Copied 2 mins ago • Terminal Command',
+        mode: 'clipboard',
+        badge: 'Clip',
+        icon: '📋',
+        action: 'Copy',
+        details: {
+          category: 'Clipboard History',
+          type: 'Bash / CLI Command',
+          length: '41 characters',
+          copied: '2 minutes ago',
+          content: 'gh repo clone codecheesee/altspace',
+          encryption: 'Windows DPAPI Encrypted'
+        }
+      },
+      {
+        id: 'clip-jwt',
+        title: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        subtitle: 'Clipboard • JWT Auth Bearer Token (256-bit)',
+        mode: 'clipboard',
+        badge: 'Clip',
+        icon: '🔑',
+        action: 'Copy',
+        details: {
+          category: 'Clipboard History',
+          type: 'JSON Web Token (JWT)',
+          length: '184 characters',
+          copied: '14 minutes ago',
+          content: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsdFNwYWNlIFVzZXIiLCJpYXQiOjE1MTYyMzkwMjJ9',
+          encryption: 'Windows DPAPI Encrypted'
+        }
+      },
+      {
+        id: 'file-pkg',
+        title: 'package.json',
+        subtitle: 'C:\\Users\\rohan\\Projects\\altspace\\frontend\\package.json',
+        mode: 'files',
+        badge: 'File',
+        icon: '📄',
+        action: 'Open',
+        details: {
+          category: 'Local File Search (NTFS)',
+          drive: 'NTFS C: (NVMe SSD)',
+          path: 'C:\\Users\\rohan\\Projects\\altspace\\frontend\\package.json',
+          size: '3.4 KB',
+          modified: '12 minutes ago',
+          indexedBy: 'Everything SDK Core (0.7ms query)',
+          type: 'JSON Configuration'
+        }
+      },
+      {
+        id: 'file-docker',
+        title: 'docker-compose.yml',
+        subtitle: 'D:\\Workspace\\infrastructure\\docker-compose.yml',
+        mode: 'files',
+        badge: 'File',
+        icon: '🐳',
+        action: 'Open',
+        details: {
+          category: 'Local File Search (NTFS)',
+          drive: 'NTFS D: (Secondary NVMe)',
+          path: 'D:\\Workspace\\infrastructure\\docker-compose.yml',
+          size: '2.1 KB',
+          modified: 'Yesterday',
+          indexedBy: 'Everything SDK Core (1.1ms query)',
+          type: 'Docker Compose Config'
+        }
+      },
+      {
+        id: 'file-main-rs',
+        title: 'main.rs (Rust Core Engine)',
+        subtitle: 'C:\\Users\\rohan\\Projects\\altspace\\src-tauri\\src\\main.rs',
+        mode: 'files',
+        badge: 'File',
+        icon: '🦀',
+        action: 'Open',
+        details: {
+          category: 'Local File Search (NTFS)',
+          drive: 'NTFS C: (SSD)',
+          path: 'C:\\Users\\rohan\\Projects\\altspace\\src-tauri\\src\\main.rs',
+          size: '14.8 KB',
+          modified: '3 hours ago',
+          indexedBy: 'Sub-5ms Rust IPC',
+          type: 'Rust Source File'
+        }
+      },
+      {
+        id: 'util-uuid',
+        title: 'UUID v4 Generator',
+        subtitle: 'Type "uuid" to generate random cryptographic identifiers',
+        mode: 'utils',
+        badge: 'UUID',
+        icon: '🆔',
+        action: 'Generate',
+        details: {
+          category: 'Developer Utility',
+          format: 'RFC 4122 Version 4',
+          sample: 'e0f9b37a-4a55-4d7f-a60d-82d2c730e2f1',
+          execution: 'Instant Client-Side',
+          shortcut: 'Enter to copy'
+        }
+      },
+      {
+        id: 'util-time',
+        title: 'Unix Epoch & Timestamp Converter',
+        subtitle: 'Type "timestamp" or "epoch" for current time & conversions',
+        mode: 'utils',
+        badge: 'Time',
+        icon: '⏱️',
+        action: 'Copy',
+        details: {
+          category: 'Developer Utility',
+          epoch: Math.floor(Date.now() / 1000),
+          utc: new Date().toUTCString(),
+          iso: new Date().toISOString()
+        }
+      },
+      {
+        id: 'util-color',
+        title: 'Color Converter & Inspector (#38bdf8)',
+        subtitle: 'HEX ↔ RGB ↔ HSL instant CSS color transforms',
+        mode: 'utils',
+        badge: 'Color',
+        icon: '🎨',
+        action: 'Inspect',
+        details: {
+          category: 'Developer Utility',
+          hex: '#38bdf8',
+          rgb: 'rgb(56, 189, 248)',
+          hsl: 'hsl(199, 95%, 60%)',
+          previewColor: '#38bdf8'
+        }
+      },
+      {
+        id: 'ai-explain',
+        title: 'Explain TypeScript error in clipboard',
+        subtitle: 'Local AI • Ollama (llama3:8b) • 42 tok/s • 0 telemetry',
+        mode: 'ai',
+        badge: 'AI',
+        icon: '🤖',
+        action: 'Prompt',
+        details: {
+          category: 'Local Private AI (Ollama)',
+          model: 'Llama 3 8B (Q4_K_M)',
+          endpoint: 'http://localhost:11434',
+          latency: '42 tokens/sec',
+          privacy: '100% On-Device / Zero Cloud'
+        }
+      },
+      {
+        id: 'sys-lock',
+        title: 'Lock Windows Workstation',
+        subtitle: 'Windows System API • Instant Win+L equivalent',
+        mode: 'all',
+        badge: 'System',
+        icon: '🔒',
+        action: 'Lock',
+        details: {
+          category: 'Windows Shell API',
+          command: 'LockWorkStation()',
+          delay: '< 1 ms',
+          target: 'Active User Session'
+        }
+      },
+      {
+        id: 'sys-clean',
+        title: 'Empty Recycle Bin',
+        subtitle: 'Windows Shell • Recover disk space silently across drives',
+        mode: 'all',
+        badge: 'System',
+        icon: '🗑️',
+        action: 'Empty',
+        details: {
+          category: 'Windows Shell API',
+          command: 'SHEmptyRecycleBinW()',
+          reclaimedEstimate: '4.8 GB',
+          status: 'Ready'
+        }
+      }
     ];
 
     let currentFilter = 'all';
     let selectedIndex = 0;
     let currentRenderedItems = [];
+    const killedPorts = new Set();
+
+    // Safe Math Evaluator for Omnibar
+    function evaluateMath(rawExpr) {
+      if (!rawExpr) return null;
+      let expr = rawExpr.trim();
+
+      // Handle "x% of y" or "x% off y"
+      const pctOfMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s*\$?([\d,]+(?:\.\d+)?)$/i);
+      if (pctOfMatch) {
+        const pct = parseFloat(pctOfMatch[1]);
+        const base = parseFloat(pctOfMatch[2].replace(/,/g, ''));
+        const ans = (pct / 100) * base;
+        return { result: ans, formatted: ans.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: rawExpr };
+      }
+
+      const pctOffMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s*\$?([\d,]+(?:\.\d+)?)$/i);
+      if (pctOffMatch) {
+        const pct = parseFloat(pctOffMatch[1]);
+        const base = parseFloat(pctOffMatch[2].replace(/,/g, ''));
+        const ans = base - (pct / 100) * base;
+        return { result: ans, formatted: ans.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: rawExpr };
+      }
+
+      // Check for hex or binary integer: 0xff, 0b1010
+      if (/^0x[0-9a-f]+$/i.test(expr)) {
+        const val = parseInt(expr, 16);
+        return { result: val, formatted: val.toLocaleString(), expr: rawExpr };
+      }
+      if (/^0b[01]+$/i.test(expr)) {
+        const val = parseInt(expr.slice(2), 2);
+        return { result: val, formatted: val.toLocaleString(), expr: rawExpr };
+      }
+
+      // Basic math regex check (numbers, operators, parentheses, sqrt, sin, cos, tan, log, pi, e)
+      const sanitized = expr
+        .replace(/\^/g, '**')
+        .replace(/sqrt\(/gi, 'Math.sqrt(')
+        .replace(/abs\(/gi, 'Math.abs(')
+        .replace(/round\(/gi, 'Math.round(')
+        .replace(/floor\(/gi, 'Math.floor(')
+        .replace(/ceil\(/gi, 'Math.ceil(')
+        .replace(/sin\(/gi, 'Math.sin(')
+        .replace(/cos\(/gi, 'Math.cos(')
+        .replace(/tan\(/gi, 'Math.tan(')
+        .replace(/log\(/gi, 'Math.log(')
+        .replace(/\bpi\b/gi, 'Math.PI')
+        .replace(/\be\b/gi, 'Math.E');
+
+      // Only allow safe math tokens
+      if (!/^[0-9+\-*\/().\s%*,MathsqrtabsincolgPIE]+$/.test(sanitized)) {
+        return null;
+      }
+
+      // Must have at least one operator or function to be a math expression
+      if (!/[+\-*\/\^%()]|Math\./.test(sanitized) && isNaN(Number(expr))) {
+        return null;
+      }
+
+      try {
+        const fn = new Function('return ' + sanitized);
+        const val = fn();
+        if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
+          return {
+            result: val,
+            formatted: val.toLocaleString('en-US', { maximumFractionDigits: 6 }),
+            expr: rawExpr
+          };
+        }
+      } catch (err) {
+        return null;
+      }
+      return null;
+    }
+
+    // Dynamic Utilities Engine
+    function evaluateDevUtils(q) {
+      const utils = [];
+      const lower = q.toLowerCase();
+
+      // UUID
+      if (lower === 'uuid' || lower === 'guid' || lower.startsWith('uuid ') || lower.startsWith('guid ')) {
+        const uuidVal = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : '3f92b710-53ab-417c-a491-9e7f8615e47a';
+        utils.push({
+          id: 'dyn-uuid',
+          title: '= ' + uuidVal,
+          subtitle: 'Generated RFC 4122 v4 UUID • Press ↵ to copy',
+          mode: 'utils',
+          badge: 'UUID',
+          icon: '🆔',
+          action: 'Copy',
+          copyVal: uuidVal,
+          details: {
+            category: 'Cryptographic UUID',
+            value: uuidVal,
+            version: 'Version 4 (Random)',
+            format: '36 characters hex-hyphenated',
+            action: 'Enter copies directly to Windows Clipboard'
+          }
+        });
+      }
+
+      // Timestamp / Epoch
+      if (lower === 'timestamp' || lower === 'time' || lower === 'epoch' || lower === 'unix' || lower.includes('unix time')) {
+        const now = new Date();
+        const epoch = Math.floor(now.getTime() / 1000);
+        const iso = now.toISOString();
+        const local = now.toLocaleString();
+        utils.push({
+          id: 'dyn-epoch',
+          title: '= ' + epoch,
+          subtitle: `Unix Epoch Timestamp • ${iso} • Press ↵ to copy`,
+          mode: 'utils',
+          badge: 'Time',
+          icon: '⏱️',
+          action: 'Copy',
+          copyVal: String(epoch),
+          details: {
+            category: 'Windows System Clock',
+            epochSeconds: epoch,
+            epochMillis: now.getTime(),
+            isoUTC: iso,
+            localTime: local
+          }
+        });
+      }
+
+      // Color detection (e.g. #38bdf8 or #fff or rgb)
+      if (q.startsWith('#') && (q.length === 4 || q.length === 7 || q.length === 9)) {
+        utils.push({
+          id: 'dyn-color',
+          title: 'Color: ' + q,
+          subtitle: 'HEX ↔ RGB ↔ HSL Converter • Press ↵ to copy',
+          mode: 'utils',
+          badge: 'Color',
+          icon: '🎨',
+          action: 'Copy',
+          copyVal: q,
+          details: {
+            category: 'CSS Color Inspector',
+            hex: q,
+            rgb: hexToRgb(q),
+            previewColor: q
+          }
+        });
+      }
+
+      return utils;
+    }
+
+    function hexToRgb(hex) {
+      let c = hex.substring(1);
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return 'Invalid Color';
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
 
     function renderDemoItems(items) {
       currentRenderedItems = items;
@@ -623,47 +1071,165 @@
       const container = document.getElementById('demo-results');
       if (!items.length) {
         container.innerHTML = `
-          <div class="py-8 text-center text-xs text-zinc-500">
-            No matching items found. Press Backspace to reset.
+          <div class="py-12 text-center text-xs text-zinc-500">
+            <svg class="w-8 h-8 mx-auto text-zinc-600 mb-2 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <div>No matching Windows desktop items found.</div>
+            <div class="text-[11px] text-zinc-600 mt-1">Try typing a math expression, ":3000", "uuid", or a filename.</div>
+          </div>
+        `;
+        renderInspector(null);
+        return;
+      }
+
+      container.innerHTML = items.map((item, idx) => {
+        const isKilled = killedPorts.has(item.id);
+        const displayAction = isKilled ? 'Freed' : item.action;
+        const actionClass = isKilled
+          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+          : (item.action === 'Kill'
+              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/20'
+              : 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border-white/[0.08]');
+
+        return `
+          <div
+            class="p-2 rounded-lg ${idx === selectedIndex ? 'bg-white/[0.08] text-white shadow-sm' : 'hover:bg-white/[0.04] text-zinc-300'} flex items-center justify-between transition cursor-pointer group select-none"
+            onclick="selectAndExecute(${idx})"
+            onmouseenter="setHoverIndex(${idx})"
+          >
+            <div class="flex items-center gap-3 min-w-0 pr-2">
+              <span class="text-base shrink-0 select-none">${item.icon}</span>
+              <div class="min-w-0">
+                <div class="text-xs font-semibold truncate ${idx === selectedIndex ? 'text-white' : 'text-zinc-200'}">
+                  ${isKilled ? `<span class="line-through text-zinc-500">${item.title}</span> <span class="text-emerald-400 font-normal text-[11px] ml-1">✓ Released</span>` : item.title}
+                </div>
+                <div class="text-[10.5px] text-zinc-400 font-mono truncate max-w-[260px] sm:max-w-md">${item.subtitle}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${displayAction ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${actionClass} transition">${displayAction}</span>` : ''}
+              <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-white/[0.05]">${item.badge}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      renderInspector(items[selectedIndex]);
+    }
+
+    // Windows 11 Task Inspector Preview Panel
+    function renderInspector(item) {
+      const panel = document.getElementById('demo-inspector');
+      if (!panel) return;
+      if (!item) {
+        panel.innerHTML = `
+          <div class="h-full flex items-center justify-center text-center text-zinc-600 text-xs">
+            Select an item to view Windows task properties
           </div>
         `;
         return;
       }
 
-      container.innerHTML = items.map((item, idx) => `
-        <div
-          class="p-2 rounded-lg ${idx === selectedIndex ? 'bg-white/[0.08] text-white' : 'hover:bg-white/[0.04] text-zinc-300'} flex items-center justify-between transition cursor-pointer group"
-          onclick="selectAndExecute(${idx})"
-          onmouseenter="setHoverIndex(${idx})"
-        >
-          <div class="flex items-center gap-3">
-            <span class="text-base select-none">${item.icon}</span>
-            <div>
-              <div class="text-xs font-semibold ${idx === selectedIndex ? 'text-white' : 'text-zinc-200'}">${item.title}</div>
-              <div class="text-[10px] text-zinc-400 font-mono truncate max-w-[280px] sm:max-w-md">${item.subtitle}</div>
-            </div>
+      const d = item.details || {};
+      const isKilled = killedPorts.has(item.id);
+
+      let detailsHtml = '';
+      if (item.badge === 'Port') {
+        detailsHtml = `
+          <div class="space-y-2 mt-3 font-mono text-[11px]">
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Protocol</span><span class="text-zinc-300">${d.protocol || 'TCP'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Port</span><span class="text-[#60cdff] font-bold">${d.port || ':3000'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Process PID</span><span class="text-zinc-300">${d.pid || 18402}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">RAM Usage</span><span class="text-zinc-300">${d.memory || '142 MB'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">CPU</span><span class="text-zinc-300">${d.cpu || '0.4%'}</span></div>
+            <div class="flex justify-between py-1"><span class="text-zinc-500">State</span><span class="${isKilled ? 'text-emerald-400 font-bold' : 'text-amber-400'}">${isKilled ? '✓ PORT RELEASED' : (d.status || 'LISTENING')}</span></div>
           </div>
-          <div class="flex items-center gap-2">
-            ${item.action ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition">${item.action}</span>` : ''}
-            <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-white/[0.05]">${item.badge}</span>
+        `;
+      } else if (item.badge === 'Calc') {
+        detailsHtml = `
+          <div class="space-y-2 mt-3 font-mono text-[11px]">
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Expression</span><span class="text-zinc-300">${d.expression || item.title}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Decimal</span><span class="text-emerald-400 font-bold text-xs">${d.decimal !== undefined ? d.decimal : item.title}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Hexadecimal</span><span class="text-sky-300">${d.hex || 'N/A'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Binary</span><span class="text-zinc-400">${d.binary || 'N/A'}</span></div>
+            <div class="flex justify-between py-1"><span class="text-zinc-500">Target</span><span class="text-zinc-300">Windows Clipboard</span></div>
+          </div>
+        `;
+      } else if (item.badge === 'File') {
+        detailsHtml = `
+          <div class="space-y-2 mt-3 font-mono text-[11px]">
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Drive</span><span class="text-zinc-300">${d.drive || 'NTFS C:'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Size</span><span class="text-zinc-300">${d.size || '3.4 KB'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Modified</span><span class="text-zinc-300">${d.modified || 'Recent'}</span></div>
+            <div class="flex justify-between py-1"><span class="text-zinc-500">Latency</span><span class="text-emerald-400 font-bold">${d.indexedBy || '0.8ms Everything SDK'}</span></div>
+          </div>
+        `;
+      } else if (item.badge === 'Clip') {
+        detailsHtml = `
+          <div class="space-y-2 mt-3 font-mono text-[11px]">
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Type</span><span class="text-zinc-300">${d.type || 'Text Snippet'}</span></div>
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Length</span><span class="text-zinc-300">${d.length || '41 chars'}</span></div>
+            <div class="flex justify-between py-1"><span class="text-zinc-500">Security</span><span class="text-sky-400">${d.encryption || 'DPAPI Encrypted'}</span></div>
+          </div>
+        `;
+      } else {
+        detailsHtml = `
+          <div class="space-y-2 mt-3 font-mono text-[11px]">
+            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Category</span><span class="text-zinc-300">${d.category || item.badge}</span></div>
+            <div class="flex justify-between py-1"><span class="text-zinc-500">Status</span><span class="text-emerald-400 font-bold">Ready</span></div>
+          </div>
+        `;
+      }
+
+      panel.innerHTML = `
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xl">${item.icon}</span>
+            <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.06] text-[#60cdff] border border-white/[0.08]">${d.category || item.badge}</span>
+          </div>
+          <h3 class="text-sm font-semibold text-white leading-tight">${item.title}</h3>
+          <p class="text-[11px] text-zinc-400 font-mono mt-1 break-all">${item.subtitle}</p>
+
+          ${d.previewColor ? `
+            <div class="mt-3 p-3 rounded-lg border border-white/[0.1] flex items-center gap-3 bg-black/40">
+              <div class="w-8 h-8 rounded border border-white/20 shadow-md" style="background-color: ${d.previewColor}"></div>
+              <div class="font-mono text-[11px]">
+                <div class="text-white font-bold">${d.hex}</div>
+                <div class="text-zinc-400">${d.rgb}</div>
+              </div>
+            </div>
+          ` : ''}
+
+          ${detailsHtml}
+        </div>
+
+        <div class="pt-4 border-t border-white/[0.06] mt-4">
+          <button
+            onclick="selectAndExecute(${selectedIndex})"
+            class="w-full py-2 px-3 rounded-md ${isKilled ? 'bg-zinc-800 text-zinc-400' : 'bg-[#0078d4] hover:bg-[#106ebe] text-white shadow-md'} font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <span>${isKilled ? 'Reset Port' : (item.badge === 'Port' ? 'Kill Process (Release Port)' : (item.action ? item.action + ' (↵ Enter)' : 'Execute (↵)'))}</span>
+          </button>
+          <div class="mt-2 text-center text-[10px] text-zinc-500 font-mono">
+            Press <kbd class="kbd-cap text-[9px]">↵</kbd> on keyboard to execute
           </div>
         </div>
-      `).join('');
+      `;
     }
 
     function setHoverIndex(idx) {
       selectedIndex = idx;
       updateSelectedHighlight();
+      renderInspector(currentRenderedItems[selectedIndex]);
     }
 
     function updateSelectedHighlight() {
       const rows = document.querySelectorAll('#demo-results > div');
       rows.forEach((r, i) => {
         if (i === selectedIndex) {
-          r.classList.add('bg-white/[0.08]', 'text-white');
+          r.classList.add('bg-white/[0.08]', 'text-white', 'shadow-sm');
           r.classList.remove('text-zinc-300');
         } else {
-          r.classList.remove('bg-white/[0.08]', 'text-white');
+          r.classList.remove('bg-white/[0.08]', 'text-white', 'shadow-sm');
           r.classList.add('text-zinc-300');
         }
       });
@@ -675,19 +1241,20 @@
         if (currentRenderedItems.length) {
           selectedIndex = (selectedIndex + 1) % currentRenderedItems.length;
           updateSelectedHighlight();
+          renderInspector(currentRenderedItems[selectedIndex]);
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (currentRenderedItems.length) {
           selectedIndex = (selectedIndex - 1 + currentRenderedItems.length) % currentRenderedItems.length;
           updateSelectedHighlight();
+          renderInspector(currentRenderedItems[selectedIndex]);
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         selectAndExecute(selectedIndex);
       } else if (e.key === 'Escape') {
-        document.getElementById('demo-search-input').value = '';
-        handleDemoSearch('');
+        clearDemoSearch();
       }
     }
 
@@ -695,84 +1262,164 @@
       const item = currentRenderedItems[idx];
       if (!item) return;
 
-      if (item.action === 'Kill') {
-        showToast(`✓ Terminated ${item.title} • Released port`);
-      } else if (item.badge === 'Calc') {
-        showToast(`✓ Copied calculation result (56,154) to clipboard`);
-      } else if (item.badge === 'Clip') {
-        showToast(`✓ Copied text snippet to clipboard`);
-      } else {
-        showToast(`✓ Launched ${item.title} in 1.1ms`);
+      if (item.badge === 'Port') {
+        if (killedPorts.has(item.id)) {
+          killedPorts.delete(item.id);
+          showToast(`✓ Reset ${item.title} to Listening state`);
+        } else {
+          killedPorts.add(item.id);
+          showToast(`✓ Terminated PID ${item.details?.pid || '18402'} • Port freed`);
+        }
+        renderDemoItems(currentRenderedItems);
+        return;
       }
+
+      if (item.copyVal || item.badge === 'Calc' || item.badge === 'UUID' || item.badge === 'Time' || item.badge === 'Clip') {
+        const toCopy = item.copyVal || (item.details?.formattedResult || item.details?.decimal || item.title.replace(/^=\s*/, ''));
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(String(toCopy)).catch(() => {});
+        }
+        showToast(`✓ Copied "${toCopy}" to Windows clipboard`);
+        return;
+      }
+
+      if (item.badge === 'File') {
+        showToast(`✓ Opened ${item.title} in default editor (0.7ms)`);
+        return;
+      }
+
+      showToast(`✓ Executed "${item.title}" in 0.9ms`);
     }
 
     function showToast(msg) {
       const toast = document.getElementById('sim-toast');
       const toastMsg = document.getElementById('sim-toast-msg');
-      toastMsg.innerText = msg;
-      toast.classList.remove('hidden');
-      clearTimeout(window._toastTimeout);
-      window._toastTimeout = setTimeout(() => {
-        toast.classList.add('hidden');
-      }, 3000);
+      if (toast && toastMsg) {
+        toastMsg.innerText = msg;
+        toast.classList.remove('hidden');
+        clearTimeout(window._toastTimeout);
+        window._toastTimeout = setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 3200);
+      }
     }
 
     function hideToast() {
-      document.getElementById('sim-toast').classList.add('hidden');
+      const toast = document.getElementById('sim-toast');
+      if (toast) toast.classList.add('hidden');
+    }
+
+    function applyQuery(text) {
+      const input = document.getElementById('demo-search-input');
+      if (input) {
+        input.value = text;
+        handleDemoSearch(text);
+        input.focus();
+      }
+    }
+
+    function clearDemoSearch() {
+      const input = document.getElementById('demo-search-input');
+      if (input) {
+        input.value = '';
+        handleDemoSearch('');
+        input.focus();
+      }
     }
 
     function handleDemoSearch(query) {
-      const q = query.toLowerCase().trim();
-      let filtered = DEMO_ITEMS;
+      const q = query.trim();
+      const lower = q.toLowerCase();
 
-      // Update random sub-ms latency simulation on keystroke
-      const lat = (0.6 + Math.random() * 0.7).toFixed(1);
-      document.getElementById('sim-latency').innerText = lat + ' ms';
+      // Simulate Rust core sub-millisecond latency on keystroke
+      const lat = (0.5 + Math.random() * 0.6).toFixed(1);
+      const latEl = document.getElementById('sim-latency');
+      if (latEl) latEl.innerText = lat + ' ms';
 
-      if (currentFilter !== 'all') {
-        filtered = filtered.filter(item => item.mode === currentFilter || item.mode === 'all');
+      let items = [...BASE_DEMO_ITEMS];
+
+      // 1. Check live math calculation
+      const mathRes = evaluateMath(q);
+      if (mathRes) {
+        const calcItem = {
+          id: 'dyn-calc',
+          title: '= ' + mathRes.formatted,
+          subtitle: `${mathRes.expr} • Press ↵ to copy to clipboard`,
+          mode: 'all',
+          badge: 'Calc',
+          icon: '🔢',
+          action: 'Copy',
+          copyVal: mathRes.formatted,
+          details: {
+            category: 'Windows Calculator Core',
+            expression: mathRes.expr,
+            formattedResult: mathRes.formatted,
+            decimal: mathRes.result,
+            hex: Number.isInteger(mathRes.result) ? '0x' + mathRes.result.toString(16).toUpperCase() : 'N/A',
+            binary: (Number.isInteger(mathRes.result) && mathRes.result >= 0 && mathRes.result < 65536) ? '0b' + mathRes.result.toString(2) : 'N/A'
+          }
+        };
+        items.unshift(calcItem);
       }
 
+      // 2. Check dynamic utilities (UUID, Timestamp, Color)
       if (q) {
-        filtered = filtered.filter(item =>
-          item.title.toLowerCase().includes(q) ||
-          item.subtitle.toLowerCase().includes(q) ||
-          item.badge.toLowerCase().includes(q)
+        const dynUtils = evaluateDevUtils(q);
+        if (dynUtils.length) {
+          items = [...dynUtils, ...items];
+        }
+      }
+
+      // 3. Filter by category pill
+      if (currentFilter !== 'all') {
+        items = items.filter(item => item.mode === currentFilter || item.mode === 'all');
+      }
+
+      // 4. Filter by query string
+      if (q && !mathRes) {
+        items = items.filter(item =>
+          item.title.toLowerCase().includes(lower) ||
+          item.subtitle.toLowerCase().includes(lower) ||
+          item.badge.toLowerCase().includes(lower) ||
+          (item.mode && item.mode.toLowerCase().includes(lower))
         );
       }
 
       selectedIndex = 0;
-      renderDemoItems(filtered);
+      renderDemoItems(items);
     }
 
     function setDemoFilter(filter, btn) {
       currentFilter = filter;
       document.querySelectorAll('.demo-tab').forEach(b => {
-        b.classList.remove('bg-white/[0.1]', 'text-white', 'font-medium');
-        b.classList.add('text-zinc-400');
+        b.className = 'demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer';
       });
       if (btn) {
-        btn.classList.add('bg-white/[0.1]', 'text-white', 'font-medium');
-        btn.classList.remove('text-zinc-400');
+        btn.className = 'demo-tab px-3 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer';
       }
-      handleDemoSearch(document.getElementById('demo-search-input').value);
+      const input = document.getElementById('demo-search-input');
+      handleDemoSearch(input ? input.value : '');
     }
 
     // Bento Demos
     function setBentoDrive(letter) {
       ['C', 'D', 'E'].forEach(l => {
         const b = document.getElementById(`drive-btn-${l}`);
-        b.className = (l === letter)
-          ? 'px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer'
-          : 'px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer';
+        if (b) {
+          b.className = (l === letter)
+            ? 'px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer'
+            : 'px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer';
+        }
       });
       const samples = {
         C: 'C:\\Program Files\\Microsoft VS Code\\Code.exe',
         D: 'D:\\Work\\Projects\\Client_Audit_2026.docx',
         E: 'E:\\Backups\\Database_Archive_March.tar.gz'
       };
-      document.getElementById('bento-drive-sample').innerText = samples[letter];
-      document.getElementById('bento-drive-speed').innerText = (letter === 'E' ? '2.1ms (USB 3.2)' : '1.2ms (NTFS)');
+      const sampleEl = document.getElementById('bento-drive-sample');
+      const speedEl = document.getElementById('bento-drive-speed');
+      if (sampleEl) sampleEl.innerText = samples[letter];
+      if (speedEl) speedEl.innerText = (letter === 'E' ? '2.1ms (USB 3.2)' : '1.2ms (NTFS)');
     }
 
     let isPortKilled = false;
@@ -781,55 +1428,70 @@
       const status = document.getElementById('bento-port-status');
       isPortKilled = !isPortKilled;
       if (isPortKilled) {
-        status.innerHTML = '<span class="text-emerald-400">✓ Port :3000 free (PID freed)</span>';
-        btn.innerText = 'Reset';
-        btn.className = 'px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] transition cursor-pointer';
+        if (status) status.innerHTML = '<span class="text-emerald-400">✓ Port :3000 free (PID freed)</span>';
+        if (btn) {
+          btn.innerText = 'Reset';
+          btn.className = 'px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] transition cursor-pointer';
+        }
       } else {
-        status.innerText = ':3000 node.exe (PID 18402)';
-        btn.innerText = 'Kill';
-        btn.className = 'px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer';
+        if (status) status.innerText = ':3000 node.exe (PID 18402)';
+        if (btn) {
+          btn.innerText = 'Kill';
+          btn.className = 'px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer';
+        }
       }
     }
 
     function copySnippetBento(btn) {
-      navigator.clipboard.writeText('git clone https://github.com/codecheesee/altspace').then(() => {
-        btn.innerText = 'Copied!';
-        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
-      });
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText('git clone https://github.com/codecheesee/altspace').then(() => {
+          btn.innerText = 'Copied!';
+          setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+        });
+      }
     }
 
     function setBentoAi(model, btn) {
       document.querySelectorAll('.bento-ai-btn').forEach(b => {
         b.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer';
       });
-      btn.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer';
+      if (btn) {
+        btn.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer';
+      }
       const tags = {
         llama3: 'Llama 3 • 42 tok/sec',
         deepseek: 'DeepSeek • Code Gen Active',
         mistral: 'Mistral 7B • Low RAM'
       };
-      document.getElementById('bento-ai-tag').innerText = tags[model];
+      const tagEl = document.getElementById('bento-ai-tag');
+      if (tagEl) tagEl.innerText = tags[model];
     }
 
     function toggleFaq(id) {
       const el = document.getElementById(id);
       const icon = document.getElementById(`${id}-icon`);
-      if (el.classList.contains('hidden')) {
-        el.classList.remove('hidden');
-        icon.innerText = '▾';
-      } else {
-        el.classList.add('hidden');
-        icon.innerText = '▸';
+      if (el) {
+        if (el.classList.contains('hidden')) {
+          el.classList.remove('hidden');
+          if (icon) icon.innerText = '▾';
+        } else {
+          el.classList.add('hidden');
+          if (icon) icon.innerText = '▸';
+        }
       }
     }
 
     function copyInstallCmd() {
       const cmd = "irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex";
-      navigator.clipboard.writeText(cmd).then(() => {
-        const text = document.getElementById('copy-text');
-        text.innerText = "Copied!";
-        setTimeout(() => { text.innerText = "Copy"; }, 2500);
-      });
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(() => {
+          const text = document.getElementById('copy-text');
+          if (text) {
+            text.innerText = "Copied!";
+            setTimeout(() => { text.innerText = "Copy"; }, 2500);
+          }
+        });
+      }
     }
 
     function setBilling(freq) {
@@ -840,22 +1502,27 @@
       const sponsorBtn = document.getElementById('sponsor-btn');
 
       if (freq === 'lifetime') {
-        price.innerText = '$29';
-        period.innerText = '/ one-time';
-        btnL.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
-        btnM.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
-        sponsorBtn.href = 'https://github.com/sponsors/codecheesee?frequency=one-time';
+        if (price) price.innerText = '$29';
+        if (period) period.innerText = '/ one-time';
+        if (btnL) btnL.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
+        if (btnM) btnM.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
+        if (sponsorBtn) sponsorBtn.href = 'https://github.com/sponsors/codecheesee?frequency=one-time';
       } else {
-        price.innerText = '$5';
-        period.innerText = '/ month';
-        btnM.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
-        btnL.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
-        sponsorBtn.href = 'https://github.com/sponsors/codecheesee';
+        if (price) price.innerText = '$5';
+        if (period) period.innerText = '/ month';
+        if (btnM) btnM.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
+        if (btnL) btnL.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
+        if (sponsorBtn) sponsorBtn.href = 'https://github.com/sponsors/codecheesee';
       }
     }
 
-    // Initial render
-    renderDemoItems(DEMO_ITEMS);
+    // Initialize Simulator on Load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDemoItems(BASE_DEMO_ITEMS);
+    });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      renderDemoItems(BASE_DEMO_ITEMS);
+    }
   </script>
 </body>
 </html>
