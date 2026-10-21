@@ -1,4 +1,5 @@
 import {
+  evaluateAction,
   executeAction,
   getRecentFailureContext,
   type TypedAction,
@@ -192,10 +193,22 @@ export async function synthesizeActionPlan(query: string): Promise<ActionPlan | 
 
 export async function executeStep(step: ActionPlanStep): Promise<{ success: boolean; message: string }> {
   try {
+    const evalRes = await evaluateAction({
+      id: step.id,
+      action: step.action,
+    });
+
+    if (!evalRes) {
+      return {
+        success: false,
+        message: "Failed to evaluate action policy challenge.",
+      };
+    }
+
     const res = await executeAction({
       id: step.id,
       action: step.action,
-      bypass_approval: true,
+      approval_token: evalRes.approval_token,
     });
 
     if (res && res.success) {

@@ -35,7 +35,7 @@ export interface ActionRequest {
   id: string;
   action: TypedAction;
   session_token?: string;
-  bypass_approval: boolean;
+  approval_token?: string;
 }
 
 export interface ActionEvaluation {
@@ -46,6 +46,7 @@ export interface ActionEvaluation {
   diff_preview?: string;
   reversibility: boolean;
   requires_entitlement: boolean;
+  approval_token?: string;
 }
 
 export interface ActionResult {
