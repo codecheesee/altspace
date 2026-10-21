@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Item } from "../types";
 
+export const isTauri = typeof window !== "undefined" && Boolean((window as any).__TAURI_INTERNALS__);
+
 export async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string, any>): Promise<T | null> {
   try {
     return await invoke<T>(cmd, args);
@@ -8,6 +10,10 @@ export async function tauriInvoke<T = unknown>(cmd: string, args?: Record<string
     console.warn(`[Tauri] ${cmd} call error:`, err);
     return null;
   }
+}
+
+export async function invokeStrict<T = unknown>(cmd: string, args?: Record<string, any>): Promise<T> {
+  return await invoke<T>(cmd, args);
 }
 
 export const APP_CACHE_KEY = "raycast_app_cache_v2";

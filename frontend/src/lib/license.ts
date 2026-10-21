@@ -1,4 +1,4 @@
-import { tauriInvoke } from "./appStorage";
+import { tauriInvoke, invokeStrict } from "./appStorage";
 import {
   getCurrentSession,
   saveCurrentSession,
@@ -412,30 +412,28 @@ export function deactivateLicense(): void {
 export async function activateManualLease(token: string): Promise<LicenseStatus> {
   const trimmed = token.trim();
   if (trimmed.startsWith("ALTS1-")) {
-    if (tauriInvoke) {
-      const res = await tauriInvoke<{
-        valid: boolean;
-        id: string;
-        user: string;
-        email?: string;
-        tier: string;
-        is_perpetual: boolean;
-        expires_at?: string;
-        machine: string;
-        message: string;
-      }>("verify_and_activate_license", { licenseKey: trimmed });
+    const res = await invokeStrict<{
+      valid: boolean;
+      id: string;
+      user: string;
+      email?: string;
+      tier: string;
+      is_perpetual: boolean;
+      expires_at?: string;
+      machine: string;
+      message: string;
+    }>("verify_and_activate_license", { licenseKey: trimmed });
 
-      if (res && res.valid) {
-        return {
-          isSupporter: true,
-          tier: "Pro",
-          login: res.user,
-          provider: "cryptographic-ed25519",
-          expiresAt: res.expires_at,
-          role: "pro",
-          reason: `Verified Ed25519 Cryptographic License (${res.id})`,
-        };
-      }
+    if (res && res.valid) {
+      return {
+        isSupporter: true,
+        tier: "Pro",
+        login: res.user,
+        provider: "cryptographic-ed25519",
+        expiresAt: res.expires_at,
+        role: "pro",
+        reason: `Verified Ed25519 Cryptographic License (${res.id})`,
+      };
     }
   }
 

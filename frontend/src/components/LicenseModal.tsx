@@ -7,7 +7,6 @@ import {
   RefreshCw,
   CheckCircle2,
   ShieldCheck,
-  Key,
   Shield,
   Loader2,
 } from "lucide-react";
@@ -15,16 +14,8 @@ import {
   deactivateLicense,
   getLicenseStatus,
   refreshEntitlement,
-  activateManualLease,
   type LicenseStatus,
 } from "../lib/license";
-import {
-  detectUserCurrency,
-  getRegionalPricing,
-  GITHUB_SPONSORS_URL,
-  openCheckout,
-  type CurrencyCode,
-} from "../lib/checkout";
 import {
   connectWithGitHubToken,
   fetchGitHubUserProfile,
@@ -72,14 +63,11 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
   const [session, setSession] = useState<UserSession | null>(getCurrentSession());
   const [machineId, setMachineId] = useState<string>("ALTS-INITIALIZING");
   const [quota, setQuota] = useState<AdvancedSearchQuota>(() => getAdvancedSearchQuota());
-  const [selectedCurrency] = useState<CurrencyCode>(() => detectUserCurrency());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Authentication inputs
   const [authMethod, setAuthMethod] = useState<AuthMethod>("device");
   const [tokenInput, setTokenInput] = useState("");
-  const [customClientId, setCustomClientId] = useState("");
-  const [showClientConfig, setShowClientConfig] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -88,16 +76,9 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Cryptographic License Key input
-  const [licenseKeyInput, setLicenseKeyInput] = useState("");
-  const [licenseKeyError, setLicenseKeyError] = useState<string | null>(null);
-  const [licenseKeyLoading, setLicenseKeyLoading] = useState(false);
-
   const [copiedMachineId, setCopiedMachineId] = useState(false);
 
-  const pricing = getRegionalPricing(selectedCurrency);
-
-  // Load hardware Machine ID and latest status
+  // Refresh user session and entitlements from GitHub
   const refreshStatus = async () => {
     setIsRefreshing(true);
     try {
@@ -163,18 +144,8 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     }
   };
 
-  const handleCheckout = () => {
-    if (pricing.checkoutUrl.includes("REPLACE_WITH_VARIANT_ID")) {
-      notify("Opening GitHub Sponsors...");
-      handleOpenUrl(GITHUB_SPONSORS_URL);
-      return;
-    }
-    openCheckout(selectedCurrency);
-  };
-
   // Device Flow Authentication Handler
   const handleStartDeviceFlow = async () => {
-    const clientId = customClientId.trim() || GITHUB_CLIENT_ID;
     setAuthLoading(true);
     setAuthError(null);
     setDeviceFlow(null);
@@ -183,7 +154,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     abortControllerRef.current = controller;
 
     try {
-      const response = await startGitHubDeviceFlow(clientId);
+      const response = await startGitHubDeviceFlow(GITHUB_CLIENT_ID);
       setDeviceFlow(response);
 
       // Auto-copy user code to clipboard
@@ -199,7 +170,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
 
       // Poll until user authorizes
       const token = await pollGitHubDeviceToken(
-        clientId,
+        GITHUB_CLIENT_ID,
         response.device_code,
         response.interval || 5,
         controller.signal
@@ -208,7 +179,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
       const userSession = await fetchGitHubUserProfile(token);
       setSession(userSession);
       setDeviceFlow(null);
-      notify(`Verified GitHub identity: @${userSession.login}!`);
+      notify(`Welcome @${userSession.login}! Authenticated successfully.`);
       const updated = await refreshEntitlement();
       setLicenseStatus(updated);
     } catch (err: any) {
@@ -242,7 +213,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
       const user = await connectWithGitHubToken(tokenInput.trim());
       setSession(user);
       setTokenInput("");
-      notify(`Verified GitHub identity: @${user.login}!`);
+      notify(`Connected @${user.login}! Authenticated successfully.`);
       const updated = await refreshEntitlement();
       setLicenseStatus(updated);
     } catch (err: any) {
@@ -270,27 +241,6 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     notify("Signed out of GitHub.");
   };
 
-  // Cryptographic Ed25519 License Key Activation
-  const handleActivateLicenseKey = async () => {
-    const key = licenseKeyInput.trim();
-    if (!key) return;
-
-    setLicenseKeyLoading(true);
-    setLicenseKeyError(null);
-    try {
-      const updated = await activateManualLease(key);
-      setLicenseStatus(updated);
-      setLicenseKeyInput("");
-      notify("Cryptographic Pro license verified and activated!");
-    } catch (err: any) {
-      const msg = err?.message || String(err);
-      setLicenseKeyError(msg);
-      notify(`Activation failed: ${msg}`);
-    } finally {
-      setLicenseKeyLoading(false);
-    }
-  };
-
   const isProOrSupporter =
     licenseStatus.tier === "Pro" ||
     licenseStatus.tier === "Supporter" ||
@@ -306,7 +256,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[500px] border border-white/[0.08] bg-[#0c0c0e] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-100"
+        className="w-full max-w-[480px] border border-white/[0.08] bg-[#0c0c0e] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header with Segmented Pills */}
@@ -367,7 +317,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
         </div>
 
         {/* Tab Body */}
-        <div className="p-4 space-y-3.5 max-h-[72vh] overflow-y-auto">
+        <div className="p-4 space-y-3.5 max-h-[70vh] overflow-y-auto">
           {/* TAB 1: ACCOUNT */}
           {activeTab === "account" && (
             <div className="space-y-3">
@@ -409,17 +359,17 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                 )}
               </div>
 
-              {/* GitHub Identity Card (Verified Only) */}
+              {/* GitHub Identity & Entitlement Card */}
               <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                     <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Verified GitHub Identity</span>
+                    <span>GitHub Account & Entitlements</span>
                   </div>
                   {session && (
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
                       <CheckCircle2 className="w-3 h-3" />
-                      Authenticated
+                      Connected
                     </span>
                   )}
                 </div>
@@ -453,7 +403,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                         onClick={() => void refreshStatus()}
                         className="px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] rounded-md transition border border-white/[0.06] cursor-pointer"
                       >
-                        Refresh
+                        Sync
                       </button>
                       <button
                         onClick={handleSignOut}
@@ -477,7 +427,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                             : "text-zinc-500 border-transparent hover:text-zinc-300"
                         )}
                       >
-                        GitHub Sign-in (Device Code)
+                        1-Click Browser Sign-in
                       </button>
                       <span className="text-zinc-600">•</span>
                       <button
@@ -525,7 +475,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                             </div>
                             <div className="text-[10px] text-zinc-500 flex items-center justify-center gap-1.5 pt-0.5">
                               <Loader2 className="w-2.5 h-2.5 animate-spin text-zinc-400" />
-                              <span>Waiting for browser authorization...</span>
+                              <span>Waiting for authorization on GitHub...</span>
                             </div>
                           </div>
                         ) : (
@@ -538,7 +488,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                               {authLoading ? (
                                 <>
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Requesting verification code...</span>
+                                  <span>Connecting to GitHub...</span>
                                 </>
                               ) : (
                                 <>
@@ -548,30 +498,9 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                               )}
                             </button>
 
-                            <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
-                              <span>Opens github.com/login/device in default browser</span>
-                              <button
-                                onClick={() => setShowClientConfig(!showClientConfig)}
-                                className="text-zinc-400 hover:text-white underline cursor-pointer"
-                              >
-                                {showClientConfig ? "Hide Client ID" : "OAuth Client ID"}
-                              </button>
-                            </div>
-
-                            {showClientConfig && (
-                              <div className="pt-1 space-y-1">
-                                <input
-                                  type="text"
-                                  placeholder={`Client ID (default: ${GITHUB_CLIENT_ID})`}
-                                  value={customClientId}
-                                  onChange={(e) => setCustomClientId(e.target.value)}
-                                  className="w-full py-1 px-2 bg-black/60 rounded border border-white/10 text-[11px] text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-white/30"
-                                />
-                                <p className="text-[9.5px] text-zinc-500">
-                                  Free to register under your GitHub account: Settings → Developer Settings → OAuth Apps (enable Device Flow).
-                                </p>
-                              </div>
-                            )}
+                            <p className="text-[10px] text-zinc-500 text-center">
+                              Secure authorization via GitHub RFC 8628. No passwords entered in AltSpace.
+                            </p>
                           </div>
                         )}
                       </div>
@@ -620,92 +549,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                 )}
               </div>
 
-              {/* Cryptographic License Key Card */}
-              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Cryptographic License</span>
-                  </div>
-                  {licenseStatus.tier === "Pro" && (
-                    <span className="text-[10px] text-purple-400 flex items-center gap-1 font-semibold">
-                      <ShieldCheck className="w-3 h-3" />
-                      Active Pro
-                    </span>
-                  )}
-                </div>
-
-                {licenseStatus.tier === "Pro" ? (
-                  <div className="space-y-2 pt-0.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-400">Licensed to:</span>
-                      <span className="font-semibold text-white">{licenseStatus.login || "Verified Licensee"}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-400">Validity:</span>
-                      <span className="text-zinc-300">
-                        {licenseStatus.expiresAt ? new Date(licenseStatus.expiresAt).toLocaleDateString() : "Perpetual Lifetime"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-400">Verification:</span>
-                      <span className="text-emerald-400 text-[11px] font-mono">Ed25519 Verified Offline</span>
-                    </div>
-
-                    <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-end">
-                      <button
-                        onClick={handleSignOut}
-                        className="px-2.5 py-1 text-[11px] text-zinc-400 hover:text-rose-400 transition cursor-pointer"
-                      >
-                        Deactivate License
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-zinc-400 leading-normal">
-                      AltSpace licenses are cryptographically signed with our Ed25519 master key. They verify 100% offline without phoning home.
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="ALTS1-eyJ2Ijox... (Paste license key)"
-                        value={licenseKeyInput}
-                        onChange={(e) => setLicenseKeyInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleActivateLicenseKey()}
-                        className="flex-1 py-1.5 px-2.5 bg-black/60 rounded-md border border-white/10 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-white/30"
-                      />
-                      <button
-                        onClick={handleActivateLicenseKey}
-                        disabled={licenseKeyLoading || !licenseKeyInput.trim()}
-                        className="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer disabled:opacity-40"
-                      >
-                        {licenseKeyLoading ? "Verifying..." : "Activate"}
-                      </button>
-                    </div>
-
-                    {licenseKeyError && (
-                      <div className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded-md">
-                        {licenseKeyError}
-                      </div>
-                    )}
-
-                    <div className="pt-1 text-[10px] text-zinc-500 flex items-center justify-between">
-                      <span>Don't have a key?</span>
-                      <button
-                        onClick={handleCheckout}
-                        className="text-zinc-300 hover:text-white underline cursor-pointer flex items-center gap-1"
-                      >
-                        Get Pro License ({pricing.formattedPrice})
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Hardware Machine ID */}
+              {/* Hardware Device ID */}
               <div className="p-3 rounded-lg border border-white/[0.06] bg-zinc-900/30 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-medium text-zinc-400">Device Hardware ID</div>

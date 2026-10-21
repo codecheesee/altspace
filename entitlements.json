@@ -19,5 +19,14 @@
   ],
   "sponsors": [],
   "contributors": [],
-  "pro": []
+  "pro": [
+    {
+      "login": "shilpi",
+      "name": "Shilpi",
+      "tier": "pro",
+      "role": "pro",
+      "unlimited": true,
+      "expiresAt": null
+    }
+  ]
 }

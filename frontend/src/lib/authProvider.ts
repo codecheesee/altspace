@@ -4,7 +4,7 @@
  * Architected with pluggable AuthProvider interface ready for free-tier Google Sign-In.
  */
 
-import { tauriInvoke } from "./appStorage";
+import { invokeStrict, isTauri } from "./appStorage";
 
 export interface UserSession {
   provider: "github" | "google" | "sovereign";
@@ -41,7 +41,7 @@ export const GITHUB_MAINTAINER_LOGIN = "codecheesee";
 export const GITHUB_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.VITE_GITHUB_CLIENT_ID
     ? String(import.meta.env.VITE_GITHUB_CLIENT_ID)
-    : "Iv1.8b835a2d6a7d5b8e";
+    : "Ov23liEeGEfUkCBd5gSd";
 
 /**
  * Retrieves the currently active user session from local storage
@@ -84,14 +84,20 @@ export function clearCurrentSession(): void {
  */
 export async function startGitHubDeviceFlow(clientId = GITHUB_CLIENT_ID): Promise<DeviceCodeResponse> {
   const cleanId = clientId.trim();
-  if (tauriInvoke) {
+  if (isTauri) {
     try {
-      const res = await tauriInvoke<DeviceCodeResponse>("github_device_code_request", { clientId: cleanId });
+      const res = await invokeStrict<DeviceCodeResponse>("github_device_code_request", { clientId: cleanId });
       if (res && res.device_code) {
         return res;
       }
     } catch (err: any) {
-      throw new Error(String(err));
+      const msg = String(err);
+      if (msg.includes("Not Found")) {
+        throw new Error(
+          "GitHub OAuth App Client ID is not registered or invalid. Please configure your GitHub OAuth Client ID in developer settings, or sign in using a Personal Access Token."
+        );
+      }
+      throw new Error(msg);
     }
   }
 
@@ -137,9 +143,9 @@ export async function pollGitHubDeviceToken(
 
     if (signal?.aborted) throw new Error("Authentication canceled by user");
 
-    if (tauriInvoke) {
+    if (isTauri) {
       try {
-        const data = await tauriInvoke<{
+        const data = await invokeStrict<{
           access_token?: string;
           error?: string;
           error_description?: string;
