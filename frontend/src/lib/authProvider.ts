@@ -86,27 +86,25 @@ export async function startGitHubDeviceFlow(clientId = GITHUB_CLIENT_ID): Promis
     scope: "read:user user:email",
   });
 
-  const res = await fetch("https://github.com/login/device/code", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  });
+  try {
+    const res = await fetch("https://github.com/login/device/code", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
 
-  if (!res.ok) {
-    // If client ID is unconfigured or rejected by GitHub API, provide direct device flow fallback
-    return {
-      device_code: "manual-flow-" + Date.now(),
-      user_code: "ALT-" + Math.random().toString(36).substring(2, 6).toUpperCase(),
-      verification_uri: "https://github.com/codecheesee/altspace/discussions",
-      expires_in: 900,
-      interval: 5,
-    };
-  }
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.device_code) {
+        return data as DeviceCodeResponse;
+      }
+    }
+  } catch (_) {}
 
-  return (await res.json()) as DeviceCodeResponse;
+  throw new Error("Direct OAuth app sign-in requires a registered client ID. Please connect using your GitHub Token or Username below.");
 }
 
 /**
@@ -188,6 +186,78 @@ export async function fetchGitHubUserProfile(token: string): Promise<UserSession
     avatarUrl: profile.avatar_url,
     email: profile.email || undefined,
     accessToken: token,
+    authenticatedAt: Date.now(),
+  };
+
+  saveCurrentSession(session);
+  return session;
+}
+
+/**
+ * Connects directly using a GitHub Personal Access Token (classic or fine-grained)
+ * Validates with GitHub API and securely saves the session
+ */
+export async function connectWithGitHubToken(token: string): Promise<UserSession> {
+  const cleanToken = token.trim();
+  if (!cleanToken) throw new Error("Please enter a valid GitHub token.");
+
+  const res = await fetch("https://api.github.com/user", {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+      Authorization: `Bearer ${cleanToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Invalid GitHub token. Please verify the token has 'read:user' permission.");
+    }
+    throw new Error(`GitHub verification failed (HTTP ${res.status}).`);
+  }
+
+  const profile = await res.json();
+  const session: UserSession = {
+    provider: "github",
+    login: String(profile.login || "").toLowerCase(),
+    id: profile.id,
+    name: profile.name || profile.login,
+    avatarUrl: profile.avatar_url,
+    email: profile.email || undefined,
+    accessToken: cleanToken,
+    authenticatedAt: Date.now(),
+  };
+
+  saveCurrentSession(session);
+  return session;
+}
+
+/**
+ * Links a public GitHub username for profile display and entitlement check without requiring a token
+ */
+export async function connectWithGitHubUsername(username: string): Promise<UserSession> {
+  const clean = username.trim().replace(/^@/, "");
+  if (!clean) throw new Error("Please enter a GitHub username.");
+
+  const res = await fetch(`https://api.github.com/users/${encodeURIComponent(clean)}`, {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(`GitHub user @${clean} was not found.`);
+    }
+    throw new Error(`Could not fetch profile for @${clean} (HTTP ${res.status}).`);
+  }
+
+  const profile = await res.json();
+  const session: UserSession = {
+    provider: "github",
+    login: String(profile.login || clean).toLowerCase(),
+    id: profile.id,
+    name: profile.name || profile.login || clean,
+    avatarUrl: profile.avatar_url,
     authenticatedAt: Date.now(),
   };
 
