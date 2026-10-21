@@ -31,7 +31,7 @@ pub fn github_device_code_request(client_id: String) -> Result<DeviceCodeRespons
     }
 
     let output = Command::new("curl.exe")
-        .args(&[
+        .args([
             "-s",
             "-X", "POST",
             "https://github.com/login/device/code",
@@ -65,7 +65,7 @@ pub fn github_device_token_poll(client_id: String, device_code: String) -> Resul
     let clean_code = device_code.trim();
 
     let output = Command::new("curl.exe")
-        .args(&[
+        .args([
             "-s",
             "-X", "POST",
             "https://github.com/login/oauth/access_token",

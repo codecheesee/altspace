@@ -388,7 +388,7 @@ impl EverythingClient {
                             });
                         }
                     }
-                    dir_items.sort_by(|a, b| b.is_folder.cmp(&a.is_folder));
+                    dir_items.sort_by_key(|a| std::cmp::Reverse(a.is_folder));
                     results.extend(dir_items);
                 }
 

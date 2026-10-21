@@ -55,7 +55,7 @@ This document serves as the **uncompromising single source of truth** for human 
 | **Discord Server (Guild) ID** | `1562508214061236364` | `README.md:4` |
 | **Official Discord Invite** | `https://discord.gg/EtVCN9m7JV` | `frontend/src/feedbackConfig.ts:11`, `README.md:4` |
 | **Discord Releases Channel ID**| `1562515749162065963` | `distribution/release-webhook.json:3` |
-| **Release Discord Webhook** | `https://discord.com/api/webhooks/1562534871874936882/...` | `distribution/release-webhook.json:2` |
+| **Release Discord Webhook** | `https://discord.com/api/webhooks/DISCORD_WEBHOOK_ID_PLACEHOLDER/DISCORD_WEBHOOK_TOKEN_PLACEHOLDER` | `distribution/release-webhook.json` (untracked local template) |
 | **Core License** | Apache License, Version 2.0 | `LICENSE`, `frontend/src-tauri/Cargo.toml:7` |
 | **Trademark Rights** | Protected under `TRADEMARK.md` (no fork branding as AltSpace) | `TRADEMARK.md:1-49` |
 | **Extension Registry Repo** | `https://github.com/codecheesee/altspace-extensions` | `frontend/src/lib/registry.ts:29-30` |

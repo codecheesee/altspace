@@ -95,16 +95,16 @@ fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
             if !features.contains(&text) && features.len() < 10 {
                 features.push(text);
             }
-        } else if lower.contains("fix")
+        } else if (lower.contains("fix")
             || lower.contains("patch")
             || lower.contains("clean")
             || lower.contains("resolve")
             || lower.contains("mitigat")
-            || lower.contains("secur")
+            || lower.contains("secur"))
+            && !fixes.contains(&text)
+            && fixes.len() < 10
         {
-            if !fixes.contains(&text) && fixes.len() < 10 {
-                fixes.push(text);
-            }
+            fixes.push(text);
         }
     }
 
@@ -223,7 +223,7 @@ if ($res) {
             let dl_url = gh.assets.and_then(|a| {
                 a.into_iter()
                     .find(|asset| {
-                        asset.name.as_deref().map_or(false, |n| {
+                        asset.name.as_deref().is_some_and(|n| {
                             n.ends_with(".exe") || n.contains("Setup")
                         })
                     })
