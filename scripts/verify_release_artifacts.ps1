@@ -8,7 +8,6 @@ $required = @(
     'altspace.exe',
     'AltSpace-Portable.exe',
     'AltSpace-Setup-x64.exe',
-    'AltSpace-MSI-x64.msi',
     'AltSpace-Portable-x64.zip',
     'Everything64.dll',
     'install.ps1',

@@ -125,4 +125,7 @@ export interface ActionItem {
   icon: React.ReactNode;
   shortcut?: string;
   run: () => void;
+  isToggle?: boolean;
+  toggleValue?: boolean;
+  badge?: string;
 }

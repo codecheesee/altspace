@@ -53,9 +53,9 @@ test('5. Sidebar preference persists only after explicit user toggle', () => {
   assert.equal(getPref(false), false, 'Persists user opt-out');
 });
 
-test('6. Multi-drive search starts disabled by default', () => {
-  const defaultDriveSearch = getStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, false);
-  assert.equal(defaultDriveSearch, false, 'Multi-drive search must be opt-in');
+test('6. Multi-drive search starts enabled by default for seamless file finding', () => {
+  const defaultDriveSearch = getStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, true);
+  assert.equal(defaultDriveSearch, true, 'Multi-drive search is enabled by default to find all user folders');
 });
 
 test('7. .altconfig exports exclude secrets, clipboard, history, entitlement data, and raw paths', () => {

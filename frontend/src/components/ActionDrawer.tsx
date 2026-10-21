@@ -147,9 +147,42 @@ export function ActionDrawer({
                           <span className="shrink-0 text-zinc-400">{action.icon}</span>
                           <span className="truncate">{action.title}</span>
                         </div>
-                        {action.shortcut && (
-                          <kbd className="kbd-cap">{action.shortcut}</kbd>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {action.badge && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.08] text-zinc-300 font-mono border border-white/[0.05]">
+                              {action.badge}
+                            </span>
+                          )}
+                          {action.isToggle ? (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  "text-[9px] font-bold tracking-wider font-mono uppercase px-1.5 py-0.5 rounded",
+                                  action.toggleValue
+                                    ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30"
+                                    : "text-zinc-500 bg-zinc-800/80 border border-zinc-700/60"
+                                )}
+                              >
+                                {action.toggleValue ? "ON" : "OFF"}
+                              </span>
+                              <div
+                                className={cn(
+                                  "relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors",
+                                  action.toggleValue ? "bg-emerald-500" : "bg-zinc-700"
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform shadow-sm",
+                                    action.toggleValue ? "translate-x-3.5" : "translate-x-0.5"
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          ) : action.shortcut ? (
+                            <kbd className="kbd-cap">{action.shortcut}</kbd>
+                          ) : null}
+                        </div>
                       </div>
                     );
                   })}

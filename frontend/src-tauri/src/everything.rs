@@ -33,6 +33,7 @@ mod ffi {
         pub fn Everything_SetMax(max: u32);
         pub fn Everything_SetOffset(offset: u32);
         pub fn Everything_QueryW(wait: BOOL) -> BOOL;
+        #[allow(dead_code)]
         pub fn Everything_GetLastError() -> u32;
         pub fn Everything_GetNumResults() -> u32;
         pub fn Everything_GetResultFileNameW(index: u32) -> PCWSTR;
@@ -51,7 +52,7 @@ pub struct EverythingClient {
 impl EverythingClient {
     pub fn new() -> Self {
         let client = Self {
-            search_all_drives: AtomicBool::new(false),
+            search_all_drives: AtomicBool::new(true), // Default to searching all drives
             cached_index: Arc::new(RwLock::new(Vec::new())),
             indexed_drives: Arc::new(RwLock::new(Vec::new())),
             is_indexing: Arc::new(AtomicBool::new(false)),
@@ -123,21 +124,71 @@ impl EverythingClient {
                     profile.join("Documents"),
                     profile.join("Pictures"),
                     profile.join("Videos"),
+                    profile.join("Music"),
                     profile.join("source"),
                     profile.join("projects"),
                     profile.join("workspace"),
                     profile.join("dev"),
                     profile.join("Code"),
+                    profile.join("OneDrive"),
                 ];
 
                 for folder in &user_folders {
                     if folder.exists() {
-                        Self::scan_directory(folder, 3, &mut indexed_items);
+                        Self::scan_directory(folder, 4, &mut indexed_items);
+                    }
+                }
+
+                // Also index top-level custom user directories (e.g. C:\Users\user\*)
+                if let Ok(entries) = std::fs::read_dir(&profile) {
+                    for entry in entries.filter_map(|e| e.ok()) {
+                        let p = entry.path();
+                        if p.is_dir() {
+                            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                            let name_lower = name.to_lowercase();
+                            if !name_lower.starts_with('.')
+                                && name_lower != "appdata"
+                                && name_lower != "local settings"
+                                && name_lower != "cookies"
+                                && name_lower != "ntuser.dat"
+                            {
+                                indexed_items.push(FileResult {
+                                    name: name.to_string(),
+                                    path: profile.to_string_lossy().to_string(),
+                                    is_folder: true,
+                                });
+                            }
+                        }
                     }
                 }
             }
 
-            // 2. If search_all_drives is enabled, index secondary & external hard disks (D:, E:, F:, ...)
+            // 2. Index C: top-level custom folders (e.g. C:\Work, C:\Data, C:\Tools, C:\Games)
+            if let Ok(c_entries) = std::fs::read_dir("C:\\") {
+                for entry in c_entries.filter_map(|e| e.ok()) {
+                    let p = entry.path();
+                    if p.is_dir() {
+                        let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        let name_lower = name.to_lowercase();
+                        if !name_lower.starts_with('$')
+                            && name_lower != "windows"
+                            && name_lower != "program files"
+                            && name_lower != "program files (x86)"
+                            && name_lower != "programdata"
+                            && name_lower != "system volume information"
+                        {
+                            indexed_items.push(FileResult {
+                                name: name.to_string(),
+                                path: "C:\\".to_string(),
+                                is_folder: true,
+                            });
+                            Self::scan_directory(&p, 3, &mut indexed_items);
+                        }
+                    }
+                }
+            }
+
+            // 3. Index secondary & external hard disks (D:, E:, F:, ...)
             if search_all {
                 for drive in &found_drives {
                     if drive == "C:" {
@@ -175,8 +226,8 @@ impl EverythingClient {
                                     is_folder: true,
                                 });
 
-                                // Scan directory tree up to depth 3
-                                Self::scan_directory(&path, 3, &mut indexed_items);
+                                // Scan directory tree up to depth 4
+                                Self::scan_directory(&path, 4, &mut indexed_items);
                             } else {
                                 indexed_items.push(FileResult {
                                     name: file_name.to_string(),
@@ -221,9 +272,9 @@ impl EverythingClient {
                     || lower == "build"
                     || lower == "venv"
                     || lower == "__pycache__"
-                    || lower == "carftapps"
-                    || lower == "tenorshare"
-                    || lower == "3utools9")
+                    || lower == "$recycle.bin"
+                    || lower == "system volume information"
+                    || lower == "appdata")
             });
 
         for entry in walker.filter_map(|e| e.ok()) {
@@ -250,7 +301,7 @@ impl EverythingClient {
             return Ok(Vec::new());
         }
 
-        // 1. Try native Everything IPC query first
+        // 1. Try native Everything IPC query if available (Voidtools)
         let mut wide_query: Vec<u16> = trimmed.encode_utf16().collect();
         wide_query.push(0);
 
@@ -260,72 +311,178 @@ impl EverythingClient {
             ffi::Everything_SetOffset(0);
 
             let ok = ffi::Everything_QueryW(BOOL(1));
-            if !ok.as_bool() {
-                let err = ffi::Everything_GetLastError();
-                return Err(format!("Everything IPC query failed (error code: {})", err));
-            }
-            let count = ffi::Everything_GetNumResults();
-            if count > 0 {
-                let mut results = Vec::with_capacity(count as usize);
-                for i in 0..count {
-                    let fn_pcwstr = ffi::Everything_GetResultFileNameW(i);
-                    let path_pcwstr = ffi::Everything_GetResultPathW(i);
-                    let is_folder = ffi::Everything_IsFolderResult(i).as_bool();
+            if ok.as_bool() {
+                let count = ffi::Everything_GetNumResults();
+                if count > 0 {
+                    let mut results = Vec::with_capacity(count as usize);
+                    for i in 0..count {
+                        let fn_pcwstr = ffi::Everything_GetResultFileNameW(i);
+                        let path_pcwstr = ffi::Everything_GetResultPathW(i);
+                        let is_folder = ffi::Everything_IsFolderResult(i).as_bool();
 
-                    let name = if !fn_pcwstr.is_null() {
-                        fn_pcwstr.to_string().unwrap_or_default()
-                    } else {
-                        String::new()
-                    };
+                        let name = if !fn_pcwstr.is_null() {
+                            fn_pcwstr.to_string().unwrap_or_default()
+                        } else {
+                            String::new()
+                        };
 
-                    let path = if !path_pcwstr.is_null() {
-                        path_pcwstr.to_string().unwrap_or_default()
-                    } else {
-                        String::new()
-                    };
+                        let path = if !path_pcwstr.is_null() {
+                            path_pcwstr.to_string().unwrap_or_default()
+                        } else {
+                            String::new()
+                        };
 
-                    results.push(FileResult {
-                        name,
-                        path,
-                        is_folder,
-                    });
+                        results.push(FileResult {
+                            name,
+                            path,
+                            is_folder,
+                        });
+                    }
+                    return Ok(results);
                 }
-                return Ok(results);
             }
         }
 
-        // 2. High-speed Multi-Drive Fallback Search (< 1ms from in-memory index)
+        // 2. High-speed Multi-Drive Fallback Search (< 1ms from in-memory index + on-demand paths)
+        // If Everything is not installed, we smoothly succeed with local filesystem results!
         Ok(self.fallback_search(trimmed, limit))
     }
 
     pub fn fallback_search(&self, query: &str, limit: u32) -> Vec<FileResult> {
-        let q_lower = query.to_lowercase();
-        let items = self.cached_index.read().unwrap_or_else(|e| e.into_inner());
+        let q_trimmed = query.trim();
+        let q_lower = q_trimmed.to_lowercase();
+        let mut results = Vec::new();
+        let mut seen_paths = std::collections::HashSet::new();
 
-        let mut matches = Vec::new();
-        for item in items.iter() {
-            let name_lower = item.name.to_lowercase();
-            if name_lower.contains(&q_lower) {
-                // Scoring: exact matches > starts with > contains
-                let score = if name_lower == q_lower {
-                    3
-                } else if name_lower.starts_with(&q_lower) {
-                    2
-                } else {
-                    1
-                };
-                matches.push((score, item.clone()));
+        // A. DIRECT PATH / DIRECTORY RESOLUTION (e.g. C:\, D:\, D:\Projects, C:\Users\...)
+        let path_obj = Path::new(q_trimmed);
+        if path_obj.exists() {
+            if path_obj.is_dir() {
+                // If user typed an existing folder path, return the folder itself first
+                if let Some(folder_name) = path_obj.file_name().and_then(|n| n.to_str()) {
+                    let parent = path_obj.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                    let full = path_obj.to_string_lossy().to_string().to_lowercase();
+                    seen_paths.insert(full);
+                    results.push(FileResult {
+                        name: folder_name.to_string(),
+                        path: parent,
+                        is_folder: true,
+                    });
+                }
+
+                // And list contents of the directory (subfolders first, then files)
+                if let Ok(entries) = std::fs::read_dir(path_obj) {
+                    let mut dir_items = Vec::new();
+                    for entry in entries.filter_map(|e| e.ok()).take(limit as usize) {
+                        let ep = entry.path();
+                        let ename = ep.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+                        let epath = ep.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                        let is_dir = ep.is_dir();
+                        let full = ep.to_string_lossy().to_string().to_lowercase();
+                        if !seen_paths.contains(&full) {
+                            seen_paths.insert(full);
+                            dir_items.push(FileResult {
+                                name: ename,
+                                path: epath,
+                                is_folder: is_dir,
+                            });
+                        }
+                    }
+                    dir_items.sort_by(|a, b| b.is_folder.cmp(&a.is_folder));
+                    results.extend(dir_items);
+                }
+
+                if !results.is_empty() {
+                    return results.into_iter().take(limit as usize).collect();
+                }
+            } else {
+                // It's a direct file
+                if let Some(fname) = path_obj.file_name().and_then(|n| n.to_str()) {
+                    let parent = path_obj.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                    return vec![FileResult {
+                        name: fname.to_string(),
+                        path: parent,
+                        is_folder: false,
+                    }];
+                }
             }
         }
 
-        // Sort by score descending (most relevant first)
-        matches.sort_by_key(|a| std::cmp::Reverse(a.0));
+        // B. ON-DEMAND DIRECT FOLDER MATCHING ACROSS DETECTED DRIVES & COMMON USER FOLDERS
+        let drives = self.indexed_drives.read().unwrap_or_else(|e| e.into_inner()).clone();
+        for drive in &drives {
+            let candidate = PathBuf::from(format!("{}\\{}", drive, q_trimmed));
+            if candidate.exists() && candidate.is_dir() {
+                let full = candidate.to_string_lossy().to_string().to_lowercase();
+                if !seen_paths.contains(&full) {
+                    seen_paths.insert(full);
+                    results.push(FileResult {
+                        name: candidate.file_name().and_then(|n| n.to_str()).unwrap_or(q_trimmed).to_string(),
+                        path: format!("{}\\", drive),
+                        is_folder: true,
+                    });
+                }
+            }
+        }
 
-        matches
-            .into_iter()
-            .take(limit as usize)
-            .map(|(_, item)| item)
-            .collect()
+        if let Some(profile_os) = std::env::var_os("USERPROFILE") {
+            let profile = PathBuf::from(profile_os);
+            let common_subdirs = ["Desktop", "Downloads", "Documents", "Pictures", "Videos", "source", "projects", "dev", "workspace", "OneDrive"];
+            for sub in &common_subdirs {
+                let candidate = profile.join(sub).join(q_trimmed);
+                if candidate.exists() && candidate.is_dir() {
+                    let full = candidate.to_string_lossy().to_string().to_lowercase();
+                    if !seen_paths.contains(&full) {
+                        seen_paths.insert(full);
+                        results.push(FileResult {
+                            name: q_trimmed.to_string(),
+                            path: profile.join(sub).to_string_lossy().to_string(),
+                            is_folder: true,
+                        });
+                    }
+                }
+            }
+        }
+
+        // C. IN-MEMORY CACHE FUZZY & PREFIX MATCHING (with Folder Priority)
+        let items = self.cached_index.read().unwrap_or_else(|e| e.into_inner());
+        let mut scored_matches = Vec::new();
+
+        for item in items.iter() {
+            let full_lower = format!("{}\\{}", item.path, item.name).to_lowercase();
+            if seen_paths.contains(&full_lower) {
+                continue;
+            }
+
+            let name_lower = item.name.to_lowercase();
+            if name_lower.contains(&q_lower) {
+                let base_score = if name_lower == q_lower {
+                    10
+                } else if name_lower.starts_with(&q_lower) {
+                    6
+                } else {
+                    2
+                };
+
+                // Folder boost: folders rank prominently
+                let folder_boost = if item.is_folder { 3 } else { 0 };
+                scored_matches.push((base_score + folder_boost, item.clone()));
+            }
+        }
+
+        scored_matches.sort_by_key(|a| std::cmp::Reverse(a.0));
+        for (_, item) in scored_matches {
+            let full_lower = format!("{}\\{}", item.path, item.name).to_lowercase();
+            if !seen_paths.contains(&full_lower) {
+                seen_paths.insert(full_lower);
+                results.push(item);
+                if results.len() >= limit as usize {
+                    break;
+                }
+            }
+        }
+
+        results
     }
 
     pub fn get_top_folders(&self, limit: usize) -> Vec<FileResult> {
@@ -378,5 +535,12 @@ mod tests {
         let res = client.fallback_search("C:", 5);
         println!("Search 'C:' count: {}", res.len());
         assert!(stats.indexed_count > 0 || !res.is_empty(), "Indexer should discover system drives and paths");
+    }
+
+    #[test]
+    fn test_search_never_fails_even_without_everything_service() {
+        let client = EverythingClient::new();
+        let res = client.search("Desktop", 5);
+        assert!(res.is_ok(), "search should never return Err even if Everything service is absent");
     }
 }

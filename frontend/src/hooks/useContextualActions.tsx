@@ -20,10 +20,8 @@ import {
   Heart,
   Star,
   ShoppingBag,
-  Award,
   Activity,
 } from "lucide-react";
-import { PRESET_THEMES } from "../lib/theme";
 import { tauriInvoke } from "../lib/appStorage";
 import type {
   ActionItem,
@@ -324,40 +322,77 @@ export function useContextualActions({
       });
     }
 
-    // THEMES & APPEARANCE
+    // PREFERENCES (Interactive switches with clear ON/OFF indicators)
     actions.push({
-      id: "theme-cycle",
-      title: `Cycle Theme (Current: ${activeTheme.name})`,
-      section: "THEMES & APPEARANCE",
-      shortcut: "Ctrl+Shift+T",
-      icon: <Palette className="w-4 h-4 text-purple-400" />,
+      id: "pref-autostart",
+      title: "Launch on Windows Startup",
+      section: "PREFERENCES",
+      icon: <Power className="w-4 h-4 text-emerald-400" />,
+      isToggle: true,
+      toggleValue: autostart,
       run: () => {
-        onCycleTheme();
+        onToggleAutostart();
+      },
+    });
+
+    actions.push({
+      id: "pref-all-drives",
+      title: "Search All Hard Drives (C:, D:, External)",
+      section: "PREFERENCES",
+      icon: <HardDrive className="w-4 h-4 text-blue-400" />,
+      isToggle: true,
+      toggleValue: driveStats?.search_all_drives ?? true,
+      run: () => {
+        onToggleAllDrives();
+      },
+    });
+
+    actions.push({
+      id: "pref-toggle-sidebar",
+      title: "Context Preview Sidebar",
+      section: "PREFERENCES",
+      shortcut: "Ctrl+B",
+      icon: isSidebarVisible ? <PanelRightClose className="w-4 h-4 text-rose-400" /> : <PanelRightOpen className="w-4 h-4 text-rose-400" />,
+      isToggle: true,
+      toggleValue: isSidebarVisible,
+      run: () => {
+        onToggleSidebar();
+      },
+    });
+
+    actions.push({
+      id: "pref-rescan-drives",
+      title: "Re-index All Hard Drives Now",
+      section: "PREFERENCES",
+      icon: <RefreshCw className="w-4 h-4 text-zinc-400" />,
+      badge: driveStats ? `${driveStats.indexed_count.toLocaleString()} files` : undefined,
+      run: () => {
+        onRescanDrives();
         onCloseActionsModal();
       },
     });
 
-    for (const theme of PRESET_THEMES) {
-      actions.push({
-        id: `theme-select-${theme.id}`,
-        title: `Set Theme: ${theme.name}${theme.id === currentThemeId ? " (Active)" : ""}`,
-        section: "THEMES & APPEARANCE",
-        icon: (
-          <span
-            className="w-3.5 h-3.5 rounded-full border border-white/20 inline-block shadow-sm"
-            style={{ backgroundColor: theme.accentHex }}
-          />
-        ),
-        run: () => {
-          onSelectTheme(theme.id);
-          onCloseActionsModal();
-        },
-      });
-    }
+    // THEMES & APPEARANCE (Streamlined)
+    actions.push({
+      id: "theme-cycle",
+      title: "Cycle Theme",
+      section: "THEMES & APPEARANCE",
+      badge: activeTheme.name,
+      shortcut: "Ctrl+Shift+T",
+      icon: (
+        <span
+          className="w-3.5 h-3.5 rounded-full border border-white/20 inline-block shadow-sm"
+          style={{ backgroundColor: activeTheme.accentHex }}
+        />
+      ),
+      run: () => {
+        onCycleTheme();
+      },
+    });
 
     actions.push({
       id: "theme-custom-accent",
-      title: "Set Custom Hex Accent Glow...",
+      title: "Custom Accent Glow...",
       section: "THEMES & APPEARANCE",
       icon: <Palette className="w-4 h-4 text-amber-400" />,
       run: () => {
@@ -368,7 +403,7 @@ export function useContextualActions({
 
     actions.push({
       id: "theme-reset-accent",
-      title: "Reset Accent to Preset Default",
+      title: "Reset Theme to Preset Default",
       section: "THEMES & APPEARANCE",
       icon: <RefreshCw className="w-4 h-4 text-neutral-400" />,
       run: () => {
@@ -377,11 +412,11 @@ export function useContextualActions({
       },
     });
 
-    // CONFIG & BACKUP
+    // CONFIG & TOOLS
     actions.push({
       id: "config-export",
       title: "Export AltSpace Config (.altconfig JSON)",
-      section: "CONFIG & BACKUP",
+      section: "CONFIG & TOOLS",
       shortcut: "Ctrl+Shift+E",
       icon: <Copy className="w-4 h-4 text-cyan-400" />,
       run: () => {
@@ -393,7 +428,7 @@ export function useContextualActions({
     actions.push({
       id: "config-import",
       title: "Import AltSpace Config from Clipboard...",
-      section: "CONFIG & BACKUP",
+      section: "CONFIG & TOOLS",
       icon: <HardDrive className="w-4 h-4 text-cyan-400" />,
       run: () => {
         onCloseActionsModal();
@@ -405,7 +440,7 @@ export function useContextualActions({
       actions.push({
         id: "privacy-diagnostics",
         title: "Privacy Diagnostics & Sanitized Telemetry...",
-        section: "CONFIG & BACKUP",
+        section: "CONFIG & TOOLS",
         shortcut: "Ctrl+Shift+D",
         icon: <Activity className="w-4 h-4 text-emerald-400" />,
         run: () => {
@@ -415,54 +450,7 @@ export function useContextualActions({
       });
     }
 
-    // PREFERENCES
-    actions.push({
-      id: "pref-autostart",
-      title: autostart ? "Disable Launch on Windows Startup" : "Enable Launch on Windows Startup",
-      section: "PREFERENCES",
-      icon: <Power className="w-4 h-4 text-neutral-400" />,
-      run: () => {
-        onToggleAutostart();
-        onCloseActionsModal();
-      },
-    });
-
-    actions.push({
-      id: "pref-all-drives",
-      title: driveStats?.search_all_drives
-        ? "Disable Multi-Drive Search (C: Only)"
-        : "Enable Multi-Drive Search (All Disks & External)",
-      section: "PREFERENCES",
-      icon: <HardDrive className="w-4 h-4 text-blue-400" />,
-      run: () => {
-        onToggleAllDrives();
-        onCloseActionsModal();
-      },
-    });
-
-    actions.push({
-      id: "pref-rescan-drives",
-      title: "Force Refresh Everything NTFS Multi-Drive Index",
-      section: "PREFERENCES",
-      icon: <RefreshCw className="w-4 h-4 text-blue-400" />,
-      run: () => {
-        onRescanDrives();
-        onCloseActionsModal();
-      },
-    });
-
-    actions.push({
-      id: "pref-toggle-sidebar",
-      title: isSidebarVisible ? "Hide Context Inspector (Ctrl+B)" : "Show Context Inspector (Ctrl+B)",
-      section: "PREFERENCES",
-      shortcut: "Ctrl+B",
-      icon: isSidebarVisible ? <PanelRightClose className="w-4 h-4 text-rose-400" /> : <PanelRightOpen className="w-4 h-4 text-rose-400" />,
-      run: () => {
-        onToggleSidebar();
-        onCloseActionsModal();
-      },
-    });
-
+    // COMMUNITY & SUPPORT
     actions.push({
       id: "comm-store",
       title: "Community Extension Store",
@@ -475,19 +463,8 @@ export function useContextualActions({
     });
 
     actions.push({
-      id: "comm-license",
-      title: "Supporter License & Bonding Curve",
-      section: "COMMUNITY & SUPPORT",
-      icon: <Award className="w-4 h-4 text-amber-400" />,
-      run: () => {
-        onOpenLicense?.();
-        onCloseActionsModal();
-      },
-    });
-
-    actions.push({
       id: "comm-feedback",
-      title: "Rate & Send Feedback",
+      title: "Submit Feedback & Report Issue",
       section: "COMMUNITY & SUPPORT",
       icon: <Heart className="w-4 h-4 text-rose-400" />,
       run: () => {
@@ -504,18 +481,6 @@ export function useContextualActions({
       run: () => {
         if (tauriInvoke) tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });
         else window.open("https://github.com/codecheesee/altspace", "_blank");
-        onCloseActionsModal();
-      },
-    });
-
-    actions.push({
-      id: "comm-contribute",
-      title: "Contributing Guide & Issues",
-      section: "COMMUNITY & SUPPORT",
-      icon: <Code className="w-4 h-4 text-purple-400" />,
-      run: () => {
-        if (tauriInvoke) tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md" });
-        else window.open("https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md", "_blank");
         onCloseActionsModal();
       },
     });

@@ -216,7 +216,7 @@ export default function App() {
       })
       .catch(() => {});
 
-    const searchAllDrives = getStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, false);
+    const searchAllDrives = getStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, true);
     tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: searchAllDrives })
       .then((stats) => {
         if (stats) setDriveStats(stats);
