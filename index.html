@@ -10,7 +10,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://codecheesee.github.io/altspace/" />
   <meta property="og:title" content="AltSpace — Native Windows Command Palette & Launcher" />
-  <meta property="og:description" content="Sub-5ms Rust core, 18MB RAM footprint, 1-click dev port killer, DPAPI vault, and multi-drive file search. Apache 2.0 Open Source." />
+  <meta property="og:description" content="Sub-5ms Rust core, 18MB RAM footprint, 1-click dev port killer, DPAPI vault, and multi-drive search. Apache 2.0 Open Source." />
   <meta property="og:image" content="./logo.png" />
 
   <!-- Twitter / X -->
@@ -63,11 +63,15 @@
       border-bottom: 2px solid #4a4a56;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
-    .pulse-glow {
-      box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.35);
-    }
     .gold-glow {
       box-shadow: 0 0 35px -8px rgba(234, 179, 8, 0.25);
+    }
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .pulse-dot {
+      animation: pulse-green 2s infinite ease-in-out;
     }
   </style>
 </head>
@@ -91,7 +95,6 @@
         <a href="#features" class="hover:text-white transition">Features</a>
         <a href="#benchmark" class="hover:text-white transition">Performance</a>
         <a href="#pricing" class="hover:text-white transition">Pricing</a>
-        <a href="#download" class="hover:text-white transition">Download</a>
       </div>
 
       <div class="flex items-center gap-3">
@@ -102,7 +105,7 @@
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium border border-white/[0.08] transition"
         >
           <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span class="hidden sm:inline">Star on GitHub</span>
+          <span class="hidden sm:inline">Star</span>
         </a>
         <a
           href="#pricing"
@@ -111,7 +114,7 @@
           <span>Get Pro</span>
         </a>
         <a
-          href="#download"
+          href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe"
           class="px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition shadow-sm"
         >
           Download
@@ -122,7 +125,7 @@
 
   <!-- Hero Section -->
   <main>
-    <section class="max-w-5xl mx-auto px-6 pt-16 pb-12 text-center">
+    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10 text-center">
       <!-- Badge -->
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-white/[0.08] text-zinc-300 text-[11px] font-medium mb-6">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -138,25 +141,43 @@
         Your shortcut to everything on Windows.
       </h1>
 
-      <p class="mt-5 text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-        The keyboard-driven launcher and developer spotlight you've always wanted. Instant multi-drive file search, single-click port killer, and private local AI.
+      <p class="mt-4 text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+        The keyboard-driven command palette and developer spotlight. Instant multi-drive file search, single-click port killer, and private local AI.
       </p>
 
       <!-- Keycap Trigger Pill -->
-      <div class="mt-6 flex items-center justify-center gap-2 text-xs text-zinc-400">
+      <div class="mt-5 flex items-center justify-center gap-2 text-xs text-zinc-400">
         <span>Invoke anywhere via</span>
         <kbd class="kbd-cap">Alt</kbd>
         <span class="text-zinc-500">+</span>
         <kbd class="kbd-cap">Space</kbd>
       </div>
 
-      <!-- Quick Install Snippet -->
-      <div class="mt-8 max-w-xl mx-auto">
-        <div class="flex items-center justify-between p-2 pl-4 rounded-xl bg-black/60 border border-white/[0.08] text-xs font-mono text-zinc-300 shadow-2xl">
+      <!-- Action Buttons & Quick Install -->
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a
+          href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe"
+          class="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Download Installer (.exe)</span>
+        </a>
+        <a
+          href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Portable-x64.zip"
+          class="w-full sm:w-auto px-5 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs border border-white/[0.1] transition flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          <span>Portable ZIP (Zero-Install)</span>
+        </a>
+      </div>
+
+      <!-- PowerShell 1-Click Snippet -->
+      <div class="mt-5 max-w-lg mx-auto">
+        <div class="flex items-center justify-between p-1.5 pl-3.5 rounded-xl bg-black/50 border border-white/[0.08] text-xs font-mono text-zinc-300">
           <span class="truncate text-zinc-400 select-all">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
           <button
             onclick="copyInstallCmd()"
-            class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-sans text-xs font-medium transition cursor-pointer flex items-center gap-1.5 shrink-0 ml-2"
+            class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-sans text-xs font-medium transition cursor-pointer flex items-center gap-1 shrink-0 ml-2"
           >
             <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
             <span id="copy-text">Copy</span>
@@ -166,15 +187,21 @@
     </section>
 
     <!-- Interactive Live Simulator Section (21st.dev Style) -->
-    <section id="demo" class="max-w-4xl mx-auto px-6 py-8 scroll-mt-20">
-      <div class="text-center mb-6">
+    <section id="demo" class="max-w-4xl mx-auto px-6 py-6 scroll-mt-20">
+      <div class="text-center mb-4">
         <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Interactive Simulator</span>
         <h2 class="text-xl sm:text-2xl font-bold text-white mt-1">Try AltSpace directly in your browser</h2>
-        <p class="text-xs text-zinc-400 mt-1">Type below to experience sub-5ms keystroke filtering right now</p>
+        <p class="text-xs text-zinc-400 mt-1">Use <kbd class="kbd-cap">↑</kbd> <kbd class="kbd-cap">↓</kbd> arrows and <kbd class="kbd-cap">↵ Enter</kbd> to test live desktop actions</p>
       </div>
 
       <!-- Mockup Window -->
-      <div class="specular-card rounded-2xl overflow-hidden border border-white/[0.12] shadow-2xl bg-[#0e0e12]">
+      <div class="specular-card rounded-2xl overflow-hidden border border-white/[0.12] shadow-2xl bg-[#0e0e12] relative">
+        <!-- Live Toast Notification Banner -->
+        <div id="sim-toast" class="hidden absolute top-14 left-4 right-4 z-20 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center justify-between shadow-xl backdrop-blur-md transition-all">
+          <span id="sim-toast-msg" class="flex items-center gap-2">✓ Action executed</span>
+          <button onclick="hideToast()" class="text-emerald-400 hover:text-white cursor-pointer">✕</button>
+        </div>
+
         <!-- Window Top Bar -->
         <div class="px-4 py-3 bg-[#131317] border-b border-white/[0.08] flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -184,8 +211,9 @@
             <span class="text-[11px] font-mono text-zinc-400 ml-2">AltSpace Omnibar</span>
           </div>
           <div class="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
             <span>Latency:</span>
-            <span class="text-emerald-400 font-bold">&lt; 1.2ms</span>
+            <span id="sim-latency" class="text-emerald-400 font-bold">0.8 ms</span>
           </div>
         </div>
 
@@ -195,8 +223,9 @@
           <input
             id="demo-search-input"
             type="text"
-            placeholder="Type 'node', 'fastapi', 'file', 'calc', or 'prompt'..."
+            placeholder="Search apps, files, ports, calculate (e.g. 42*1337), or filter..."
             oninput="handleDemoSearch(this.value)"
+            onkeydown="handleDemoKeydown(event)"
             class="w-full bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 outline-none font-sans"
             autocomplete="off"
             spellcheck="false"
@@ -206,11 +235,11 @@
 
         <!-- Filter Pill Chips -->
         <div class="px-4 py-2 bg-[#0c0c10] border-b border-white/[0.04] flex items-center gap-2 text-xs overflow-x-auto">
-          <button onclick="setDemoFilter('all')" class="demo-tab px-2.5 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer">All</button>
-          <button onclick="setDemoFilter('ports')" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Ports</button>
-          <button onclick="setDemoFilter('clipboard')" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Clipboard</button>
-          <button onclick="setDemoFilter('files')" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Files</button>
-          <button onclick="setDemoFilter('ai')" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Local AI</button>
+          <button onclick="setDemoFilter('all', this)" class="demo-tab px-2.5 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer">All</button>
+          <button onclick="setDemoFilter('ports', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Ports</button>
+          <button onclick="setDemoFilter('clipboard', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Clipboard</button>
+          <button onclick="setDemoFilter('files', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Files</button>
+          <button onclick="setDemoFilter('ai', this)" class="demo-tab px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition cursor-pointer">Local AI</button>
         </div>
 
         <!-- Interactive Results Feed -->
@@ -225,17 +254,19 @@
             <span>Everything SDK Active (Drives: C:, D:, E:)</span>
           </div>
           <div class="flex items-center gap-2">
-            <span>Press</span>
+            <span>Use</span>
+            <kbd class="kbd-cap">↑</kbd>
+            <kbd class="kbd-cap">↓</kbd>
+            <span>then</span>
             <kbd class="kbd-cap">↵</kbd>
-            <span>to execute</span>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Superpowers Bento Grid Section -->
-    <section id="features" class="max-w-6xl mx-auto px-6 py-20 scroll-mt-20">
-      <div class="text-center mb-16">
+    <section id="features" class="max-w-6xl mx-auto px-6 py-16 scroll-mt-20">
+      <div class="text-center mb-12">
         <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Engineered for Power Users</span>
         <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">Everything you need. Zero bloat.</h2>
         <p class="text-sm text-zinc-400 mt-2 max-w-xl mx-auto">
@@ -252,15 +283,21 @@
             </div>
             <h3 class="text-lg font-bold text-white">Multi-Drive Everything Indexer</h3>
             <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Find any file, folder, or executable across <span class="text-zinc-200 font-mono">C:</span>, <span class="text-zinc-200 font-mono">D:</span>, and external hard drives in less than 5 milliseconds. Directly interfaces with the Windows NTFS USN Journal and Everything SDK with zero background CPU scanning.
+              Find any file, folder, or executable across <span class="text-zinc-200 font-mono">C:</span>, <span class="text-zinc-200 font-mono">D:</span>, and external drives in less than 5 milliseconds. Direct integration with the Windows NTFS USN Journal with zero CPU indexing overhead.
             </p>
           </div>
+          <!-- Interactive Drive Micro-Demo -->
           <div class="mt-6 p-3 rounded-xl bg-black/40 border border-white/[0.06] text-xs font-mono text-zinc-300">
-            <div class="flex items-center justify-between text-[11px] text-zinc-500 pb-1 mb-1 border-b border-white/[0.04]">
-              <span>Query: "report 2026"</span>
-              <span class="text-emerald-400">Match count: 184 (1.8ms)</span>
+            <div class="flex items-center justify-between text-[11px] text-zinc-500 pb-2 mb-2 border-b border-white/[0.04]">
+              <div class="flex items-center gap-1.5">
+                <span>Drive:</span>
+                <button onclick="setBentoDrive('C')" id="drive-btn-C" class="px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer">C:</button>
+                <button onclick="setBentoDrive('D')" id="drive-btn-D" class="px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer">D:</button>
+                <button onclick="setBentoDrive('E')" id="drive-btn-E" class="px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer">E:</button>
+              </div>
+              <span class="text-emerald-400 font-semibold" id="bento-drive-speed">1.2ms (NTFS)</span>
             </div>
-            <div class="text-zinc-400 truncate">D:\Work\Projects\Client_Audit_2026.docx</div>
+            <div class="text-zinc-300 truncate" id="bento-drive-sample">C:\Program Files\Microsoft VS Code\Code.exe</div>
           </div>
         </div>
 
@@ -272,12 +309,18 @@
             </div>
             <h3 class="text-lg font-bold text-white">Dev Port Killer</h3>
             <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Never hunt for orphan <code class="text-zinc-300">:3000</code> or <code class="text-zinc-300">:8080</code> processes in Task Manager again. AltSpace lists listening ports and terminates them instantly with 1 click.
+              Never hunt for orphan <code class="text-zinc-300">:3000</code> or <code class="text-zinc-300">:8080</code> processes in Task Manager again. Lists active listening ports and frees them with 1 click.
             </p>
           </div>
-          <div class="mt-6 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-between text-xs">
-            <span class="font-mono text-rose-300">:3000 node.exe (PID 14210)</span>
-            <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[10px]">Kill</span>
+          <div class="mt-6 p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between text-xs">
+            <span class="font-mono text-zinc-200" id="bento-port-status">:3000 node.exe (PID 18402)</span>
+            <button
+              id="bento-port-btn"
+              onclick="toggleBentoPort()"
+              class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer"
+            >
+              Kill
+            </button>
           </div>
         </div>
 
@@ -292,8 +335,9 @@
               Full clipboard history with instantaneous search. Encrypted in RAM with Windows DPAPI protection. Never writes secrets or passwords to unencrypted disk files.
             </p>
           </div>
-          <div class="mt-6 text-[11px] text-zinc-500 font-mono">
-            Shortcut: <kbd class="kbd-cap">:clip</kbd>
+          <div class="mt-6 p-2 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-xs">
+            <span class="font-mono text-purple-200 truncate max-w-[150px]">git clone altspace...</span>
+            <button onclick="copySnippetBento(this)" class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-semibold cursor-pointer hover:bg-purple-500/30 transition">Copy</button>
           </div>
         </div>
 
@@ -305,32 +349,32 @@
             </div>
             <h3 class="text-lg font-bold text-white">Local Offline AI (Ollama Native)</h3>
             <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Explain code snippets, reformat clipboard text, or draft responses using your local GPU. Direct connection to Ollama (Llama 3, DeepSeek, Mistral) with 100% data privacy. No monthly AI fees or cloud telemetry.
+              Explain code snippets, reformat clipboard text, or draft responses using your local GPU. Direct connection to Ollama with 100% data privacy. No monthly AI fees or cloud telemetry.
             </p>
           </div>
-          <div class="mt-6 flex items-center gap-2">
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/[0.08]">llama3:8b</span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/[0.08]">deepseek-coder</span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/[0.08]">qwen2.5</span>
-            <span class="text-xs text-emerald-400 font-medium ml-auto">100% Private</span>
+          <div class="mt-6 flex items-center gap-2 flex-wrap">
+            <button onclick="setBentoAi('llama3', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer">llama3:8b</button>
+            <button onclick="setBentoAi('deepseek', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer">deepseek-coder</button>
+            <button onclick="setBentoAi('mistral', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer">mistral:7b</button>
+            <span class="text-xs text-emerald-400 font-medium ml-auto" id="bento-ai-tag">100% Offline GPU</span>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Performance Benchmark Section -->
-    <section id="benchmark" class="max-w-5xl mx-auto px-6 py-16 scroll-mt-20">
-      <div class="text-center mb-12">
+    <section id="benchmark" class="max-w-4xl mx-auto px-6 py-12 scroll-mt-20">
+      <div class="text-center mb-10">
         <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">Zero-Overhead Architecture</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Benchmarked against industry standards</h2>
-        <p class="text-xs text-zinc-400 mt-2">Tested on clean Windows 11 Pro 23H2 (x64 Intel i7 / 32GB RAM)</p>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Benchmarked against industry standards</h2>
+        <p class="text-xs text-zinc-400 mt-1">Raw performance evaluated on Windows 11 Pro (x64 Intel i7 / 32GB RAM)</p>
       </div>
 
       <div class="specular-card rounded-2xl overflow-hidden border border-white/[0.1]">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="border-b border-white/[0.08] bg-white/[0.02] text-zinc-400 font-mono">
-              <th class="p-4">Metric</th>
+              <th class="p-4">Benchmark Metric</th>
               <th class="p-4 text-white">AltSpace (Rust)</th>
               <th class="p-4">PowerToys Run (C#)</th>
               <th class="p-4">Raycast (macOS)</th>
@@ -338,34 +382,34 @@
           </thead>
           <tbody class="divide-y divide-white/[0.04] text-zinc-300">
             <tr>
-              <td class="p-4 font-medium text-white">Search Latency</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 5 ms (Rust Everything)</td>
-              <td class="p-4 text-zinc-400 font-mono">80 - 250 ms</td>
-              <td class="p-4 text-zinc-400 font-mono">&lt; 10 ms (Mac only)</td>
+              <td class="p-4 font-medium text-white">Cold Launch Speed</td>
+              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 5 ms (Tokio)</td>
+              <td class="p-4 text-zinc-400 font-mono">450 - 900 ms</td>
+              <td class="p-4 text-zinc-400 font-mono">15 ms (Mac only)</td>
             </tr>
             <tr>
-              <td class="p-4 font-medium text-white">RAM Footprint</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">18 MB Idle</td>
+              <td class="p-4 font-medium text-white">Search Query Latency</td>
+              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 1.2 ms</td>
+              <td class="p-4 text-zinc-400 font-mono">80 - 250 ms</td>
+              <td class="p-4 text-zinc-400 font-mono">&lt; 10 ms</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-medium text-white">Idle Memory Footprint</td>
+              <td class="p-4 text-emerald-400 font-mono font-semibold">18 MB RAM</td>
               <td class="p-4 text-zinc-400 font-mono">140 - 280 MB</td>
               <td class="p-4 text-zinc-400 font-mono">60 - 120 MB</td>
             </tr>
             <tr>
-              <td class="p-4 font-medium text-white">Multi-Drive Search</td>
-              <td class="p-4 text-emerald-400 font-semibold">Yes (C:, D:, External)</td>
-              <td class="p-4 text-zinc-400">Indexed folders only</td>
-              <td class="p-4 text-zinc-400">Spotlight volumes</td>
+              <td class="p-4 font-medium text-white">Binary Install Size</td>
+              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 15 MB</td>
+              <td class="p-4 text-zinc-400 font-mono">180 MB+</td>
+              <td class="p-4 text-zinc-400 font-mono">90 MB</td>
             </tr>
             <tr>
-              <td class="p-4 font-medium text-white">Developer Port Killer</td>
-              <td class="p-4 text-emerald-400 font-semibold">Built-in 1-Click</td>
-              <td class="p-4 text-zinc-500">Requires plugins</td>
-              <td class="p-4 text-zinc-500">Requires extension</td>
-            </tr>
-            <tr>
-              <td class="p-4 font-medium text-white">License & Code</td>
-              <td class="p-4 text-emerald-400 font-semibold">Apache 2.0 (Open Source)</td>
-              <td class="p-4 text-zinc-400">MIT</td>
-              <td class="p-4 text-zinc-500">Proprietary</td>
+              <td class="p-4 font-medium text-white">Core Architecture</td>
+              <td class="p-4 text-emerald-400 font-semibold">Native Rust + Tauri v2</td>
+              <td class="p-4 text-zinc-400">.NET Runtime</td>
+              <td class="p-4 text-zinc-500">Proprietary (Cocoa)</td>
             </tr>
           </tbody>
         </table>
@@ -373,8 +417,8 @@
     </section>
 
     <!-- Pricing & Payment Section (Raycast & 21st.dev Style) -->
-    <section id="pricing" class="max-w-5xl mx-auto px-6 py-20 scroll-mt-20">
-      <div class="text-center mb-12">
+    <section id="pricing" class="max-w-5xl mx-auto px-6 py-16 scroll-mt-20">
+      <div class="text-center mb-10">
         <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-semibold">Transparent Pricing</span>
         <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">Free for everyone. Supercharged for Pro.</h2>
         <p class="text-sm text-zinc-400 mt-2 max-w-lg mx-auto">
@@ -430,10 +474,10 @@
 
           <div class="mt-8">
             <a
-              href="#download"
+              href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe"
               class="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-semibold text-xs border border-white/[0.08] transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Download Free (.exe / .zip)</span>
+              <span>Download Free (.exe Installer)</span>
             </a>
           </div>
         </div>
@@ -501,62 +545,38 @@
         </div>
       </div>
 
-      <!-- FAQ Accordion -->
-      <div class="max-w-3xl mx-auto mt-16 space-y-4">
+      <!-- Collapsible FAQ Accordion (Clean & Lean) -->
+      <div class="max-w-2xl mx-auto mt-16 space-y-3">
         <h3 class="text-xl font-bold text-white text-center mb-6">Frequently Asked Questions</h3>
 
-        <div class="specular-card rounded-xl p-4 border border-white/[0.06]">
-          <div class="text-xs font-semibold text-white">How does AltSpace recognize that I'm subscribed to Pro?</div>
-          <p class="text-xs text-zinc-400 mt-1.5 leading-relaxed">
-            When you sponsor via GitHub Sponsors, our automated GitHub webhook logs your GitHub handle to the verified manifest. When you open the AltSpace desktop app and click <strong>"Sign in with GitHub"</strong>, it matches your authenticated handle and unlocks Pro in under 3 seconds.
-          </p>
+        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+          <button onclick="toggleFaq('faq-1')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
+            <span>How does AltSpace recognize that I'm subscribed to Pro?</span>
+            <span id="faq-1-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+          </button>
+          <div id="faq-1" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
+            When you sponsor via GitHub Sponsors, our automated GitHub webhook logs your handle to the verified manifest. When you click <strong>"Sign in with GitHub"</strong> inside the AltSpace desktop app, it matches your authenticated handle and unlocks Pro in under 3 seconds.
+          </div>
         </div>
 
-        <div class="specular-card rounded-xl p-4 border border-white/[0.06]">
-          <div class="text-xs font-semibold text-white">Can I use AltSpace completely free for commercial work?</div>
-          <p class="text-xs text-zinc-400 mt-1.5 leading-relaxed">
-            Yes! AltSpace is released under the permissive <strong>Apache 2.0 Open Source License</strong>. You can use it freely for personal, freelance, startup, and enterprise engineering workflows.
-          </p>
+        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+          <button onclick="toggleFaq('faq-2')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
+            <span>Can I use AltSpace completely free for commercial work?</span>
+            <span id="faq-2-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+          </button>
+          <div id="faq-2" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
+            Yes! AltSpace is released under the permissive <strong>Apache 2.0 Open Source License</strong>. You can use it freely for personal, freelance, startup, and enterprise engineering workflows with zero cost.
+          </div>
         </div>
 
-        <div class="specular-card rounded-xl p-4 border border-white/[0.06]">
-          <div class="text-xs font-semibold text-white">Does AltSpace send my file names, clipboard, or keystrokes to the cloud?</div>
-          <p class="text-xs text-zinc-400 mt-1.5 leading-relaxed">
-            Never. AltSpace is strictly local-first. Searches run directly against your local NTFS Everything journal, clipboard history stays in DPAPI-encrypted RAM, and local AI uses your own Ollama engine. We do not operate any tracking, metrics, or telemetry servers.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Download Hub Section -->
-    <section id="download" class="max-w-4xl mx-auto px-6 py-16 scroll-mt-20">
-      <div class="specular-card rounded-3xl p-8 sm:p-10 border border-white/[0.12] text-center">
-        <h2 class="text-3xl font-extrabold text-white tracking-tight">
-          Ready to supercharge your Windows workflow?
-        </h2>
-        <p class="text-sm text-zinc-400 mt-3 max-w-lg mx-auto">
-          Download the latest v2.0.0 preview. Free, lightweight, and offline.
-        </p>
-
-        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe"
-            class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            <span>Download Installer (Setup.exe)</span>
-          </a>
-          <a
-            href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Portable-x64.zip"
-            class="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-semibold text-xs border border-white/[0.1] transition flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-            <span>Portable ZIP (Zero-Install)</span>
-          </a>
-        </div>
-
-        <div class="mt-6 text-[11px] text-zinc-500 font-mono">
-          Winget: <code class="text-zinc-300">winget install codecheesee.altspace</code>
+        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+          <button onclick="toggleFaq('faq-3')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
+            <span>Does AltSpace send my file names or keystrokes to the cloud?</span>
+            <span id="faq-3-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+          </button>
+          <div id="faq-3" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
+            Never. AltSpace is strictly local-first. Searches run directly against your local NTFS Everything journal, clipboard history stays in DPAPI-encrypted RAM, and local AI uses your own Ollama engine. We operate zero telemetry servers.
+          </div>
         </div>
       </div>
     </section>
@@ -580,22 +600,26 @@
     </div>
   </footer>
 
-  <!-- Interactive Demo & Pricing Scripts -->
+  <!-- Interactive Demo, Bento & Pricing Scripts -->
   <script>
     const DEMO_ITEMS = [
-      { id: 1, title: 'Visual Studio Code', subtitle: 'App • C:\Program Files\Microsoft VS Code\Code.exe', mode: 'all', badge: 'App', icon: '💻' },
+      { id: 1, title: 'Visual Studio Code', subtitle: 'App • C:\\Program Files\\Microsoft VS Code\\Code.exe', mode: 'all', badge: 'App', icon: '💻' },
       { id: 2, title: 'node.exe (Port :3000)', subtitle: 'Port • PID 18402 • Listening on localhost:3000', mode: 'ports', badge: 'Port', icon: '⚡', action: 'Kill' },
       { id: 3, title: 'python.exe (Port :8000)', subtitle: 'Port • PID 24910 • FastAPI dev server', mode: 'ports', badge: 'Port', icon: '⚡', action: 'Kill' },
       { id: 4, title: 'git clone https://github.com/codecheesee/altspace', subtitle: 'Clipboard • Copied 2 mins ago', mode: 'clipboard', badge: 'Clip', icon: '📋' },
-      { id: 5, title: 'Q1_Financial_Report_2026.xlsx', subtitle: 'File • D:\Work\Finance\Q1_Financial_Report_2026.xlsx', mode: 'files', badge: 'File', icon: '📁' },
+      { id: 5, title: 'Q1_Financial_Report_2026.xlsx', subtitle: 'File • D:\\Work\\Finance\\Q1_Financial_Report_2026.xlsx', mode: 'files', badge: 'File', icon: '📁' },
       { id: 6, title: 'Explain this error in clipboard context', subtitle: 'AI Prompt • Local Ollama (llama3:8b)', mode: 'ai', badge: 'AI', icon: '🤖' },
       { id: 7, title: 'Windows Calculator', subtitle: 'Result: 42 * 1337 = 56,154', mode: 'all', badge: 'Calc', icon: '🔢' },
       { id: 8, title: 'Snap Active Window Left Half', subtitle: 'System • Snap current window to left 50%', mode: 'all', badge: 'Snap', icon: '🪟' }
     ];
 
     let currentFilter = 'all';
+    let selectedIndex = 0;
+    let currentRenderedItems = [];
 
     function renderDemoItems(items) {
+      currentRenderedItems = items;
+      if (selectedIndex >= items.length) selectedIndex = 0;
       const container = document.getElementById('demo-results');
       if (!items.length) {
         container.innerHTML = `
@@ -607,11 +631,15 @@
       }
 
       container.innerHTML = items.map((item, idx) => `
-        <div class="p-2 rounded-lg ${idx === 0 ? 'bg-white/[0.08] text-white' : 'hover:bg-white/[0.04] text-zinc-300'} flex items-center justify-between transition cursor-pointer group" onclick="handleDemoItemClick('${item.title}', '${item.action || ''}')">
+        <div
+          class="p-2 rounded-lg ${idx === selectedIndex ? 'bg-white/[0.08] text-white' : 'hover:bg-white/[0.04] text-zinc-300'} flex items-center justify-between transition cursor-pointer group"
+          onclick="selectAndExecute(${idx})"
+          onmouseenter="setHoverIndex(${idx})"
+        >
           <div class="flex items-center gap-3">
             <span class="text-base select-none">${item.icon}</span>
             <div>
-              <div class="text-xs font-semibold ${idx === 0 ? 'text-white' : 'text-zinc-200'}">${item.title}</div>
+              <div class="text-xs font-semibold ${idx === selectedIndex ? 'text-white' : 'text-zinc-200'}">${item.title}</div>
               <div class="text-[10px] text-zinc-400 font-mono truncate max-w-[280px] sm:max-w-md">${item.subtitle}</div>
             </div>
           </div>
@@ -623,9 +651,83 @@
       `).join('');
     }
 
+    function setHoverIndex(idx) {
+      selectedIndex = idx;
+      updateSelectedHighlight();
+    }
+
+    function updateSelectedHighlight() {
+      const rows = document.querySelectorAll('#demo-results > div');
+      rows.forEach((r, i) => {
+        if (i === selectedIndex) {
+          r.classList.add('bg-white/[0.08]', 'text-white');
+          r.classList.remove('text-zinc-300');
+        } else {
+          r.classList.remove('bg-white/[0.08]', 'text-white');
+          r.classList.add('text-zinc-300');
+        }
+      });
+    }
+
+    function handleDemoKeydown(e) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentRenderedItems.length) {
+          selectedIndex = (selectedIndex + 1) % currentRenderedItems.length;
+          updateSelectedHighlight();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentRenderedItems.length) {
+          selectedIndex = (selectedIndex - 1 + currentRenderedItems.length) % currentRenderedItems.length;
+          updateSelectedHighlight();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        selectAndExecute(selectedIndex);
+      } else if (e.key === 'Escape') {
+        document.getElementById('demo-search-input').value = '';
+        handleDemoSearch('');
+      }
+    }
+
+    function selectAndExecute(idx) {
+      const item = currentRenderedItems[idx];
+      if (!item) return;
+
+      if (item.action === 'Kill') {
+        showToast(`✓ Terminated ${item.title} • Released port`);
+      } else if (item.badge === 'Calc') {
+        showToast(`✓ Copied calculation result (56,154) to clipboard`);
+      } else if (item.badge === 'Clip') {
+        showToast(`✓ Copied text snippet to clipboard`);
+      } else {
+        showToast(`✓ Launched ${item.title} in 1.1ms`);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('sim-toast');
+      const toastMsg = document.getElementById('sim-toast-msg');
+      toastMsg.innerText = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(window._toastTimeout);
+      window._toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    function hideToast() {
+      document.getElementById('sim-toast').classList.add('hidden');
+    }
+
     function handleDemoSearch(query) {
       const q = query.toLowerCase().trim();
       let filtered = DEMO_ITEMS;
+
+      // Update random sub-ms latency simulation on keystroke
+      const lat = (0.6 + Math.random() * 0.7).toFixed(1);
+      document.getElementById('sim-latency').innerText = lat + ' ms';
 
       if (currentFilter !== 'all') {
         filtered = filtered.filter(item => item.mode === currentFilter || item.mode === 'all');
@@ -639,23 +741,85 @@
         );
       }
 
+      selectedIndex = 0;
       renderDemoItems(filtered);
     }
 
-    function setDemoFilter(filter) {
+    function setDemoFilter(filter, btn) {
       currentFilter = filter;
-      document.querySelectorAll('.demo-tab').forEach(btn => {
-        btn.classList.remove('bg-white/[0.1]', 'text-white', 'font-medium');
-        btn.classList.add('text-zinc-400');
+      document.querySelectorAll('.demo-tab').forEach(b => {
+        b.classList.remove('bg-white/[0.1]', 'text-white', 'font-medium');
+        b.classList.add('text-zinc-400');
       });
-      event.target.classList.add('bg-white/[0.1]', 'text-white', 'font-medium');
-      event.target.classList.remove('text-zinc-400');
+      if (btn) {
+        btn.classList.add('bg-white/[0.1]', 'text-white', 'font-medium');
+        btn.classList.remove('text-zinc-400');
+      }
       handleDemoSearch(document.getElementById('demo-search-input').value);
     }
 
-    function handleDemoItemClick(title, action) {
-      if (action === 'Kill') {
-        alert(`AltSpace simulator: Successfully sent SIGKILL to process for ${title}`);
+    // Bento Demos
+    function setBentoDrive(letter) {
+      ['C', 'D', 'E'].forEach(l => {
+        const b = document.getElementById(`drive-btn-${l}`);
+        b.className = (l === letter)
+          ? 'px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer'
+          : 'px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer';
+      });
+      const samples = {
+        C: 'C:\\Program Files\\Microsoft VS Code\\Code.exe',
+        D: 'D:\\Work\\Projects\\Client_Audit_2026.docx',
+        E: 'E:\\Backups\\Database_Archive_March.tar.gz'
+      };
+      document.getElementById('bento-drive-sample').innerText = samples[letter];
+      document.getElementById('bento-drive-speed').innerText = (letter === 'E' ? '2.1ms (USB 3.2)' : '1.2ms (NTFS)');
+    }
+
+    let isPortKilled = false;
+    function toggleBentoPort() {
+      const btn = document.getElementById('bento-port-btn');
+      const status = document.getElementById('bento-port-status');
+      isPortKilled = !isPortKilled;
+      if (isPortKilled) {
+        status.innerHTML = '<span class="text-emerald-400">✓ Port :3000 free (PID freed)</span>';
+        btn.innerText = 'Reset';
+        btn.className = 'px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] transition cursor-pointer';
+      } else {
+        status.innerText = ':3000 node.exe (PID 18402)';
+        btn.innerText = 'Kill';
+        btn.className = 'px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer';
+      }
+    }
+
+    function copySnippetBento(btn) {
+      navigator.clipboard.writeText('git clone https://github.com/codecheesee/altspace').then(() => {
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+      });
+    }
+
+    function setBentoAi(model, btn) {
+      document.querySelectorAll('.bento-ai-btn').forEach(b => {
+        b.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer';
+      });
+      btn.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer';
+      const tags = {
+        llama3: 'Llama 3 • 42 tok/sec',
+        deepseek: 'DeepSeek • Code Gen Active',
+        mistral: 'Mistral 7B • Low RAM'
+      };
+      document.getElementById('bento-ai-tag').innerText = tags[model];
+    }
+
+    function toggleFaq(id) {
+      const el = document.getElementById(id);
+      const icon = document.getElementById(`${id}-icon`);
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        icon.innerText = '▾';
+      } else {
+        el.classList.add('hidden');
+        icon.innerText = '▸';
       }
     }
 

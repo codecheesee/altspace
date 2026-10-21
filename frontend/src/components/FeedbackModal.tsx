@@ -1,3 +1,4 @@
+import { cn } from "../lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp, Settings, History, Copy, Check } from "lucide-react";
 import { tauriInvoke } from "../lib/appStorage";
@@ -272,51 +273,56 @@ ${item.comment || "No detailed notes provided."}
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-100 select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 animate-in fade-in duration-100"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-5 flex flex-col gap-4 text-zinc-100 animate-in zoom-in-95 duration-100 relative"
+        className="w-full max-w-lg max-h-[470px] rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] flex flex-col text-zinc-100 animate-in zoom-in-95 duration-100 relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Controls */}
-        <div className="absolute top-4 right-4 flex items-center gap-1.5">
-          <button
-            onClick={() => setShowWebhookConfig((prev) => !prev)}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-            title="Configure Private Webhook"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-            title="Close (Esc)"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Modal Header */}
-        <div>
-          <div className="flex items-center gap-2">
-            <Heart
-              className="w-5 h-5 text-rose-500 fill-rose-500"
-              style={{ color: activeTheme.accentHex, fill: activeTheme.accentHex }}
-            />
-            <h2 className="text-base font-semibold text-white tracking-tight">
-              Community Feedback & Issue Tracker
-            </h2>
+        {/* Top Header - Fixed */}
+        <div className="p-4 pb-2.5 border-b border-white/[0.06] shrink-0 bg-[#0e0e11] relative">
+          {/* Top Controls */}
+          <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+            <button
+              onClick={() => setShowWebhookConfig((prev) => !prev)}
+              className={cn(
+                "p-1.5 rounded-lg transition cursor-pointer",
+                showWebhookConfig ? "bg-white/[0.12] text-white" : "text-zinc-400 hover:text-white hover:bg-white/[0.08]"
+              )}
+              title="Configure Private Webhook"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+              title="Close (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            AltSpace is 100% open-source. Rate the app, request features, or report issues directly to maintainers.
-          </p>
+
+          <div className="pr-16">
+            <div className="flex items-center gap-2">
+              <Heart
+                className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0"
+                style={{ color: activeTheme.accentHex, fill: activeTheme.accentHex }}
+              />
+              <h2 className="text-sm font-semibold text-white tracking-tight truncate">
+                Community Feedback & Issue Tracker
+              </h2>
+            </div>
+            <p className="text-[11px] text-zinc-400 mt-0.5 truncate">
+              Rate AltSpace, request features, or report issues directly to maintainers.
+            </p>
+          </div>
 
           {/* Tab Selector */}
-          <div className="flex items-center gap-2 mt-3 border-b border-white/[0.08] pb-2">
+          <div className="flex items-center gap-2 mt-2.5">
             <button
               onClick={() => { setActiveTab("write"); setSubmitted(false); }}
-              className={`text-xs font-medium px-2.5 py-1 rounded-lg transition cursor-pointer ${
+              className={`text-xs font-medium px-2.5 py-1 rounded-md transition cursor-pointer ${
                 activeTab === "write"
                   ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -326,7 +332,7 @@ ${item.comment || "No detailed notes provided."}
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition cursor-pointer ${
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition cursor-pointer ${
                 activeTab === "history"
                   ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -337,6 +343,9 @@ ${item.comment || "No detailed notes provided."}
             </button>
           </div>
         </div>
+
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
 
         {showWebhookConfig && (
           <div className="p-3 rounded-xl bg-black/40 border border-white/[0.08] flex flex-col gap-2 animate-in fade-in">
@@ -611,6 +620,7 @@ ${item.comment || "No detailed notes provided."}
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );
