@@ -303,15 +303,30 @@ export default function App() {
     shellConfirmation !== null
   );
 
-  // Focus omnibar when window regains focus, but never steal focus from an active modal
+  // Always ensure omnibar is focused when palette is visible or regains focus, unless inside a modal
   useEffect(() => {
     const onFocus = () => {
       if (!isAnyModalOpen) {
-        inputRef.current?.focus();
+        inputRef.current?.focus({ preventScroll: true });
       }
     };
+    onFocus();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [isAnyModalOpen]);
+
+  // Restore focus to omnibar immediately when any modal is dismissed
+  useEffect(() => {
+    if (!isAnyModalOpen) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      }, 30);
+      return () => clearTimeout(timer);
+    }
   }, [isAnyModalOpen]);
 
   // Contextual file preview and Git info
@@ -730,23 +745,96 @@ export default function App() {
     }
   };
 
-  // Window-level keydown listener to guarantee reliable shortcuts regardless of DOM focus
+  // Container background click immediately returns focus to the search omnibar
+  const handleContainerClick = useCallback((e: React.MouseEvent) => {
+    if (isAnyModalOpen) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a") || target.closest("input") || target.closest("textarea")) {
+      return;
+    }
+    inputRef.current?.focus({ preventScroll: true });
+  }, [isAnyModalOpen]);
+
+  // Window-level keydown listener & Global Omnibar Steering (Type-to-Search)
+  // Ensures any typing immediately enters the search box regardless of mouse position or prior clicks
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent) => {
       if (isAnyModalOpen) return;
+
+      const active = document.activeElement;
+      const isInputActive = active === inputRef.current || active?.tagName === "INPUT" || active?.tagName === "TEXTAREA";
+
       if (e.key === "Escape") {
-        if (query) {
+        if (quickLookOpen) {
+          e.preventDefault();
+          setQuickLookOpen(false);
+        } else if (showActionsModal) {
+          e.preventDefault();
+          setShowActionsModal(false);
+        } else if (query) {
           e.preventDefault();
           setQuery("");
         } else {
           e.preventDefault();
           handleDismissWindow();
         }
+        return;
+      }
+
+      // If already focused in input, let normal input events flow
+      if (isInputActive) return;
+
+      // Ignore pure modifiers or special control combinations
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.key === "Tab" || e.key === "CapsLock" || e.key === "Shift") return;
+
+      // Arrow navigation over items even if mouse was clicked outside input
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        inputRef.current?.focus({ preventScroll: true });
+        setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        inputRef.current?.focus({ preventScroll: true });
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
+        return;
+      }
+      if (e.key === "Enter") {
+        if (selectedItem) {
+          e.preventDefault();
+          handleItemAction(selectedItem);
+        }
+        return;
+      }
+
+      // Printable character: steer directly into the search input!
+      if (e.key.length === 1) {
+        e.preventDefault();
+        inputRef.current?.focus({ preventScroll: true });
+        setQuery((prev) => prev + e.key);
+        setSelectedIndex(0);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        inputRef.current?.focus({ preventScroll: true });
+        setQuery((prev) => prev.slice(0, -1));
+        setSelectedIndex(0);
       }
     };
-    window.addEventListener("keydown", onWindowKeyDown);
-    return () => window.removeEventListener("keydown", onWindowKeyDown);
-  }, [isAnyModalOpen, query]);
+
+    window.addEventListener("keydown", onWindowKeyDown, true);
+    return () => window.removeEventListener("keydown", onWindowKeyDown, true);
+  }, [
+    isAnyModalOpen,
+    query,
+    items,
+    selectedItem,
+    quickLookOpen,
+    showActionsModal,
+    handleDismissWindow,
+    handleItemAction,
+  ]);
 
   return (
     <div
@@ -755,6 +843,7 @@ export default function App() {
         backgroundColor: activeTheme.bg,
         borderColor: activeTheme.borderColor,
       }}
+      onClick={handleContainerClick}
       onKeyDown={handleKeyDown}
     >
       <div

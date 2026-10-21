@@ -38,6 +38,9 @@ Desktop.ini
 .DS_Store
 
 # Scratch & test scripts
+scripts/keys/
+*.key
+license_master.json
 scratch_capture.ps1
 capture_screen.ps1
 check_*.ps1

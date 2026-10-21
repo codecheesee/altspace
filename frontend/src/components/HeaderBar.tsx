@@ -115,6 +115,7 @@ export function HeaderBar({
         <input
           ref={inputRef}
           type="text"
+          autoFocus={true}
           value={query}
           role="combobox"
           aria-expanded={true}

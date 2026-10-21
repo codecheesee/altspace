@@ -164,6 +164,36 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
     };
   }
 
+  // 2. Check Ed25519 Cryptographic License
+  if (tauriInvoke) {
+    try {
+      const verified = await tauriInvoke<{
+        valid: boolean;
+        id: string;
+        user: string;
+        email?: string;
+        tier: string;
+        is_perpetual: boolean;
+        expires_at?: string;
+        machine: string;
+        message: string;
+      }>("get_active_verified_license");
+
+      if (verified && verified.valid) {
+        return {
+          isSupporter: true,
+          tier: "Pro",
+          login: verified.user,
+          avatarUrl: session?.avatarUrl,
+          provider: "cryptographic-ed25519",
+          expiresAt: verified.expires_at,
+          role: "pro",
+          reason: `Verified Ed25519 Cryptographic License (${verified.id})`,
+        };
+      }
+    } catch (_) {}
+  }
+
   // 2. Check offline DPAPI / localStorage lease token
   if (tauriInvoke) {
     try {
@@ -371,14 +401,44 @@ export function deactivateLicense(): void {
   clearCurrentSession();
   if (tauriInvoke) {
     tauriInvoke("vault_delete_secret", { key: "altspace_entitlement_token" }).catch(() => {});
+    tauriInvoke("vault_delete_secret", { key: "altspace_verified_license" }).catch(() => {});
   }
   try {
     localStorage.removeItem("altspace_entitlement_token");
+    localStorage.removeItem("altspace_verified_license");
   } catch (_) {}
 }
 
 export async function activateManualLease(token: string): Promise<LicenseStatus> {
   const trimmed = token.trim();
+  if (trimmed.startsWith("ALTS1-")) {
+    if (tauriInvoke) {
+      const res = await tauriInvoke<{
+        valid: boolean;
+        id: string;
+        user: string;
+        email?: string;
+        tier: string;
+        is_perpetual: boolean;
+        expires_at?: string;
+        machine: string;
+        message: string;
+      }>("verify_and_activate_license", { licenseKey: trimmed });
+
+      if (res && res.valid) {
+        return {
+          isSupporter: true,
+          tier: "Pro",
+          login: res.user,
+          provider: "cryptographic-ed25519",
+          expiresAt: res.expires_at,
+          role: "pro",
+          reason: `Verified Ed25519 Cryptographic License (${res.id})`,
+        };
+      }
+    }
+  }
+
   if (trimmed.length > 3) {
     if (tauriInvoke) {
       await tauriInvoke("vault_store_secret", { key: "altspace_entitlement_token", value: trimmed });

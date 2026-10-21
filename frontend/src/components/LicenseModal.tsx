@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   Copy,
@@ -6,6 +6,10 @@ import {
   LogOut,
   RefreshCw,
   CheckCircle2,
+  ShieldCheck,
+  Key,
+  Shield,
+  Loader2,
 } from "lucide-react";
 import {
   deactivateLicense,
@@ -23,8 +27,12 @@ import {
 } from "../lib/checkout";
 import {
   connectWithGitHubToken,
-  connectWithGitHubUsername,
+  fetchGitHubUserProfile,
   getCurrentSession,
+  GITHUB_CLIENT_ID,
+  pollGitHubDeviceToken,
+  startGitHubDeviceFlow,
+  type DeviceCodeResponse,
   type UserSession,
 } from "../lib/authProvider";
 import {
@@ -44,7 +52,7 @@ interface LicenseModalProps {
 }
 
 type TabType = "account" | "features" | "about";
-type AuthMethod = "token" | "username";
+type AuthMethod = "device" | "token";
 
 function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -68,15 +76,22 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Authentication inputs
-  const [authMethod, setAuthMethod] = useState<AuthMethod>("token");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>("device");
   const [tokenInput, setTokenInput] = useState("");
-  const [usernameInput, setUsernameInput] = useState("");
+  const [customClientId, setCustomClientId] = useState("");
+  const [showClientConfig, setShowClientConfig] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Manual key input
-  const [manualKeyOpen, setManualKeyOpen] = useState(false);
-  const [manualKeyInput, setManualKeyInput] = useState("");
+  // Device Flow State (RFC 8628)
+  const [deviceFlow, setDeviceFlow] = useState<DeviceCodeResponse | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cryptographic License Key input
+  const [licenseKeyInput, setLicenseKeyInput] = useState("");
+  const [licenseKeyError, setLicenseKeyError] = useState<string | null>(null);
+  const [licenseKeyLoading, setLicenseKeyLoading] = useState(false);
 
   const [copiedMachineId, setCopiedMachineId] = useState(false);
 
@@ -108,6 +123,16 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     void refreshStatus();
   }, [isOpen]);
 
+  // Clean up device flow on modal close or unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   // Escape key closes modal
   useEffect(() => {
     if (!isOpen) return;
@@ -115,12 +140,16 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
-        onClose();
+        if (deviceFlow) {
+          handleCancelDeviceFlow();
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, onClose]);
+  }, [isOpen, deviceFlow, onClose]);
 
   if (!isOpen) return null;
 
@@ -143,6 +172,68 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     openCheckout(selectedCurrency);
   };
 
+  // Device Flow Authentication Handler
+  const handleStartDeviceFlow = async () => {
+    const clientId = customClientId.trim() || GITHUB_CLIENT_ID;
+    setAuthLoading(true);
+    setAuthError(null);
+    setDeviceFlow(null);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await startGitHubDeviceFlow(clientId);
+      setDeviceFlow(response);
+
+      // Auto-copy user code to clipboard
+      try {
+        await navigator.clipboard.writeText(response.user_code);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 3000);
+      } catch (_) {}
+
+      // Auto-open browser to GitHub device verification page
+      handleOpenUrl(response.verification_uri);
+      notify(`Code ${response.user_code} copied! Authorize in browser.`);
+
+      // Poll until user authorizes
+      const token = await pollGitHubDeviceToken(
+        clientId,
+        response.device_code,
+        response.interval || 5,
+        controller.signal
+      );
+
+      const userSession = await fetchGitHubUserProfile(token);
+      setSession(userSession);
+      setDeviceFlow(null);
+      notify(`Verified GitHub identity: @${userSession.login}!`);
+      const updated = await refreshEntitlement();
+      setLicenseStatus(updated);
+    } catch (err: any) {
+      if (controller.signal.aborted) {
+        setAuthError("Sign-in cancelled.");
+      } else {
+        setAuthError(err?.message || "GitHub authentication failed.");
+      }
+      setDeviceFlow(null);
+    } finally {
+      setAuthLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelDeviceFlow = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setDeviceFlow(null);
+    setAuthLoading(false);
+    setAuthError(null);
+  };
+
   const handleConnectToken = async () => {
     if (!tokenInput.trim()) return;
     setAuthLoading(true);
@@ -151,29 +242,11 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
       const user = await connectWithGitHubToken(tokenInput.trim());
       setSession(user);
       setTokenInput("");
-      notify(`Connected GitHub account @${user.login}!`);
+      notify(`Verified GitHub identity: @${user.login}!`);
       const updated = await refreshEntitlement();
       setLicenseStatus(updated);
     } catch (err: any) {
       setAuthError(err?.message || "Failed to verify token.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleConnectUsername = async () => {
-    if (!usernameInput.trim()) return;
-    setAuthLoading(true);
-    setAuthError(null);
-    try {
-      const user = await connectWithGitHubUsername(usernameInput.trim());
-      setSession(user);
-      setUsernameInput("");
-      notify(`Linked GitHub profile @${user.login}!`);
-      const updated = await refreshEntitlement();
-      setLicenseStatus(updated);
-    } catch (err: any) {
-      setAuthError(err?.message || "Failed to fetch profile.");
     } finally {
       setAuthLoading(false);
     }
@@ -194,22 +267,27 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
     setSession(null);
     const updated = getLicenseStatus();
     setLicenseStatus(updated);
-    notify("Disconnected GitHub account.");
+    notify("Signed out of GitHub.");
   };
 
-  const handleActivateManualKey = async () => {
-    if (!manualKeyInput.trim()) return;
-    setIsRefreshing(true);
+  // Cryptographic Ed25519 License Key Activation
+  const handleActivateLicenseKey = async () => {
+    const key = licenseKeyInput.trim();
+    if (!key) return;
+
+    setLicenseKeyLoading(true);
+    setLicenseKeyError(null);
     try {
-      const updated = await activateManualLease(manualKeyInput);
+      const updated = await activateManualLease(key);
       setLicenseStatus(updated);
-      setManualKeyInput("");
-      setManualKeyOpen(false);
-      notify("License lease activated!");
+      setLicenseKeyInput("");
+      notify("Cryptographic Pro license verified and activated!");
     } catch (err: any) {
-      notify(`Activation error: ${err?.message || err}`);
+      const msg = err?.message || String(err);
+      setLicenseKeyError(msg);
+      notify(`Activation failed: ${msg}`);
     } finally {
-      setIsRefreshing(false);
+      setLicenseKeyLoading(false);
     }
   };
 
@@ -289,7 +367,7 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
         </div>
 
         {/* Tab Body */}
-        <div className="p-4 space-y-3.5 max-h-[70vh] overflow-y-auto">
+        <div className="p-4 space-y-3.5 max-h-[72vh] overflow-y-auto">
           {/* TAB 1: ACCOUNT */}
           {activeTab === "account" && (
             <div className="space-y-3">
@@ -314,8 +392,8 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
 
                 <p className="text-[11px] text-zinc-400 leading-normal">
                   {isProOrSupporter
-                    ? "All offline tools and hosted cloud features are unmetered."
-                    : "Local searches and tools are unlimited forever. Resets monthly on " + quotaResetDate + "."}
+                    ? "All local desktop tools and cloud features are active and unmetered."
+                    : "Local searches and utilities are unlimited forever. Resets monthly on " + quotaResetDate + "."}
                 </p>
 
                 {!isProOrSupporter && (
@@ -331,14 +409,23 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                 )}
               </div>
 
-              {/* GitHub Connection */}
+              {/* GitHub Identity Card (Verified Only) */}
               <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
-                <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider">
-                  GitHub Profile
+                <div className="flex items-center justify-between">
+                  <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Verified GitHub Identity</span>
+                  </div>
+                  {session && (
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Authenticated
+                    </span>
+                  )}
                 </div>
 
                 {session ? (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-0.5">
                     <div className="flex items-center gap-2.5">
                       {session.avatarUrl ? (
                         <img
@@ -373,13 +460,26 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                         className="px-2.5 py-1 text-[11px] text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-md transition border border-rose-500/20 cursor-pointer flex items-center gap-1"
                       >
                         <LogOut className="w-3 h-3" />
-                        Disconnect
+                        Sign Out
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
+                    {/* Method Switcher */}
                     <div className="flex items-center gap-2 text-[11px]">
+                      <button
+                        onClick={() => setAuthMethod("device")}
+                        className={cn(
+                          "pb-0.5 border-b transition cursor-pointer",
+                          authMethod === "device"
+                            ? "text-white border-white font-medium"
+                            : "text-zinc-500 border-transparent hover:text-zinc-300"
+                        )}
+                      >
+                        GitHub Sign-in (Device Code)
+                      </button>
+                      <span className="text-zinc-600">•</span>
                       <button
                         onClick={() => setAuthMethod("token")}
                         className={cn(
@@ -391,21 +491,91 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                       >
                         Personal Access Token
                       </button>
-                      <span className="text-zinc-600">•</span>
-                      <button
-                        onClick={() => setAuthMethod("username")}
-                        className={cn(
-                          "pb-0.5 border-b transition cursor-pointer",
-                          authMethod === "username"
-                            ? "text-white border-white font-medium"
-                            : "text-zinc-500 border-transparent hover:text-zinc-300"
-                        )}
-                      >
-                        Username Only
-                      </button>
                     </div>
 
-                    {authMethod === "token" ? (
+                    {authMethod === "device" ? (
+                      <div className="space-y-2">
+                        {deviceFlow ? (
+                          <div className="p-3 bg-black/60 rounded-md border border-white/10 space-y-2.5 text-center">
+                            <div className="text-[11px] text-zinc-300">
+                              Enter this code on GitHub to authorize AltSpace:
+                            </div>
+                            <div className="text-lg font-mono font-bold tracking-widest text-white bg-zinc-800/80 py-1.5 px-3 rounded border border-white/10 select-all">
+                              {deviceFlow.user_code}
+                            </div>
+                            <div className="flex items-center justify-center gap-2 pt-1">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(deviceFlow.user_code);
+                                  setCopiedCode(true);
+                                  handleOpenUrl(deviceFlow.verification_uri);
+                                  setTimeout(() => setCopiedCode(false), 3000);
+                                }}
+                                className="px-3 py-1 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded transition cursor-pointer flex items-center gap-1.5"
+                              >
+                                {copiedCode ? <Check className="w-3 h-3" /> : <ExternalLink className="w-3 h-3" />}
+                                {copiedCode ? "Copied! Opening..." : "Open GitHub"}
+                              </button>
+                              <button
+                                onClick={handleCancelDeviceFlow}
+                                className="px-3 py-1 bg-white/[0.08] hover:bg-white/[0.12] text-zinc-300 text-xs rounded transition cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <div className="text-[10px] text-zinc-500 flex items-center justify-center gap-1.5 pt-0.5">
+                              <Loader2 className="w-2.5 h-2.5 animate-spin text-zinc-400" />
+                              <span>Waiting for browser authorization...</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <button
+                              onClick={handleStartDeviceFlow}
+                              disabled={authLoading}
+                              className="w-full py-2 px-3 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
+                            >
+                              {authLoading ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Requesting verification code...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <GithubIcon className="w-4 h-4" />
+                                  <span>Sign in with GitHub</span>
+                                </>
+                              )}
+                            </button>
+
+                            <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                              <span>Opens github.com/login/device in default browser</span>
+                              <button
+                                onClick={() => setShowClientConfig(!showClientConfig)}
+                                className="text-zinc-400 hover:text-white underline cursor-pointer"
+                              >
+                                {showClientConfig ? "Hide Client ID" : "OAuth Client ID"}
+                              </button>
+                            </div>
+
+                            {showClientConfig && (
+                              <div className="pt-1 space-y-1">
+                                <input
+                                  type="text"
+                                  placeholder={`Client ID (default: ${GITHUB_CLIENT_ID})`}
+                                  value={customClientId}
+                                  onChange={(e) => setCustomClientId(e.target.value)}
+                                  className="w-full py-1 px-2 bg-black/60 rounded border border-white/10 text-[11px] text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                                />
+                                <p className="text-[9.5px] text-zinc-500">
+                                  Free to register under your GitHub account: Settings → Developer Settings → OAuth Apps (enable Device Flow).
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
                           <input
@@ -421,15 +591,15 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                             disabled={authLoading || !tokenInput.trim()}
                             className="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer disabled:opacity-40"
                           >
-                            {authLoading ? "Connecting..." : "Connect"}
+                            {authLoading ? "Verifying..." : "Verify & Save"}
                           </button>
                         </div>
                         <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-zinc-500">Requires 'read:user' scope</span>
+                          <span className="text-zinc-500">Requires 'read:user' permission</span>
                           <button
                             onClick={() =>
                               handleOpenUrl(
-                                "https://github.com/settings/tokens/new?scopes=read:user&description=AltSpace"
+                                "https://github.com/settings/tokens/new?scopes=read:user&description=AltSpace%20Desktop"
                               )
                             }
                             className="text-zinc-400 hover:text-white flex items-center gap-1 underline cursor-pointer"
@@ -439,173 +609,170 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          placeholder="e.g. shilpi"
-                          value={usernameInput}
-                          onChange={(e) => setUsernameInput(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleConnectUsername()}
-                          className="flex-1 py-1.5 px-2.5 bg-black/60 rounded-md border border-white/10 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-white/30"
-                        />
-                        <button
-                          onClick={handleConnectUsername}
-                          disabled={authLoading || !usernameInput.trim()}
-                          className="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer disabled:opacity-40"
-                        >
-                          {authLoading ? "Linking..." : "Link Profile"}
-                        </button>
-                      </div>
                     )}
 
                     {authError && (
-                      <div className="text-[10.5px] text-rose-400 mt-1">{authError}</div>
+                      <div className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded-md">
+                        {authError}
+                      </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Device Identifier */}
-              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-1.5">
-                <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider">
-                  Device Identifier
+              {/* Cryptographic License Key Card */}
+              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10.5px] font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Cryptographic License</span>
+                  </div>
+                  {licenseStatus.tier === "Pro" && (
+                    <span className="text-[10px] text-purple-400 flex items-center gap-1 font-semibold">
+                      <ShieldCheck className="w-3 h-3" />
+                      Active Pro
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center justify-between bg-black/50 py-1.5 px-2.5 rounded-md border border-white/[0.06]">
-                  <span className="font-mono text-xs text-zinc-300 select-all">{machineId}</span>
-                  <button
-                    onClick={handleCopyMachineId}
-                    className="p-1 hover:bg-white/10 rounded transition text-zinc-400 hover:text-white cursor-pointer"
-                    title="Copy Machine ID"
-                  >
-                    {copiedMachineId ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
+
+                {licenseStatus.tier === "Pro" ? (
+                  <div className="space-y-2 pt-0.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400">Licensed to:</span>
+                      <span className="font-semibold text-white">{licenseStatus.login || "Verified Licensee"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400">Validity:</span>
+                      <span className="text-zinc-300">
+                        {licenseStatus.expiresAt ? new Date(licenseStatus.expiresAt).toLocaleDateString() : "Perpetual Lifetime"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400">Verification:</span>
+                      <span className="text-emerald-400 text-[11px] font-mono">Ed25519 Verified Offline</span>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-end">
+                      <button
+                        onClick={handleSignOut}
+                        className="px-2.5 py-1 text-[11px] text-zinc-400 hover:text-rose-400 transition cursor-pointer"
+                      >
+                        Deactivate License
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-zinc-400 leading-normal">
+                      AltSpace licenses are cryptographically signed with our Ed25519 master key. They verify 100% offline without phoning home.
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="ALTS1-eyJ2Ijox... (Paste license key)"
+                        value={licenseKeyInput}
+                        onChange={(e) => setLicenseKeyInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleActivateLicenseKey()}
+                        className="flex-1 py-1.5 px-2.5 bg-black/60 rounded-md border border-white/10 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-white/30"
+                      />
+                      <button
+                        onClick={handleActivateLicenseKey}
+                        disabled={licenseKeyLoading || !licenseKeyInput.trim()}
+                        className="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer disabled:opacity-40"
+                      >
+                        {licenseKeyLoading ? "Verifying..." : "Activate"}
+                      </button>
+                    </div>
+
+                    {licenseKeyError && (
+                      <div className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded-md">
+                        {licenseKeyError}
+                      </div>
                     )}
-                  </button>
-                </div>
+
+                    <div className="pt-1 text-[10px] text-zinc-500 flex items-center justify-between">
+                      <span>Don't have a key?</span>
+                      <button
+                        onClick={handleCheckout}
+                        className="text-zinc-300 hover:text-white underline cursor-pointer flex items-center gap-1"
+                      >
+                        Get Pro License ({pricing.formattedPrice})
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Upgrade or Manage Subscription */}
-              {!isProOrSupporter ? (
-                <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-semibold text-white">Upgrade to Pro</div>
-                      <div className="text-[10.5px] text-zinc-400">
-                        {pricing.formattedPrice} one-time • Unmetered access
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleCheckout}
-                      className="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-md transition cursor-pointer"
-                    >
-                      Upgrade
-                    </button>
-                  </div>
-
-                  <div className="pt-1.5 border-t border-white/[0.05]">
-                    {!manualKeyOpen ? (
-                      <button
-                        onClick={() => setManualKeyOpen(true)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 underline cursor-pointer"
-                      >
-                        Have an offline license key?
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="text"
-                          placeholder="ALTS-PRO-..."
-                          value={manualKeyInput}
-                          onChange={(e) => setManualKeyInput(e.target.value)}
-                          className="flex-1 py-1 px-2 bg-black/60 rounded border border-white/10 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none"
-                        />
-                        <button
-                          onClick={handleActivateManualKey}
-                          className="px-2.5 py-1 bg-white/[0.1] hover:bg-white/[0.2] text-white text-xs rounded cursor-pointer"
-                        >
-                          Apply
-                        </button>
-                        <button
-                          onClick={() => setManualKeyOpen(false)}
-                          className="text-[10px] text-zinc-500 hover:text-zinc-300"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
+              {/* Hardware Machine ID */}
+              <div className="p-3 rounded-lg border border-white/[0.06] bg-zinc-900/30 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-medium text-zinc-400">Device Hardware ID</div>
+                  <div className="font-mono text-xs text-zinc-200 mt-0.5">{machineId}</div>
                 </div>
-              ) : (
-                <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 flex items-center justify-between">
-                  <div className="text-xs text-zinc-300">Subscription is active</div>
-                  <button
-                    onClick={() => handleOpenUrl(GITHUB_SPONSORS_URL)}
-                    className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
-                  >
-                    Manage
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={handleCopyMachineId}
+                  className="px-2.5 py-1 rounded bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 hover:text-white text-xs font-medium transition cursor-pointer flex items-center gap-1"
+                  title="Copy machine ID"
+                >
+                  {copiedMachineId ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedMachineId ? "Copied" : "Copy"}</span>
+                </button>
+              </div>
             </div>
           )}
 
           {/* TAB 2: FEATURES */}
           {activeTab === "features" && (
-            <div className="space-y-3.5">
-              <div className="space-y-1.5">
-                <div className="text-[10.5px] font-medium text-emerald-400 uppercase tracking-wider">
-                  Always Free & Unlimited
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2">
+                <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Always Free & Unlimited</span>
                 </div>
-                <div className="space-y-1 text-xs text-zinc-300">
-                  {[
-                    "Search all drives (C:, D:, External)",
-                    "App launcher & window snap controls",
-                    "Clipboard history with token redaction",
-                    "Developer port killer (:3000, :5173, etc.)",
-                    "Local Ollama AI (localhost:11434, offline)",
-                    "Calculator, unit converter, system shortcuts",
-                    "12 themes & custom accent glows",
-                  ].map((feat, i) => (
-                    <div key={i} className="flex items-center gap-2 py-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>{feat}</span>
-                    </div>
-                  ))}
+                <div className="space-y-1.5 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Instant Multi-Drive File & Folder Search (C:, D:, External)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Installed App Launcher & Process Navigation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Persistent Clipboard History Manager</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Developer Port Inspector & Single-Click Killer</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Local Ollama AI Integration (100% Offline & Private)</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-                <div className="text-[10.5px] font-medium text-purple-400 uppercase tracking-wider">
-                  Cloud & Pro Services
+              <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2">
+                <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Pro Services</span>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  {[
-                    {
-                      name: "Hosted Cloud AI (Claude 3.5, GPT-4o)",
-                      plan: isProOrSupporter ? "Unlimited" : "100 / month trial",
-                    },
-                    {
-                      name: "Shell Runner (> or cmd:)",
-                      plan: isProOrSupporter ? "Unlimited" : "100 / month trial",
-                    },
-                    {
-                      name: "Encrypted Cloud Snippet Sync",
-                      plan: isProOrSupporter ? "Enabled" : "Local only",
-                    },
-                    {
-                      name: "Community Extension Store",
-                      plan: isProOrSupporter ? "Full store access" : "Verified plugins",
-                    },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-zinc-300 py-0.5">
-                      <span>{item.name}</span>
-                      <span className="text-[10px] font-mono text-zinc-400">{item.plan}</span>
-                    </div>
-                  ))}
+                <div className="space-y-1.5 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Hosted AI Vector Embeddings for Semantic Code Search</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Encrypted Multi-Device DPAPI Vault Synchronization</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Priority Support & Early Feature Access</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -613,40 +780,42 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
 
           {/* TAB 3: ABOUT */}
           {activeTab === "about" && (
-            <div className="space-y-3 text-xs text-zinc-300">
-              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-1">
-                <div className="font-semibold text-white">AltSpace Windows Palette</div>
-                <div className="text-[10px] text-zinc-500 font-mono">v2.0.0-preview (x64)</div>
-                <div className="text-[11px] text-zinc-400 pt-1 leading-normal">
-                  High-performance native command palette for Windows. Licensed under Apache 2.0.
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">AltSpace for Windows</span>
+                  <span className="text-[10px] font-mono text-zinc-400">v2.0.0-preview</span>
                 </div>
+                <p className="text-[11px] text-zinc-400 leading-normal">
+                  High-performance native command palette, file indexer, and developer workflow launcher for Windows.
+                </p>
               </div>
 
-              <div className="space-y-1 pt-1">
-                <button
-                  onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace")}
-                  className="w-full p-2.5 rounded-lg bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/[0.06] flex items-center justify-between text-zinc-300 hover:text-white transition cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
-                    GitHub Repository
-                  </span>
-                  <ExternalLink className="w-3 h-3 text-zinc-500" />
-                </button>
-                <button
-                  onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace/releases")}
-                  className="w-full p-2.5 rounded-lg bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/[0.06] flex items-center justify-between text-zinc-300 hover:text-white transition cursor-pointer"
-                >
-                  <span>Release Notes & Downloads</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-500" />
-                </button>
-                <button
-                  onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace/blob/main/LICENSE")}
-                  className="w-full p-2.5 rounded-lg bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/[0.06] flex items-center justify-between text-zinc-300 hover:text-white transition cursor-pointer"
-                >
-                  <span>Apache 2.0 License</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-500" />
-                </button>
+              <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-white/[0.05]">
+                  <span className="text-zinc-400">License</span>
+                  <span className="text-zinc-200">Apache 2.0 (Open Source)</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-white/[0.05]">
+                  <span className="text-zinc-400">Repository</span>
+                  <button
+                    onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace")}
+                    className="text-zinc-300 hover:text-white underline cursor-pointer flex items-center gap-1"
+                  >
+                    codecheesee/altspace
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-zinc-400">Releases & Notes</span>
+                  <button
+                    onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace/releases")}
+                    className="text-zinc-300 hover:text-white underline cursor-pointer flex items-center gap-1"
+                  >
+                    GitHub Releases
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </button>
+                </div>
               </div>
             </div>
           )}

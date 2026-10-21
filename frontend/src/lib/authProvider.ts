@@ -4,6 +4,8 @@
  * Architected with pluggable AuthProvider interface ready for free-tier Google Sign-In.
  */
 
+import { tauriInvoke } from "./appStorage";
+
 export interface UserSession {
   provider: "github" | "google" | "sovereign";
   login: string;
@@ -81,30 +83,39 @@ export function clearCurrentSession(): void {
  * Returns the 8-character user code to display to the user
  */
 export async function startGitHubDeviceFlow(clientId = GITHUB_CLIENT_ID): Promise<DeviceCodeResponse> {
+  const cleanId = clientId.trim();
+  if (tauriInvoke) {
+    try {
+      const res = await tauriInvoke<DeviceCodeResponse>("github_device_code_request", { clientId: cleanId });
+      if (res && res.device_code) {
+        return res;
+      }
+    } catch (err: any) {
+      throw new Error(String(err));
+    }
+  }
+
+  // Fallback to fetch for browser testing
   const params = new URLSearchParams({
-    client_id: clientId,
+    client_id: cleanId,
     scope: "read:user user:email",
   });
 
-  try {
-    const res = await fetch("https://github.com/login/device/code", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
+  const res = await fetch("https://github.com/login/device/code", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+  });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.device_code) {
-        return data as DeviceCodeResponse;
-      }
-    }
-  } catch (_) {}
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`GitHub rejected device code request: ${txt || res.statusText}`);
+  }
 
-  throw new Error("Direct OAuth app sign-in requires a registered client ID. Please connect using your GitHub Token or Username below.");
+  return (await res.json()) as DeviceCodeResponse;
 }
 
 /**
@@ -126,35 +137,63 @@ export async function pollGitHubDeviceToken(
 
     if (signal?.aborted) throw new Error("Authentication canceled by user");
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      device_code: deviceCode,
-      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-    });
+    if (tauriInvoke) {
+      try {
+        const data = await tauriInvoke<{
+          access_token?: string;
+          error?: string;
+          error_description?: string;
+        }>("github_device_token_poll", { clientId, deviceCode });
 
-    const res = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
+        if (data?.access_token) {
+          return data.access_token;
+        }
+        if (data?.error === "authorization_pending") {
+          continue;
+        }
+        if (data?.error === "slow_down") {
+          interval += 5;
+          continue;
+        }
+        if (data?.error === "expired_token" || data?.error === "access_denied") {
+          throw new Error(data.error_description || "Authentication request expired or was denied.");
+        }
+      } catch (err: any) {
+        if (String(err).includes("denied") || String(err).includes("expired")) {
+          throw err;
+        }
+      }
+    } else {
+      const params = new URLSearchParams({
+        client_id: clientId,
+        device_code: deviceCode,
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.access_token) {
-        return data.access_token;
-      }
-      if (data.error === "authorization_pending") {
-        continue;
-      }
-      if (data.error === "slow_down") {
-        interval += 5;
-        continue;
-      }
-      if (data.error === "expired_token" || data.error === "access_denied") {
-        throw new Error(data.error_description || "Authentication request expired or was denied.");
+      const res = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.access_token) {
+          return data.access_token;
+        }
+        if (data.error === "authorization_pending") {
+          continue;
+        }
+        if (data.error === "slow_down") {
+          interval += 5;
+          continue;
+        }
+        if (data.error === "expired_token" || data.error === "access_denied") {
+          throw new Error(data.error_description || "Authentication request expired or was denied.");
+        }
       }
     }
   }
@@ -231,39 +270,6 @@ export async function connectWithGitHubToken(token: string): Promise<UserSession
   return session;
 }
 
-/**
- * Links a public GitHub username for profile display and entitlement check without requiring a token
- */
-export async function connectWithGitHubUsername(username: string): Promise<UserSession> {
-  const clean = username.trim().replace(/^@/, "");
-  if (!clean) throw new Error("Please enter a GitHub username.");
-
-  const res = await fetch(`https://api.github.com/users/${encodeURIComponent(clean)}`, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-    },
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error(`GitHub user @${clean} was not found.`);
-    }
-    throw new Error(`Could not fetch profile for @${clean} (HTTP ${res.status}).`);
-  }
-
-  const profile = await res.json();
-  const session: UserSession = {
-    provider: "github",
-    login: String(profile.login || clean).toLowerCase(),
-    id: profile.id,
-    name: profile.name || profile.login || clean,
-    avatarUrl: profile.avatar_url,
-    authenticatedAt: Date.now(),
-  };
-
-  saveCurrentSession(session);
-  return session;
-}
 
 /**
  * Direct Sovereign Maintainer Activation

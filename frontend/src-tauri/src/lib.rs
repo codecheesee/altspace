@@ -13,6 +13,8 @@ mod windows_mgmt;
 pub mod crypto_vault;
 pub mod broker;
 pub mod named_pipe;
+pub mod license_verifier;
+pub mod github_auth;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
@@ -998,7 +1000,11 @@ pub fn run() {
             get_machine_id,
             get_plugin_health,
             reset_plugin_health,
-            get_safe_mode_status
+            get_safe_mode_status,
+            license_verifier::verify_and_activate_license,
+            license_verifier::get_active_verified_license,
+            github_auth::github_device_code_request,
+            github_auth::github_device_token_poll
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));
