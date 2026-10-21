@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to publish (e.g. 2.0.0-preview)'
+        description: 'Release version to publish (e.g. 2.1.0)'
         required: true
-        default: '2.0.0-preview'
+        default: '2.1.0'
 
 permissions:
   contents: read
@@ -23,7 +23,7 @@ jobs:
 
       - name: Submit to Windows Package Manager
         uses: vedantmgoyal2009/winget-releaser@v2
+        continue-on-error: true
         with:
           identifier: codecheesee.altspace
-          installer-type: nullsoft
           token: ${{ secrets.WINGET_TOKEN || secrets.GITHUB_TOKEN }}

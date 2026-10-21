@@ -45,9 +45,8 @@ jobs:
             const comment = (payload.comment || "").trim();
             const contact = payload.contact || "Anonymous AltSpace User";
             const platform = payload.platform || "Windows (AltSpace Desktop)";
-            const appVersion = payload.appVersion || "2.0.0";
+            const appVersion = payload.appVersion || "2.1.0";
 
-            // Determine issue title and labels
             let titlePrefix = "[Feedback]: ";
             const labels = ["user-feedback"];
 
@@ -61,28 +60,30 @@ jobs:
                 labels.push("bounty-candidate");
               }
             } else if (type === "rating") {
-              titlePrefix = `[User Review ${stars}★]: `;
+              titlePrefix = `[User Review ${stars}/5]: `;
               labels.push("review");
             }
 
             const rawSummary = comment.split('\n')[0].slice(0, 60).trim();
             const title = `${titlePrefix}${rawSummary || `${stars}-star submission`}`;
 
-            const body = `### In-App Community Feedback Submission
-
-- **Category**: \`${type.toUpperCase()}\`
-- **Rating**: ${"⭐".repeat(Math.max(1, Math.min(5, stars)))} (${stars}/5)
-- **Author**: ${contact}
-- **Environment**: \`${platform}\` • AltSpace v${appVersion}
-- **Timestamp**: ${new Date().toISOString()}
-
----
-
-### Description & User Notes
-${comment || "*(No detailed comments provided)*"}
-
----
-*Created automatically by AltSpace In-App Feedback Ingestion Pipeline.*`;
+            const body = [
+              "### In-App Community Feedback Submission",
+              "",
+              `- **Category**: \`${type.toUpperCase()}\``,
+              `- **Rating**: ${stars}/5`,
+              `- **Author**: ${contact}`,
+              `- **Environment**: \`${platform}\` • AltSpace v${appVersion}`,
+              `- **Timestamp**: ${new Date().toISOString()}`,
+              "",
+              "---",
+              "",
+              "### Description & User Notes",
+              comment || "*(No detailed comments provided)*",
+              "",
+              "---",
+              "*Created automatically by AltSpace In-App Feedback Ingestion Pipeline.*"
+            ].join("\n");
 
             try {
               const issue = await github.rest.issues.create({
