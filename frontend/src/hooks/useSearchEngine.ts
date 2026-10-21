@@ -42,6 +42,8 @@ export interface PluginItem {
   keyword: string;
   script_path: string;
   icon: string;
+  status?: string;
+  status_message?: string;
 }
 
 export function useSearchEngine({
@@ -306,7 +308,9 @@ export function useSearchEngine({
       const pluginItems: Item[] = matchedPlugins.map((p) => ({
         id: `plugin-${p.id}`,
         title: p.name,
-        subtitle: `${p.keyword} • ${p.description}`,
+        subtitle: p.status === "blocked_migration_required"
+          ? `${p.keyword} • [Migration Required] ${p.description}`
+          : `${p.keyword} • ${p.description}`,
         category: "Command",
         iconType: "cmd",
         path: `plugin://${p.script_path}`,
