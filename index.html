@@ -188,128 +188,298 @@
 
     <!-- Interactive Live Simulator Section (21st.dev Raycast Style) -->
         <!-- Interactive Live Simulator Section (Windows 11 Fluent Design) -->
-    <section id="demo" class="max-w-5xl mx-auto px-6 py-6 scroll-mt-20">
-      <div class="text-center mb-4">
-        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Interactive Windows Simulator</span>
-        <h2 class="text-xl sm:text-2xl font-bold text-white mt-1">Try AltSpace directly in your browser</h2>
-        <p class="text-xs text-zinc-400 mt-1">Experience native Windows 11 speed — calculate math, kill active ports, search files, or test dev utilities</p>
+        <!-- Interactive Live Simulator Section (Pixel-Perfect AltSpace Desktop App) -->
+    <section id="demo" class="max-w-4xl mx-auto px-4 sm:px-6 py-8 scroll-mt-20">
+      <div class="text-center mb-6">
+        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Live Web Simulator</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5 tracking-tight">Experience AltSpace in your browser</h2>
+        <p class="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl mx-auto">
+          Pixel-for-pixel replica of the native Windows application. Test search, real-time math, port management, and press <kbd class="kbd-cap">Ctrl K</kbd> for the action menu.
+        </p>
       </div>
 
-      <!-- Windows 11 Mockup Window (Mica / Acrylic Glass) -->
-      <div class="rounded-xl overflow-hidden border border-white/[0.14] shadow-[0_20px_50px_rgba(0,0,0,0.6)] bg-[#18181c]/95 backdrop-blur-2xl relative">
-        <!-- Windows 11 Fluent Toast Notification -->
-        <div id="sim-toast" class="hidden absolute top-12 left-4 right-4 z-30 p-2.5 rounded-lg bg-[#202024]/95 border border-[#60cdff]/40 text-white text-xs font-medium flex items-center justify-between shadow-2xl backdrop-blur-xl transition-all">
-          <div class="flex items-center gap-2.5">
-            <span class="w-2 h-2 rounded-full bg-[#60cdff] shadow-[0_0_8px_#60cdff]"></span>
-            <span id="sim-toast-msg">✓ Action executed successfully</span>
-          </div>
-          <button onclick="hideToast()" class="text-zinc-400 hover:text-white cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.08]">✕</button>
+      <!-- Floating AltSpace Palette HUD Window (Matches Screenshot 1 & 2) -->
+      <div class="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_25px_60px_rgba(0,0,0,0.85)] bg-[#0e0e12] select-none">
+        <!-- Top Specular Highlight Rim -->
+        <div class="h-[1px] w-full bg-white/[0.08]"></div>
+
+        <!-- In-App Notification / Toast Banner -->
+        <div id="sim-toast" class="hidden px-4 py-2 bg-sky-500/10 border-b border-sky-500/20 text-xs text-sky-300 font-medium flex items-center justify-between transition-all">
+          <span id="sim-toast-msg" class="flex items-center gap-2">✓ Action executed successfully</span>
+          <button onclick="hideToast()" class="text-sky-400 hover:text-white cursor-pointer px-1">✕</button>
         </div>
 
-        <!-- Windows 11 Title Bar -->
-        <div class="h-9 px-3 bg-[#1f1f24] border-b border-white/[0.08] flex items-center justify-between select-none">
-          <!-- Left: App Icon & Title -->
-          <div class="flex items-center gap-2">
-            <img src="./logo.png" alt="AltSpace" class="w-4 h-4 rounded shadow-sm" />
-            <span class="text-xs text-zinc-200 font-medium">AltSpace</span>
-            <span class="text-zinc-600 font-mono text-[11px]">•</span>
-            <span class="text-[11px] text-zinc-400 font-mono">v2.0.0 (x64)</span>
+        <!-- Header / Omnibar (HeaderBar.tsx) -->
+        <div class="px-4 py-3 bg-[#131317] border-b border-white/[0.08] flex items-center gap-3">
+          <!-- Logo Button -->
+          <a
+            href="https://github.com/codecheesee/altspace"
+            target="_blank"
+            rel="noreferrer"
+            title="AltSpace Repository"
+            class="flex items-center p-0.5 -ml-1 rounded hover:bg-white/[0.08] transition shrink-0 cursor-pointer"
+          >
+            <img src="./logo.png" alt="AltSpace Logo" class="w-5 h-5 rounded-md shadow-sm" />
+          </a>
+
+          <!-- Cyan Search Icon -->
+          <svg class="w-4 h-4 text-sky-400 shrink-0 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+
+          <!-- Search Input -->
+          <input
+            id="demo-search-input"
+            type="text"
+            placeholder="Search apps, files, calculate, or type :store, :ports..."
+            oninput="handleDemoSearch(this.value)"
+            onkeydown="handleDemoKeydown(event)"
+            class="w-full bg-transparent text-[14px] font-normal text-zinc-100 placeholder-zinc-500 outline-none border-none tracking-tight font-sans"
+            autocomplete="off"
+            spellcheck="false"
+          />
+
+          <!-- Clear Query Button (Dynamic) -->
+          <button
+            id="demo-clear-btn"
+            onclick="clearDemoSearch()"
+            class="hidden p-1 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200 transition shrink-0 cursor-pointer"
+            title="Clear query"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <!-- Menu Ctrl+K Button -->
+          <button
+            onclick="toggleActionDrawer()"
+            title="Command Palette Menu (Ctrl+K)"
+            class="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/[0.06] text-xs font-medium text-zinc-400 hover:text-zinc-100 transition cursor-pointer shrink-0"
+          >
+            <span>Menu</span>
+            <kbd class="kbd-cap">Ctrl K</kbd>
+          </button>
+
+          <!-- Dismiss Button -->
+          <button
+            onclick="clearDemoSearch()"
+            title="Dismiss (Esc)"
+            class="p-1 rounded hover:bg-white/[0.08] text-zinc-500 hover:text-zinc-200 transition shrink-0 cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Section Header (ResultSection.tsx) -->
+        <div class="px-4 pt-3.5 pb-1.5 flex items-center justify-between text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
+          <span id="demo-section-title">SUGGESTED APPLICATIONS (1)</span>
+          <span class="text-[11px] font-normal lowercase text-zinc-600">frequently used</span>
+        </div>
+
+        <!-- Results List Area (ResultRow.tsx) -->
+        <div id="demo-results-list" class="px-2 py-1 space-y-1 min-h-[220px] max-h-[360px] overflow-y-auto">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- Footer Bar (FooterBar.tsx) -->
+        <div class="min-h-9 px-4 py-2 bg-[#0c0c0f] border-t border-white/[0.08] flex items-center justify-between text-xs text-zinc-400 font-medium">
+          <!-- Left: AltSpace / count / theme -->
+          <div class="flex items-center gap-2 text-[11.5px] text-zinc-400">
+            <span class="font-semibold text-zinc-200 tracking-tight">AltSpace</span>
+            <span class="text-zinc-600">/</span>
+            <span id="demo-result-count" class="font-mono text-[11px] text-zinc-400">1 result</span>
+            <span class="text-zinc-600">/</span>
+            <button
+              onclick="cycleThemeDemo()"
+              title="Cycle Theme (Ctrl+Shift+T)"
+              class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            >
+              <span id="theme-dot" class="w-2 h-2 rounded-full bg-[#00d2ff]"></span>
+              <span id="theme-name" class="text-[11px]">Windows Graphite</span>
+            </button>
           </div>
 
-          <!-- Center: Latency & RAM -->
-          <div class="hidden sm:flex items-center gap-3 text-[11px] font-mono text-zinc-400">
-            <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
-              <span>Sub-5ms Rust Core:</span>
-              <span id="sim-latency" class="text-emerald-400 font-bold">0.8 ms</span>
+          <!-- Right: Keyboard cues & Action buttons -->
+          <div class="flex items-center gap-2 sm:gap-3 text-[11px]">
+            <div class="hidden sm:flex items-center gap-1.5">
+              <span class="text-zinc-400">Open</span>
+              <kbd class="kbd-cap">↵</kbd>
             </div>
-            <span class="text-zinc-600">|</span>
-            <span class="text-zinc-400">18.4 MB RAM</span>
-          </div>
-
-          <!-- Right: Windows 11 Caption Controls (Minimize, Maximize, Close) -->
-          <div class="flex items-center -mr-3">
-            <button title="Minimize" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-white/[0.08] hover:text-white transition">
-              <svg class="w-2.5 h-2.5" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+            <div class="hidden md:flex items-center gap-1.5">
+              <span class="text-zinc-400">Preview</span>
+              <kbd class="kbd-cap">Space</kbd>
+            </div>
+            <button
+              onclick="toggleActionDrawer()"
+              class="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            >
+              <span>Actions</span>
+              <kbd class="kbd-cap">Ctrl K</kbd>
             </button>
-            <button title="Maximize" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-white/[0.08] hover:text-white transition">
-              <svg class="w-2.5 h-2.5" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>
-            </button>
-            <button title="Close" class="w-11 h-9 flex items-center justify-center text-zinc-400 hover:bg-[#c42b1c] hover:text-white transition">
-              <svg class="w-2.5 h-2.5" viewBox="0 0 10 10"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.1"/></svg>
+            <button
+              onclick="toggleDetailsDemo()"
+              id="details-btn"
+              class="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            >
+              <span>Details</span>
+              <kbd class="kbd-cap">Ctrl B</kbd>
             </button>
           </div>
         </div>
 
-        <!-- Windows 11 Omnibar Search Box -->
-        <div class="p-3 bg-[#18181c] border-b border-white/[0.06]">
-          <div class="relative flex items-center bg-[#202024] rounded-lg border border-white/[0.1] focus-within:border-[#60cdff] focus-within:ring-1 focus-within:ring-[#60cdff]/40 transition shadow-inner">
-            <svg class="w-4 h-4 text-[#60cdff] shrink-0 ml-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input
-              id="demo-search-input"
-              type="text"
-              placeholder="Search files, calculate (e.g. 42*1337 or 15% of 850), kill :3000, type 'uuid', 'color'..."
-              oninput="handleDemoSearch(this.value)"
-              onkeydown="handleDemoKeydown(event)"
-              class="w-full bg-transparent px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none font-sans"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <div class="flex items-center gap-1.5 mr-2.5">
-              <kbd class="kbd-cap text-[10px] hidden sm:inline-flex cursor-pointer" onclick="clearDemoSearch()">ESC</kbd>
+        <!-- Actions Drawer Modal (ActionDrawer.tsx - Matches Screenshot 2!) -->
+        <div
+          id="action-drawer"
+          class="hidden absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-end justify-end p-3 z-50 animate-in fade-in duration-100"
+          onclick="toggleActionDrawer()"
+        >
+          <div
+            class="w-[360px] max-h-[460px] border border-white/[0.08] bg-[#0c0c0e] rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-2.5 flex flex-col space-y-2"
+            onclick="event.stopPropagation()"
+          >
+            <!-- Drawer Header -->
+            <div class="px-3 py-1.5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+              <div class="min-w-0 pr-2">
+                <span id="drawer-item-title" class="text-[12px] font-semibold text-white truncate block">
+                  Actions for Developer PowerShell for VS 2022
+                </span>
+                <span id="drawer-item-type" class="text-[10px] text-zinc-400 truncate block font-mono">
+                  Application
+                </span>
+              </div>
+              <button
+                onclick="toggleActionDrawer()"
+                class="flex items-center gap-1 text-zinc-400 hover:text-white transition cursor-pointer"
+              >
+                <kbd class="kbd-cap hover:border-zinc-500">Esc</kbd>
+              </button>
+            </div>
+
+            <!-- Drawer Scrollable Actions -->
+            <div class="overflow-y-auto space-y-2.5 px-1 py-1 max-h-[380px] text-xs">
+              <!-- PRIMARY ACTION -->
+              <div class="space-y-1">
+                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
+                  PRIMARY ACTION
+                </div>
+                <div
+                  onclick="executePrimaryAction()"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-white hover:bg-white/[0.08] transition"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-amber-400">⚡</span>
+                    <span class="font-medium">Launch Application</span>
+                  </div>
+                  <kbd class="kbd-cap">↵</kbd>
+                </div>
+              </div>
+
+              <!-- STANDARD ACTIONS -->
+              <div class="space-y-1">
+                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
+                  STANDARD ACTIONS
+                </div>
+                <div
+                  onclick="executeActionToast('Running as Administrator...')"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-rose-400">🛡️</span>
+                    <span>Run as Administrator</span>
+                  </div>
+                  <kbd class="kbd-cap">Ctrl+Shift+↵</kbd>
+                </div>
+                <div
+                  onclick="executeActionToast('Copied path to clipboard')"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-zinc-400">📋</span>
+                    <span>Copy Absolute Path</span>
+                  </div>
+                  <kbd class="kbd-cap">Ctrl+C</kbd>
+                </div>
+              </div>
+
+              <!-- PREFERENCES -->
+              <div class="space-y-1">
+                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
+                  PREFERENCES
+                </div>
+                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
+                  <div class="flex items-center gap-2">
+                    <span class="text-emerald-400">⚡</span>
+                    <span>Launch on Windows Startup</span>
+                  </div>
+                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer">
+                    <span class="w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sky-400">💾</span>
+                    <span>Search All Hard Drives (C:, D:, External)</span>
+                  </div>
+                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-emerald-500 relative transition cursor-pointer">
+                    <span class="w-3 h-3 rounded-full bg-white absolute right-0.5 top-0.5 transition-transform"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
+                  <div class="flex items-center gap-2">
+                    <span class="text-rose-400">📐</span>
+                    <span>Context Preview Sidebar</span>
+                  </div>
+                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer">
+                    <span class="w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform"></span>
+                  </button>
+                </div>
+                <div
+                  onclick="executeActionToast('Re-indexed 6,919 files across drives in 4.2ms')"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-zinc-400">🔄</span>
+                    <span>Re-index All Hard Drives Now</span>
+                  </div>
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">6,919 files</span>
+                </div>
+              </div>
+
+              <!-- THEMES & APPEARANCE -->
+              <div class="space-y-1">
+                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
+                  THEMES & APPEARANCE
+                </div>
+                <div
+                  onclick="cycleThemeDemo()"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-purple-400">🎨</span>
+                    <span>Cycle Theme</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[10.5px] text-zinc-400">Windows Graphite</span>
+                    <kbd class="kbd-cap text-[9px]">Ctrl+Shift+T</kbd>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Trending Suggestion Chips -->
-        <div class="px-4 py-2 bg-[#141418] border-b border-white/[0.04] flex items-center gap-1.5 text-[11px] overflow-x-auto select-none">
-          <span class="text-zinc-500 font-mono shrink-0 mr-1">Quick Try:</span>
-          <button onclick="applyQuery('42 * 1337')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-[#60cdff]/20 hover:text-[#60cdff] text-zinc-300 font-mono transition cursor-pointer shrink-0">42 * 1337</button>
-          <button onclick="applyQuery('15% of 850')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-[#60cdff]/20 hover:text-[#60cdff] text-zinc-300 font-mono transition cursor-pointer shrink-0">15% of 850</button>
-          <button onclick="applyQuery(':3000')" class="px-2 py-0.5 rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-mono transition cursor-pointer shrink-0">:3000 (Kill)</button>
-          <button onclick="applyQuery('uuid')" class="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-mono transition cursor-pointer shrink-0">uuid</button>
-          <button onclick="applyQuery('timestamp')" class="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-mono transition cursor-pointer shrink-0">timestamp</button>
-          <button onclick="applyQuery('#38bdf8')" class="px-2 py-0.5 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-mono transition cursor-pointer shrink-0">#38bdf8</button>
-          <button onclick="applyQuery('package.json')" class="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 font-mono transition cursor-pointer shrink-0">package.json</button>
-        </div>
-
-        <!-- Filter Pill Chips (Windows 11 Segmented Navigation) -->
-        <div class="px-4 py-2 bg-[#121215] border-b border-white/[0.04] flex items-center gap-1.5 text-xs overflow-x-auto">
-          <button onclick="setDemoFilter('all', this)" class="demo-tab px-3 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer">All</button>
-          <button onclick="setDemoFilter('ports', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Ports & Servers</button>
-          <button onclick="setDemoFilter('clipboard', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Clipboard</button>
-          <button onclick="setDemoFilter('files', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">NTFS Files</button>
-          <button onclick="setDemoFilter('utils', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Dev Utilities</button>
-          <button onclick="setDemoFilter('ai', this)" class="demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer">Local AI</button>
-        </div>
-
-        <!-- Two-Column Workspace: Results Feed (Left) + Rich Inspector (Right) -->
-        <div class="grid grid-cols-1 md:grid-cols-12 min-h-[350px]">
-          <!-- Interactive Results Feed -->
-          <div id="demo-results" class="md:col-span-7 lg:col-span-8 p-2 space-y-1 max-h-[350px] overflow-y-auto border-r border-white/[0.04]">
-            <!-- Populated by JavaScript -->
-          </div>
-
-          <!-- Windows 11 Task Inspector Panel -->
-          <div id="demo-inspector" class="hidden md:flex md:col-span-5 lg:col-span-4 p-4 flex-col justify-between bg-[#121216]/90 text-xs text-zinc-300">
-            <!-- Populated dynamically based on selectedIndex -->
-          </div>
-        </div>
-
-        <!-- Windows 11 Status Bar -->
-        <div class="px-4 py-2 bg-[#16161a] border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400 font-mono">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span id="sim-footer-status">Windows Everything NTFS Index Active (C:, D:, E:)</span>
-          </div>
-          <div class="flex items-center gap-2 text-zinc-500">
-            <span>Navigate</span>
-            <kbd class="kbd-cap">↑</kbd>
-            <kbd class="kbd-cap">↓</kbd>
-            <span>Execute</span>
-            <kbd class="kbd-cap">↵</kbd>
-          </div>
-        </div>
+      <!-- Quick-Suggestion Clickable Tags (Clean, Relatable Queries) -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+        <span class="text-zinc-500 font-mono text-[11px]">Quick Try:</span>
+        <button onclick="applyDemoQuery('Developer PowerShell')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/[0.06] transition cursor-pointer font-sans text-[11.5px]">Developer PowerShell</button>
+        <button onclick="applyDemoQuery('42 * 1337')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-sky-400 hover:text-sky-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">42 * 1337</button>
+        <button onclick="applyDemoQuery('15% of 850')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-sky-400 hover:text-sky-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">15% of 850</button>
+        <button onclick="applyDemoQuery(':3000')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">:3000 (Port Killer)</button>
+        <button onclick="applyDemoQuery('package.json')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/[0.06] transition cursor-pointer font-sans text-[11.5px]">package.json</button>
+        <button onclick="toggleActionDrawer()" class="px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition cursor-pointer font-medium text-[11.5px] flex items-center gap-1">
+          <span>Actions Menu</span>
+          <kbd class="kbd-cap text-[9.5px]">Ctrl K</kbd>
+        </button>
       </div>
     </section>
 
@@ -649,294 +819,106 @@
     </div>
   </footer>
 
-    <!-- Interactive Demo, Bento & Pricing Scripts -->
+      <!-- Interactive Demo, Bento & Pricing Scripts -->
   <script>
-    // Windows 11 Dynamic Catalog of Developer, System & Productivity Tools
-    const BASE_DEMO_ITEMS = [
+    // Real desktop items reflecting the exact structure of AltSpace
+    const DEFAULT_APP_ITEMS = [
+      {
+        id: 'vs-powershell',
+        title: 'Developer PowerShell for VS 2022',
+        subtitle: 'Start Menu > Visual S ... PowerShell for VS 2022',
+        category: 'SUGGESTED APPLICATIONS',
+        categoryHint: 'frequently used',
+        drive: 'C:',
+        badge: 'Frequently used',
+        iconType: 'app-ps',
+        actionLabel: 'Launch Application',
+        type: 'Application'
+      },
       {
         id: 'port-3000',
         title: 'node.exe (Port :3000)',
-        subtitle: 'Next.js Dev Server • PID 18402 • 127.0.0.1:3000',
-        mode: 'ports',
-        badge: 'Port',
-        icon: '⚡',
-        action: 'Kill',
-        details: {
-          category: 'Active Port Listener',
-          protocol: 'TCP (IPv4)',
-          port: ':3000',
-          pid: 18402,
-          process: 'node.exe (Next.js v15.2)',
-          memory: '142 MB',
-          cpu: '0.4%',
-          uptime: '1h 24m',
-          status: 'LISTENING',
-          command: 'npm run dev -- --port 3000'
-        }
-      },
-      {
-        id: 'port-8000',
-        title: 'python.exe (Port :8000)',
-        subtitle: 'FastAPI Dev Server • PID 24910 • 0.0.0.0:8000',
-        mode: 'ports',
-        badge: 'Port',
-        icon: '⚡',
-        action: 'Kill',
-        details: {
-          category: 'Active Port Listener',
-          protocol: 'TCP (IPv4)',
-          port: ':8000',
-          pid: 24910,
-          process: 'uvicorn main:app --reload',
-          memory: '88 MB',
-          cpu: '0.1%',
-          uptime: '38m',
-          status: 'LISTENING',
-          command: 'python -m uvicorn api:app --port 8000'
-        }
-      },
-      {
-        id: 'port-5432',
-        title: 'postgres.exe (Port :5432)',
-        subtitle: 'PostgreSQL Database • PID 9120 • Localhost',
-        mode: 'ports',
-        badge: 'Port',
-        icon: '🐘',
-        action: 'Kill',
-        details: {
-          category: 'Database Service',
-          protocol: 'TCP (IPv4)',
-          port: ':5432',
-          pid: 9120,
-          process: 'postgres.exe (v16.1)',
-          memory: '230 MB',
-          cpu: '0.2%',
-          uptime: '14h 10m',
-          status: 'LISTENING',
-          command: 'docker-compose up -d postgres'
-        }
-      },
-      {
-        id: 'clip-git',
-        title: 'gh repo clone codecheesee/altspace',
-        subtitle: 'Clipboard • Copied 2 mins ago • Terminal Command',
-        mode: 'clipboard',
-        badge: 'Clip',
-        icon: '📋',
-        action: 'Copy',
-        details: {
-          category: 'Clipboard History',
-          type: 'Bash / CLI Command',
-          length: '41 characters',
-          copied: '2 minutes ago',
-          content: 'gh repo clone codecheesee/altspace',
-          encryption: 'Windows DPAPI Encrypted'
-        }
-      },
-      {
-        id: 'clip-jwt',
-        title: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        subtitle: 'Clipboard • JWT Auth Bearer Token (256-bit)',
-        mode: 'clipboard',
-        badge: 'Clip',
-        icon: '🔑',
-        action: 'Copy',
-        details: {
-          category: 'Clipboard History',
-          type: 'JSON Web Token (JWT)',
-          length: '184 characters',
-          copied: '14 minutes ago',
-          content: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsdFNwYWNlIFVzZXIiLCJpYXQiOjE1MTYyMzkwMjJ9',
-          encryption: 'Windows DPAPI Encrypted'
-        }
+        subtitle: 'PID 18402 • Next.js Dev Server • localhost:3000',
+        category: 'ACTIVE PORTS',
+        categoryHint: 'listening',
+        drive: 'NET',
+        badge: 'Port :3000',
+        iconType: 'port',
+        actionLabel: 'Kill Process (Free Port)',
+        type: 'Port'
       },
       {
         id: 'file-pkg',
         title: 'package.json',
         subtitle: 'C:\\Users\\rohan\\Projects\\altspace\\frontend\\package.json',
-        mode: 'files',
-        badge: 'File',
-        icon: '📄',
-        action: 'Open',
-        details: {
-          category: 'Local File Search (NTFS)',
-          drive: 'NTFS C: (NVMe SSD)',
-          path: 'C:\\Users\\rohan\\Projects\\altspace\\frontend\\package.json',
-          size: '3.4 KB',
-          modified: '12 minutes ago',
-          indexedBy: 'Everything SDK Core (0.7ms query)',
-          type: 'JSON Configuration'
-        }
+        category: 'RECENT FILES',
+        categoryHint: 'everything sdk',
+        drive: 'C:',
+        badge: '3.4 KB',
+        iconType: 'file',
+        actionLabel: 'Open in Editor',
+        type: 'File'
       },
       {
-        id: 'file-docker',
-        title: 'docker-compose.yml',
-        subtitle: 'D:\\Workspace\\infrastructure\\docker-compose.yml',
-        mode: 'files',
-        badge: 'File',
-        icon: '🐳',
-        action: 'Open',
-        details: {
-          category: 'Local File Search (NTFS)',
-          drive: 'NTFS D: (Secondary NVMe)',
-          path: 'D:\\Workspace\\infrastructure\\docker-compose.yml',
-          size: '2.1 KB',
-          modified: 'Yesterday',
-          indexedBy: 'Everything SDK Core (1.1ms query)',
-          type: 'Docker Compose Config'
-        }
-      },
-      {
-        id: 'file-main-rs',
-        title: 'main.rs (Rust Core Engine)',
-        subtitle: 'C:\\Users\\rohan\\Projects\\altspace\\src-tauri\\src\\main.rs',
-        mode: 'files',
-        badge: 'File',
-        icon: '🦀',
-        action: 'Open',
-        details: {
-          category: 'Local File Search (NTFS)',
-          drive: 'NTFS C: (SSD)',
-          path: 'C:\\Users\\rohan\\Projects\\altspace\\src-tauri\\src\\main.rs',
-          size: '14.8 KB',
-          modified: '3 hours ago',
-          indexedBy: 'Sub-5ms Rust IPC',
-          type: 'Rust Source File'
-        }
-      },
-      {
-        id: 'util-uuid',
-        title: 'UUID v4 Generator',
-        subtitle: 'Type "uuid" to generate random cryptographic identifiers',
-        mode: 'utils',
-        badge: 'UUID',
-        icon: '🆔',
-        action: 'Generate',
-        details: {
-          category: 'Developer Utility',
-          format: 'RFC 4122 Version 4',
-          sample: 'e0f9b37a-4a55-4d7f-a60d-82d2c730e2f1',
-          execution: 'Instant Client-Side',
-          shortcut: 'Enter to copy'
-        }
-      },
-      {
-        id: 'util-time',
-        title: 'Unix Epoch & Timestamp Converter',
-        subtitle: 'Type "timestamp" or "epoch" for current time & conversions',
-        mode: 'utils',
-        badge: 'Time',
-        icon: '⏱️',
-        action: 'Copy',
-        details: {
-          category: 'Developer Utility',
-          epoch: Math.floor(Date.now() / 1000),
-          utc: new Date().toUTCString(),
-          iso: new Date().toISOString()
-        }
-      },
-      {
-        id: 'util-color',
-        title: 'Color Converter & Inspector (#38bdf8)',
-        subtitle: 'HEX ↔ RGB ↔ HSL instant CSS color transforms',
-        mode: 'utils',
-        badge: 'Color',
-        icon: '🎨',
-        action: 'Inspect',
-        details: {
-          category: 'Developer Utility',
-          hex: '#38bdf8',
-          rgb: 'rgb(56, 189, 248)',
-          hsl: 'hsl(199, 95%, 60%)',
-          previewColor: '#38bdf8'
-        }
-      },
-      {
-        id: 'ai-explain',
-        title: 'Explain TypeScript error in clipboard',
-        subtitle: 'Local AI • Ollama (llama3:8b) • 42 tok/s • 0 telemetry',
-        mode: 'ai',
-        badge: 'AI',
-        icon: '🤖',
-        action: 'Prompt',
-        details: {
-          category: 'Local Private AI (Ollama)',
-          model: 'Llama 3 8B (Q4_K_M)',
-          endpoint: 'http://localhost:11434',
-          latency: '42 tokens/sec',
-          privacy: '100% On-Device / Zero Cloud'
-        }
-      },
-      {
-        id: 'sys-lock',
-        title: 'Lock Windows Workstation',
-        subtitle: 'Windows System API • Instant Win+L equivalent',
-        mode: 'all',
-        badge: 'System',
-        icon: '🔒',
-        action: 'Lock',
-        details: {
-          category: 'Windows Shell API',
-          command: 'LockWorkStation()',
-          delay: '< 1 ms',
-          target: 'Active User Session'
-        }
-      },
-      {
-        id: 'sys-clean',
-        title: 'Empty Recycle Bin',
-        subtitle: 'Windows Shell • Recover disk space silently across drives',
-        mode: 'all',
-        badge: 'System',
-        icon: '🗑️',
-        action: 'Empty',
-        details: {
-          category: 'Windows Shell API',
-          command: 'SHEmptyRecycleBinW()',
-          reclaimedEstimate: '4.8 GB',
-          status: 'Ready'
-        }
+        id: 'clip-git',
+        title: 'gh repo clone codecheesee/altspace',
+        subtitle: 'Clipboard History • Copied 2 mins ago',
+        category: 'CLIPBOARD HISTORY',
+        categoryHint: 'dpapi encrypted',
+        drive: 'RAM',
+        badge: 'Copied',
+        iconType: 'clip',
+        actionLabel: 'Paste to Active Window',
+        type: 'Clipboard'
       }
     ];
 
-    let currentFilter = 'all';
+    let currentItems = [...DEFAULT_APP_ITEMS];
     let selectedIndex = 0;
-    let currentRenderedItems = [];
+    let isDrawerOpen = false;
     const killedPorts = new Set();
 
-    // Safe Math Evaluator for Omnibar
-    function evaluateMath(rawExpr) {
-      if (!rawExpr) return null;
-      let expr = rawExpr.trim();
+    const THEMES = [
+      { name: 'Windows Graphite', hex: '#00d2ff' },
+      { name: 'Raycast Obsidian', hex: '#ff6363' },
+      { name: 'Linear Dark', hex: '#5e6ad2' },
+      { name: 'Emerald Forest', hex: '#10b981' }
+    ];
+    let themeIndex = 0;
 
-      // Handle "x% of y" or "x% off y"
-      const pctOfMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s*\$?([\d,]+(?:\.\d+)?)$/i);
-      if (pctOfMatch) {
-        const pct = parseFloat(pctOfMatch[1]);
-        const base = parseFloat(pctOfMatch[2].replace(/,/g, ''));
-        const ans = (pct / 100) * base;
-        return { result: ans, formatted: ans.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: rawExpr };
+    // Real-Time Math Calculator
+    function evaluateMath(raw) {
+      if (!raw) return null;
+      const expr = raw.trim();
+
+      // Percentage: 15% of 850
+      const pctMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s*\$?([\d,]+(?:\.\d+)?)$/i);
+      if (pctMatch) {
+        const pct = parseFloat(pctMatch[1]);
+        const base = parseFloat(pctMatch[2].replace(/,/g, ''));
+        const res = (pct / 100) * base;
+        return { result: res, formatted: res.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: raw };
       }
 
-      const pctOffMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s*\$?([\d,]+(?:\.\d+)?)$/i);
-      if (pctOffMatch) {
-        const pct = parseFloat(pctOffMatch[1]);
-        const base = parseFloat(pctOffMatch[2].replace(/,/g, ''));
-        const ans = base - (pct / 100) * base;
-        return { result: ans, formatted: ans.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: rawExpr };
+      // Percentage off: 20% off 200
+      const offMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s*\$?([\d,]+(?:\.\d+)?)$/i);
+      if (offMatch) {
+        const pct = parseFloat(offMatch[1]);
+        const base = parseFloat(offMatch[2].replace(/,/g, ''));
+        const res = base - (pct / 100) * base;
+        return { result: res, formatted: res.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: raw };
       }
 
-      // Check for hex or binary integer: 0xff, 0b1010
+      // Hex 0xff or Binary 0b1010
       if (/^0x[0-9a-f]+$/i.test(expr)) {
         const val = parseInt(expr, 16);
-        return { result: val, formatted: val.toLocaleString(), expr: rawExpr };
+        return { result: val, formatted: val.toLocaleString(), expr: raw };
       }
       if (/^0b[01]+$/i.test(expr)) {
         const val = parseInt(expr.slice(2), 2);
-        return { result: val, formatted: val.toLocaleString(), expr: rawExpr };
+        return { result: val, formatted: val.toLocaleString(), expr: raw };
       }
 
-      // Basic math regex check (numbers, operators, parentheses, sqrt, sin, cos, tan, log, pi, e)
       const sanitized = expr
         .replace(/\^/g, '**')
         .replace(/sqrt\(/gi, 'Math.sqrt(')
@@ -944,351 +926,272 @@
         .replace(/round\(/gi, 'Math.round(')
         .replace(/floor\(/gi, 'Math.floor(')
         .replace(/ceil\(/gi, 'Math.ceil(')
-        .replace(/sin\(/gi, 'Math.sin(')
-        .replace(/cos\(/gi, 'Math.cos(')
-        .replace(/tan\(/gi, 'Math.tan(')
-        .replace(/log\(/gi, 'Math.log(')
         .replace(/\bpi\b/gi, 'Math.PI')
         .replace(/\be\b/gi, 'Math.E');
 
-      // Only allow safe math tokens
-      if (!/^[0-9+\-*\/().\s%*,MathsqrtabsincolgPIE]+$/.test(sanitized)) {
-        return null;
-      }
-
-      // Must have at least one operator or function to be a math expression
-      if (!/[+\-*\/\^%()]|Math\./.test(sanitized) && isNaN(Number(expr))) {
-        return null;
-      }
+      if (!/^[0-9+\-*\/().\s%*,MathsqrtabPIE]+$/.test(sanitized)) return null;
+      if (!/[+\-*\/\^%()]|Math\./.test(sanitized) && isNaN(Number(expr))) return null;
 
       try {
-        const fn = new Function('return ' + sanitized);
-        const val = fn();
+        const val = new Function('return ' + sanitized)();
         if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
           return {
             result: val,
             formatted: val.toLocaleString('en-US', { maximumFractionDigits: 6 }),
-            expr: rawExpr
+            expr: raw
           };
         }
-      } catch (err) {
+      } catch (e) {
         return null;
       }
       return null;
     }
 
-    // Dynamic Utilities Engine
-    function evaluateDevUtils(q) {
-      const utils = [];
-      const lower = q.toLowerCase();
-
-      // UUID
-      if (lower === 'uuid' || lower === 'guid' || lower.startsWith('uuid ') || lower.startsWith('guid ')) {
-        const uuidVal = (typeof crypto !== 'undefined' && crypto.randomUUID)
-          ? crypto.randomUUID()
-          : '3f92b710-53ab-417c-a491-9e7f8615e47a';
-        utils.push({
-          id: 'dyn-uuid',
-          title: '= ' + uuidVal,
-          subtitle: 'Generated RFC 4122 v4 UUID • Press ↵ to copy',
-          mode: 'utils',
-          badge: 'UUID',
-          icon: '🆔',
-          action: 'Copy',
-          copyVal: uuidVal,
-          details: {
-            category: 'Cryptographic UUID',
-            value: uuidVal,
-            version: 'Version 4 (Random)',
-            format: '36 characters hex-hyphenated',
-            action: 'Enter copies directly to Windows Clipboard'
-          }
-        });
-      }
-
-      // Timestamp / Epoch
-      if (lower === 'timestamp' || lower === 'time' || lower === 'epoch' || lower === 'unix' || lower.includes('unix time')) {
-        const now = new Date();
-        const epoch = Math.floor(now.getTime() / 1000);
-        const iso = now.toISOString();
-        const local = now.toLocaleString();
-        utils.push({
-          id: 'dyn-epoch',
-          title: '= ' + epoch,
-          subtitle: `Unix Epoch Timestamp • ${iso} • Press ↵ to copy`,
-          mode: 'utils',
-          badge: 'Time',
-          icon: '⏱️',
-          action: 'Copy',
-          copyVal: String(epoch),
-          details: {
-            category: 'Windows System Clock',
-            epochSeconds: epoch,
-            epochMillis: now.getTime(),
-            isoUTC: iso,
-            localTime: local
-          }
-        });
-      }
-
-      // Color detection (e.g. #38bdf8 or #fff or rgb)
-      if (q.startsWith('#') && (q.length === 4 || q.length === 7 || q.length === 9)) {
-        utils.push({
-          id: 'dyn-color',
-          title: 'Color: ' + q,
-          subtitle: 'HEX ↔ RGB ↔ HSL Converter • Press ↵ to copy',
-          mode: 'utils',
-          badge: 'Color',
-          icon: '🎨',
-          action: 'Copy',
-          copyVal: q,
-          details: {
-            category: 'CSS Color Inspector',
-            hex: q,
-            rgb: hexToRgb(q),
-            previewColor: q
-          }
-        });
-      }
-
-      return utils;
-    }
-
-    function hexToRgb(hex) {
-      let c = hex.substring(1);
-      if (c.length === 3) c = c.split('').map(x => x + x).join('');
-      const num = parseInt(c, 16);
-      if (isNaN(num)) return 'Invalid Color';
-      const r = (num >> 16) & 255;
-      const g = (num >> 8) & 255;
-      const b = num & 255;
-      return `rgb(${r}, ${g}, ${b})`;
-    }
-
-    function renderDemoItems(items) {
-      currentRenderedItems = items;
-      if (selectedIndex >= items.length) selectedIndex = 0;
-      const container = document.getElementById('demo-results');
-      if (!items.length) {
-        container.innerHTML = `
-          <div class="py-12 text-center text-xs text-zinc-500">
-            <svg class="w-8 h-8 mx-auto text-zinc-600 mb-2 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <div>No matching Windows desktop items found.</div>
-            <div class="text-[11px] text-zinc-600 mt-1">Try typing a math expression, ":3000", "uuid", or a filename.</div>
+    function renderItemIcon(item) {
+      if (item.iconType === 'app-ps') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-[#002447] border border-sky-500/30 flex items-center justify-center p-1 shrink-0 shadow-inner">
+            <svg class="w-4 h-4 text-sky-400 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
           </div>
         `;
-        renderInspector(null);
+      }
+      if (item.iconType === 'calc') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <span class="text-sm font-mono text-emerald-400 font-bold">=</span>
+          </div>
+        `;
+      }
+      if (item.iconType === 'port') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0">
+            <span class="text-xs text-rose-400">⚡</span>
+          </div>
+        `;
+      }
+      if (item.iconType === 'clip') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <span class="text-xs text-amber-400">📋</span>
+          </div>
+        `;
+      }
+      return `
+        <div class="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
+          <span class="text-xs text-zinc-300">📄</span>
+        </div>
+      `;
+    }
+
+    function renderDemoResults() {
+      const container = document.getElementById('demo-results-list');
+      const countEl = document.getElementById('demo-result-count');
+      const sectionTitle = document.getElementById('demo-section-title');
+
+      if (!container) return;
+
+      if (!currentItems.length) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-xs text-zinc-500 font-sans">
+            No matching items found. Press Backspace to reset search.
+          </div>
+        `;
+        if (countEl) countEl.innerText = '0 results';
+        if (sectionTitle) sectionTitle.innerText = 'SEARCH RESULTS (0)';
         return;
       }
 
-      container.innerHTML = items.map((item, idx) => {
+      if (selectedIndex >= currentItems.length) selectedIndex = 0;
+
+      if (countEl) {
+        countEl.innerText = `${currentItems.length} ${currentItems.length === 1 ? 'result' : 'results'}`;
+      }
+      if (sectionTitle) {
+        sectionTitle.innerText = `${currentItems[0].category || 'SEARCH RESULTS'} (${currentItems.length})`;
+      }
+
+      container.innerHTML = currentItems.map((item, idx) => {
+        const isSelected = idx === selectedIndex;
         const isKilled = killedPorts.has(item.id);
-        const displayAction = isKilled ? 'Freed' : item.action;
-        const actionClass = isKilled
-          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-          : (item.action === 'Kill'
-              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/20'
-              : 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border-white/[0.08]');
 
         return `
           <div
-            class="p-2 rounded-lg ${idx === selectedIndex ? 'bg-white/[0.08] text-white shadow-sm' : 'hover:bg-white/[0.04] text-zinc-300'} flex items-center justify-between transition cursor-pointer group select-none"
+            role="option"
+            aria-selected="${isSelected}"
             onclick="selectAndExecute(${idx})"
             onmouseenter="setHoverIndex(${idx})"
+            class="min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 ${
+              isSelected
+                ? 'bg-white/[0.08] text-white shadow-sm border border-sky-400/25 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sky-400'
+                : 'text-zinc-300 hover:bg-white/[0.03] hover:text-zinc-100 border border-transparent'
+            }"
           >
-            <div class="flex items-center gap-3 min-w-0 pr-2">
-              <span class="text-base shrink-0 select-none">${item.icon}</span>
+            <!-- Left: Icon + Title + Subtitle -->
+            <div class="flex items-center gap-3 min-w-0 pr-3">
+              ${renderItemIcon(item)}
+
               <div class="min-w-0">
-                <div class="text-xs font-semibold truncate ${idx === selectedIndex ? 'text-white' : 'text-zinc-200'}">
-                  ${isKilled ? `<span class="line-through text-zinc-500">${item.title}</span> <span class="text-emerald-400 font-normal text-[11px] ml-1">✓ Released</span>` : item.title}
+                <div class="font-medium text-[13.5px] truncate tracking-tight text-zinc-100 group-hover:text-white">
+                  ${isKilled ? `<span class="line-through text-zinc-500">${item.title}</span> <span class="text-emerald-400 font-normal text-xs ml-1.5">✓ Port Released</span>` : item.title}
                 </div>
-                <div class="text-[10.5px] text-zinc-400 font-mono truncate max-w-[260px] sm:max-w-md">${item.subtitle}</div>
+                <div class="text-[11.5px] text-zinc-400 truncate font-mono">
+                  ${item.subtitle}
+                </div>
               </div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${displayAction ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${actionClass} transition">${displayAction}</span>` : ''}
-              <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-white/[0.05]">${item.badge}</span>
+
+            <!-- Right: Drive badge & Category pill -->
+            <div class="shrink-0 flex items-center gap-2">
+              ${item.drive ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-400 bg-white/[0.05] border border-white/[0.08]">${item.drive}</span>` : ''}
+              <span class="px-2 py-0.5 rounded text-[10.5px] font-medium ${
+                item.badge === 'Frequently used'
+                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                  : 'bg-zinc-800 text-zinc-300 border border-white/[0.06]'
+              }">
+                ${isKilled ? 'Freed' : item.badge}
+              </span>
             </div>
           </div>
         `;
       }).join('');
 
-      renderInspector(items[selectedIndex]);
-    }
-
-    // Windows 11 Task Inspector Preview Panel
-    function renderInspector(item) {
-      const panel = document.getElementById('demo-inspector');
-      if (!panel) return;
-      if (!item) {
-        panel.innerHTML = `
-          <div class="h-full flex items-center justify-center text-center text-zinc-600 text-xs">
-            Select an item to view Windows task properties
-          </div>
-        `;
-        return;
-      }
-
-      const d = item.details || {};
-      const isKilled = killedPorts.has(item.id);
-
-      let detailsHtml = '';
-      if (item.badge === 'Port') {
-        detailsHtml = `
-          <div class="space-y-2 mt-3 font-mono text-[11px]">
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Protocol</span><span class="text-zinc-300">${d.protocol || 'TCP'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Port</span><span class="text-[#60cdff] font-bold">${d.port || ':3000'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Process PID</span><span class="text-zinc-300">${d.pid || 18402}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">RAM Usage</span><span class="text-zinc-300">${d.memory || '142 MB'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">CPU</span><span class="text-zinc-300">${d.cpu || '0.4%'}</span></div>
-            <div class="flex justify-between py-1"><span class="text-zinc-500">State</span><span class="${isKilled ? 'text-emerald-400 font-bold' : 'text-amber-400'}">${isKilled ? '✓ PORT RELEASED' : (d.status || 'LISTENING')}</span></div>
-          </div>
-        `;
-      } else if (item.badge === 'Calc') {
-        detailsHtml = `
-          <div class="space-y-2 mt-3 font-mono text-[11px]">
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Expression</span><span class="text-zinc-300">${d.expression || item.title}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Decimal</span><span class="text-emerald-400 font-bold text-xs">${d.decimal !== undefined ? d.decimal : item.title}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Hexadecimal</span><span class="text-sky-300">${d.hex || 'N/A'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Binary</span><span class="text-zinc-400">${d.binary || 'N/A'}</span></div>
-            <div class="flex justify-between py-1"><span class="text-zinc-500">Target</span><span class="text-zinc-300">Windows Clipboard</span></div>
-          </div>
-        `;
-      } else if (item.badge === 'File') {
-        detailsHtml = `
-          <div class="space-y-2 mt-3 font-mono text-[11px]">
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Drive</span><span class="text-zinc-300">${d.drive || 'NTFS C:'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Size</span><span class="text-zinc-300">${d.size || '3.4 KB'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Modified</span><span class="text-zinc-300">${d.modified || 'Recent'}</span></div>
-            <div class="flex justify-between py-1"><span class="text-zinc-500">Latency</span><span class="text-emerald-400 font-bold">${d.indexedBy || '0.8ms Everything SDK'}</span></div>
-          </div>
-        `;
-      } else if (item.badge === 'Clip') {
-        detailsHtml = `
-          <div class="space-y-2 mt-3 font-mono text-[11px]">
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Type</span><span class="text-zinc-300">${d.type || 'Text Snippet'}</span></div>
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Length</span><span class="text-zinc-300">${d.length || '41 chars'}</span></div>
-            <div class="flex justify-between py-1"><span class="text-zinc-500">Security</span><span class="text-sky-400">${d.encryption || 'DPAPI Encrypted'}</span></div>
-          </div>
-        `;
-      } else {
-        detailsHtml = `
-          <div class="space-y-2 mt-3 font-mono text-[11px]">
-            <div class="flex justify-between py-1 border-b border-white/[0.04]"><span class="text-zinc-500">Category</span><span class="text-zinc-300">${d.category || item.badge}</span></div>
-            <div class="flex justify-between py-1"><span class="text-zinc-500">Status</span><span class="text-emerald-400 font-bold">Ready</span></div>
-          </div>
-        `;
-      }
-
-      panel.innerHTML = `
-        <div>
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xl">${item.icon}</span>
-            <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.06] text-[#60cdff] border border-white/[0.08]">${d.category || item.badge}</span>
-          </div>
-          <h3 class="text-sm font-semibold text-white leading-tight">${item.title}</h3>
-          <p class="text-[11px] text-zinc-400 font-mono mt-1 break-all">${item.subtitle}</p>
-
-          ${d.previewColor ? `
-            <div class="mt-3 p-3 rounded-lg border border-white/[0.1] flex items-center gap-3 bg-black/40">
-              <div class="w-8 h-8 rounded border border-white/20 shadow-md" style="background-color: ${d.previewColor}"></div>
-              <div class="font-mono text-[11px]">
-                <div class="text-white font-bold">${d.hex}</div>
-                <div class="text-zinc-400">${d.rgb}</div>
-              </div>
-            </div>
-          ` : ''}
-
-          ${detailsHtml}
-        </div>
-
-        <div class="pt-4 border-t border-white/[0.06] mt-4">
-          <button
-            onclick="selectAndExecute(${selectedIndex})"
-            class="w-full py-2 px-3 rounded-md ${isKilled ? 'bg-zinc-800 text-zinc-400' : 'bg-[#0078d4] hover:bg-[#106ebe] text-white shadow-md'} font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <span>${isKilled ? 'Reset Port' : (item.badge === 'Port' ? 'Kill Process (Release Port)' : (item.action ? item.action + ' (↵ Enter)' : 'Execute (↵)'))}</span>
-          </button>
-          <div class="mt-2 text-center text-[10px] text-zinc-500 font-mono">
-            Press <kbd class="kbd-cap text-[9px]">↵</kbd> on keyboard to execute
-          </div>
-        </div>
-      `;
+      updateDrawerHeader();
     }
 
     function setHoverIndex(idx) {
       selectedIndex = idx;
-      updateSelectedHighlight();
-      renderInspector(currentRenderedItems[selectedIndex]);
+      updateHighlightOnly();
     }
 
-    function updateSelectedHighlight() {
-      const rows = document.querySelectorAll('#demo-results > div');
+    function updateHighlightOnly() {
+      const rows = document.querySelectorAll('#demo-results-list > div');
       rows.forEach((r, i) => {
         if (i === selectedIndex) {
-          r.classList.add('bg-white/[0.08]', 'text-white', 'shadow-sm');
-          r.classList.remove('text-zinc-300');
+          r.className = 'min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 bg-white/[0.08] text-white shadow-sm border border-sky-400/25 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sky-400';
         } else {
-          r.classList.remove('bg-white/[0.08]', 'text-white', 'shadow-sm');
-          r.classList.add('text-zinc-300');
+          r.className = 'min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 text-zinc-300 hover:bg-white/[0.03] hover:text-zinc-100 border border-transparent';
         }
       });
+      updateDrawerHeader();
+    }
+
+    function updateDrawerHeader() {
+      const item = currentItems[selectedIndex];
+      if (!item) return;
+      const titleEl = document.getElementById('drawer-item-title');
+      const typeEl = document.getElementById('drawer-item-type');
+      if (titleEl) titleEl.innerText = `Actions for ${item.title}`;
+      if (typeEl) typeEl.innerText = item.type || 'Application';
     }
 
     function handleDemoKeydown(e) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        if (currentRenderedItems.length) {
-          selectedIndex = (selectedIndex + 1) % currentRenderedItems.length;
-          updateSelectedHighlight();
-          renderInspector(currentRenderedItems[selectedIndex]);
+        if (currentItems.length) {
+          selectedIndex = (selectedIndex + 1) % currentItems.length;
+          updateHighlightOnly();
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (currentRenderedItems.length) {
-          selectedIndex = (selectedIndex - 1 + currentRenderedItems.length) % currentRenderedItems.length;
-          updateSelectedHighlight();
-          renderInspector(currentRenderedItems[selectedIndex]);
+        if (currentItems.length) {
+          selectedIndex = (selectedIndex - 1 + currentItems.length) % currentItems.length;
+          updateHighlightOnly();
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         selectAndExecute(selectedIndex);
       } else if (e.key === 'Escape') {
-        clearDemoSearch();
+        if (isDrawerOpen) {
+          toggleActionDrawer();
+        } else {
+          clearDemoSearch();
+        }
+      } else if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        toggleActionDrawer();
       }
     }
 
     function selectAndExecute(idx) {
-      const item = currentRenderedItems[idx];
+      const item = currentItems[idx];
       if (!item) return;
 
-      if (item.badge === 'Port') {
+      if (item.type === 'Port') {
         if (killedPorts.has(item.id)) {
           killedPorts.delete(item.id);
           showToast(`✓ Reset ${item.title} to Listening state`);
         } else {
           killedPorts.add(item.id);
-          showToast(`✓ Terminated PID ${item.details?.pid || '18402'} • Port freed`);
+          showToast(`✓ Terminated PID 18402 • Port :3000 freed`);
         }
-        renderDemoItems(currentRenderedItems);
+        renderDemoResults();
         return;
       }
 
-      if (item.copyVal || item.badge === 'Calc' || item.badge === 'UUID' || item.badge === 'Time' || item.badge === 'Clip') {
-        const toCopy = item.copyVal || (item.details?.formattedResult || item.details?.decimal || item.title.replace(/^=\s*/, ''));
+      if (item.isCalc || item.type === 'Clipboard') {
+        const val = item.copyVal || item.title.replace(/^=\s*/, '');
         if (navigator.clipboard) {
-          navigator.clipboard.writeText(String(toCopy)).catch(() => {});
+          navigator.clipboard.writeText(val).catch(() => {});
         }
-        showToast(`✓ Copied "${toCopy}" to Windows clipboard`);
+        showToast(`✓ Copied "${val}" to clipboard`);
         return;
       }
 
-      if (item.badge === 'File') {
-        showToast(`✓ Opened ${item.title} in default editor (0.7ms)`);
-        return;
-      }
+      showToast(`✓ Launched "${item.title}" in 0.9ms`);
+    }
 
-      showToast(`✓ Executed "${item.title}" in 0.9ms`);
+    function executePrimaryAction() {
+      toggleActionDrawer();
+      selectAndExecute(selectedIndex);
+    }
+
+    function executeActionToast(msg) {
+      toggleActionDrawer();
+      showToast(`✓ ${msg}`);
+    }
+
+    function toggleActionDrawer() {
+      const drawer = document.getElementById('action-drawer');
+      if (!drawer) return;
+      isDrawerOpen = !isDrawerOpen;
+      if (isDrawerOpen) {
+        drawer.classList.remove('hidden');
+        updateDrawerHeader();
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function toggleSwitch(btn) {
+      const isOn = btn.classList.contains('bg-emerald-500');
+      const knob = btn.querySelector('span');
+      if (isOn) {
+        btn.className = 'w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer';
+        if (knob) knob.className = 'w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform';
+        showToast('Preference updated: Disabled');
+      } else {
+        btn.className = 'w-8 h-4 rounded-full bg-emerald-500 relative transition cursor-pointer';
+        if (knob) knob.className = 'w-3 h-3 rounded-full bg-white absolute right-0.5 top-0.5 transition-transform';
+        showToast('Preference updated: Enabled');
+      }
+    }
+
+    function cycleThemeDemo() {
+      themeIndex = (themeIndex + 1) % THEMES.length;
+      const t = THEMES[themeIndex];
+      const dot = document.getElementById('theme-dot');
+      const name = document.getElementById('theme-name');
+      if (dot) dot.style.backgroundColor = t.hex;
+      if (name) name.innerText = t.name;
+      showToast(`Switched active theme to ${t.name}`);
+    }
+
+    function toggleDetailsDemo() {
+      const btn = document.getElementById('details-btn');
+      showToast('Toggled details inspector (Ctrl+B)');
     }
 
     function showToast(msg) {
@@ -1300,7 +1203,7 @@
         clearTimeout(window._toastTimeout);
         window._toastTimeout = setTimeout(() => {
           toast.classList.add('hidden');
-        }, 3200);
+        }, 3000);
       }
     }
 
@@ -1309,7 +1212,7 @@
       if (toast) toast.classList.add('hidden');
     }
 
-    function applyQuery(text) {
+    function applyDemoQuery(text) {
       const input = document.getElementById('demo-search-input');
       if (input) {
         input.value = text;
@@ -1330,78 +1233,50 @@
     function handleDemoSearch(query) {
       const q = query.trim();
       const lower = q.toLowerCase();
+      const clearBtn = document.getElementById('demo-clear-btn');
 
-      // Simulate Rust core sub-millisecond latency on keystroke
-      const lat = (0.5 + Math.random() * 0.6).toFixed(1);
-      const latEl = document.getElementById('sim-latency');
-      if (latEl) latEl.innerText = lat + ' ms';
-
-      let items = [...BASE_DEMO_ITEMS];
-
-      // 1. Check live math calculation
-      const mathRes = evaluateMath(q);
-      if (mathRes) {
-        const calcItem = {
-          id: 'dyn-calc',
-          title: '= ' + mathRes.formatted,
-          subtitle: `${mathRes.expr} • Press ↵ to copy to clipboard`,
-          mode: 'all',
-          badge: 'Calc',
-          icon: '🔢',
-          action: 'Copy',
-          copyVal: mathRes.formatted,
-          details: {
-            category: 'Windows Calculator Core',
-            expression: mathRes.expr,
-            formattedResult: mathRes.formatted,
-            decimal: mathRes.result,
-            hex: Number.isInteger(mathRes.result) ? '0x' + mathRes.result.toString(16).toUpperCase() : 'N/A',
-            binary: (Number.isInteger(mathRes.result) && mathRes.result >= 0 && mathRes.result < 65536) ? '0b' + mathRes.result.toString(2) : 'N/A'
-          }
-        };
-        items.unshift(calcItem);
+      if (clearBtn) {
+        if (q) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
       }
 
-      // 2. Check dynamic utilities (UUID, Timestamp, Color)
-      if (q) {
-        const dynUtils = evaluateDevUtils(q);
-        if (dynUtils.length) {
-          items = [...dynUtils, ...items];
-        }
+      // Check math evaluation
+      const math = evaluateMath(q);
+      if (math) {
+        currentItems = [{
+          id: 'calc-dynamic',
+          title: '= ' + math.formatted,
+          subtitle: `${math.expr} • Press ↵ to copy to clipboard`,
+          category: 'CALCULATOR',
+          categoryHint: 'instant math',
+          drive: 'CALC',
+          badge: 'Math',
+          iconType: 'calc',
+          actionLabel: 'Copy Calculation',
+          isCalc: true,
+          copyVal: math.formatted,
+          type: 'Calculation'
+        }];
+        selectedIndex = 0;
+        renderDemoResults();
+        return;
       }
 
-      // 3. Filter by category pill
-      if (currentFilter !== 'all') {
-        items = items.filter(item => item.mode === currentFilter || item.mode === 'all');
-      }
-
-      // 4. Filter by query string
-      if (q && !mathRes) {
-        items = items.filter(item =>
+      if (!q) {
+        currentItems = [...DEFAULT_APP_ITEMS];
+      } else {
+        currentItems = DEFAULT_APP_ITEMS.filter(item =>
           item.title.toLowerCase().includes(lower) ||
           item.subtitle.toLowerCase().includes(lower) ||
-          item.badge.toLowerCase().includes(lower) ||
-          (item.mode && item.mode.toLowerCase().includes(lower))
+          item.badge.toLowerCase().includes(lower)
         );
       }
 
       selectedIndex = 0;
-      renderDemoItems(items);
+      renderDemoResults();
     }
 
-    function setDemoFilter(filter, btn) {
-      currentFilter = filter;
-      document.querySelectorAll('.demo-tab').forEach(b => {
-        b.className = 'demo-tab px-3 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.04] transition cursor-pointer';
-      });
-      if (btn) {
-        btn.className = 'demo-tab px-3 py-1 rounded-md bg-white/[0.1] text-white font-medium transition cursor-pointer';
-      }
-      const input = document.getElementById('demo-search-input');
-      handleDemoSearch(input ? input.value : '');
-    }
-
-    // Bento Demos
+    // Bento Grid Interactive Scripts
     function setBentoDrive(letter) {
       ['C', 'D', 'E'].forEach(l => {
         const b = document.getElementById(`drive-btn-${l}`);
@@ -1518,10 +1393,10 @@
 
     // Initialize Simulator on Load
     document.addEventListener('DOMContentLoaded', () => {
-      renderDemoItems(BASE_DEMO_ITEMS);
+      renderDemoResults();
     });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      renderDemoItems(BASE_DEMO_ITEMS);
+      renderDemoResults();
     }
   </script>
 </body>
