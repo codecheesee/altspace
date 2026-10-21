@@ -674,9 +674,97 @@ fn kill_all_dev_servers() -> Result<usize, String> {
     Ok(killed)
 }
 
+/// Strictly validates URLs for opening via the system default browser.
+///
+/// Permits:
+/// - Any valid HTTPS URL
+/// - HTTP only if the host is explicitly loopback (localhost, 127.0.0.1, [::1])
+///
+/// Rejects:
+/// - Insecure remote HTTP URLs
+/// - File URLs (file://)
+/// - Dangerous URI schemes (javascript:, data:, ms-appinstaller:, cmd:, powershell:, smb:, etc.)
+/// - Embedded credentials (user:pass@host)
+/// - Control characters (\0, \r, \n)
+pub fn validate_url_for_opening(raw_url: &str) -> Result<url::Url, String> {
+    let trimmed = raw_url.trim();
+    if trimmed.is_empty() {
+        return Err("URL cannot be empty".into());
+    }
+
+    if trimmed.contains('\0') || trimmed.contains('\n') || trimmed.contains('\r') {
+        return Err("URL contains invalid control characters".into());
+    }
+
+    let parsed = url::Url::parse(trimmed).map_err(|e| format!("Invalid URL format: {}", e))?;
+
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("URLs with user credentials are not permitted".into());
+    }
+
+    match parsed.scheme() {
+        "https" => Ok(parsed),
+        "http" => {
+            let is_loopback = match parsed.host() {
+                Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+                Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+                Some(url::Host::Domain(d)) => d.eq_ignore_ascii_case("localhost"),
+                None => false,
+            };
+            if is_loopback {
+                Ok(parsed)
+            } else {
+                Err("Insecure HTTP is restricted to localhost/loopback addresses. Use HTTPS.".into())
+            }
+        }
+        other => Err(format!(
+            "URL scheme '{}' is blocked. Only HTTPS and localhost HTTP are allowed.",
+            other
+        )),
+    }
+}
+
+/// Strictly validates Windows Settings URIs (ms-settings:*).
+///
+/// Permits:
+/// - Safe ms-settings: URIs containing alphanumeric and dash/dot/query characters.
+///
+/// Rejects:
+/// - Non ms-settings schemes
+/// - Control characters, whitespace, quotes, slashes, or injection characters
+pub fn validate_settings_uri_for_opening(raw_uri: &str) -> Result<String, String> {
+    let trimmed = raw_uri.trim();
+    if trimmed.is_empty() {
+        return Err("Settings URI cannot be empty".into());
+    }
+
+    if trimmed.contains('\0') || trimmed.contains('\n') || trimmed.contains('\r') {
+        return Err("URI contains invalid control characters".into());
+    }
+
+    if !trimmed.starts_with("ms-settings:") {
+        return Err("Only 'ms-settings:' URIs are permitted".into());
+    }
+
+    let subpage = &trimmed["ms-settings:".len()..];
+    for ch in subpage.chars() {
+        if !ch.is_ascii_alphanumeric() && ch != '-' && ch != '_' && ch != '.' && ch != '?' && ch != '=' && ch != '&' {
+            return Err("Settings URI contains forbidden characters".into());
+        }
+    }
+
+    let parsed = url::Url::parse(trimmed).map_err(|e| format!("Invalid settings URI: {}", e))?;
+    if parsed.scheme() != "ms-settings" {
+        return Err("URI scheme must be 'ms-settings'".into());
+    }
+
+    Ok(trimmed.to_string())
+}
+
 #[tauri::command]
 fn open_url(url: String) -> Result<(), String> {
-    let wide_url: Vec<u16> = url.encode_utf16().chain(std::iter::once(0)).collect();
+    let parsed = validate_url_for_opening(&url)?;
+    let wide_url: Vec<u16> = parsed.as_str().encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let res = ShellExecuteW(
             HWND::default(),
@@ -687,10 +775,7 @@ fn open_url(url: String) -> Result<(), String> {
             SW_SHOWNORMAL,
         );
         if res.0 as usize <= 32 {
-            let _ = Command::new("cmd")
-                .args(["/c", "start", "", &url])
-                .creation_flags(CREATE_NO_WINDOW)
-                .spawn();
+            return Err(format!("System failed to open URL (code {})", res.0 as usize));
         }
     }
     Ok(())
@@ -698,7 +783,8 @@ fn open_url(url: String) -> Result<(), String> {
 
 #[tauri::command]
 fn open_settings_uri(uri: String) -> Result<(), String> {
-    let wide_uri: Vec<u16> = uri.encode_utf16().chain(std::iter::once(0)).collect();
+    let safe_uri = validate_settings_uri_for_opening(&uri)?;
+    let wide_uri: Vec<u16> = safe_uri.encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let res = ShellExecuteW(
             HWND::default(),
@@ -709,10 +795,7 @@ fn open_settings_uri(uri: String) -> Result<(), String> {
             SW_SHOWNORMAL,
         );
         if res.0 as usize <= 32 {
-            let _ = Command::new("cmd")
-                .args(["/c", "start", "", &uri])
-                .creation_flags(CREATE_NO_WINDOW)
-                .spawn();
+            return Err(format!("System failed to open Settings URI (code {})", res.0 as usize));
         }
     }
     Ok(())
@@ -1499,4 +1582,67 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_url_valid_https() {
+        assert!(validate_url_for_opening("https://github.com/codecheesee/altspace").is_ok());
+        assert!(validate_url_for_opening("https://altspace.dev/docs?query=test#hash").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_valid_localhost() {
+        assert!(validate_url_for_opening("http://localhost:3000/app").is_ok());
+        assert!(validate_url_for_opening("http://127.0.0.1:8080/api").is_ok());
+        assert!(validate_url_for_opening("http://[::1]:5173/").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_rejects_insecure_remote_http() {
+        let res = validate_url_for_opening("http://example.com");
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("Insecure HTTP is restricted"));
+    }
+
+    #[test]
+    fn test_validate_url_rejects_dangerous_schemes() {
+        assert!(validate_url_for_opening("javascript:alert(1)").is_err());
+        assert!(validate_url_for_opening("file:///C:/Windows/System32/calc.exe").is_err());
+        assert!(validate_url_for_opening("data:text/html,<script>alert(1)</script>").is_err());
+        assert!(validate_url_for_opening("ms-appinstaller:?source=https://evil.com/app.msix").is_err());
+        assert!(validate_url_for_opening("cmd:foo").is_err());
+        assert!(validate_url_for_opening("powershell:bar").is_err());
+        assert!(validate_url_for_opening("smb://attacker/share").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_rejects_credentials_and_control_chars() {
+        assert!(validate_url_for_opening("https://user:password@github.com").is_err());
+        assert!(validate_url_for_opening("https://github.com\0/bad").is_err());
+        assert!(validate_url_for_opening("https://github.com\r\n/bad").is_err());
+        assert!(validate_url_for_opening("").is_err());
+        assert!(validate_url_for_opening("   ").is_err());
+    }
+
+    #[test]
+    fn test_validate_settings_uri_valid() {
+        assert!(validate_settings_uri_for_opening("ms-settings:display").is_ok());
+        assert!(validate_settings_uri_for_opening("ms-settings:network-wifi").is_ok());
+        assert!(validate_settings_uri_for_opening("ms-settings:windowsupdate").is_ok());
+        assert!(validate_settings_uri_for_opening("ms-settings:").is_ok());
+    }
+
+    #[test]
+    fn test_validate_settings_uri_rejects_invalid() {
+        assert!(validate_settings_uri_for_opening("").is_err());
+        assert!(validate_settings_uri_for_opening("https://evil.com").is_err());
+        assert!(validate_settings_uri_for_opening("ms-settings:display & calc.exe").is_err());
+        assert!(validate_settings_uri_for_opening("ms-settings:display; cmd.exe").is_err());
+        assert!(validate_settings_uri_for_opening("ms-settings:display\0bad").is_err());
+        assert!(validate_settings_uri_for_opening("ms-settings:display|bad").is_err());
+    }
 }

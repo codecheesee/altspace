@@ -26,6 +26,7 @@ chrono = "0.4"
 rusqlite = { version = "0.31", features = ["bundled"] }
 ed25519-dalek = { version = "2.1", default-features = false }
 base64 = "0.22"
+url = "2.5"
 
 [dependencies.windows]
 version = "0.58"

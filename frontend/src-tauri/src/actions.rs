@@ -40,9 +40,42 @@ pub fn get_target_directory(path_str: &str) -> PathBuf {
     }
 }
 
-/// Launches a target application or script elevated as Administrator (UAC Prompt)
+/// Launches a target application elevated as Administrator (UAC Prompt).
+///
+/// NOTE: Strictly restricted to existing local binary executables (.exe) and MMC consoles (.msc).
+/// UNC paths, scripts (.bat, .cmd, .ps1), and non-existent files are rejected.
 pub fn run_as_admin(target_path: &str) -> Result<(), String> {
-    let p = sanitize_path(target_path)?;
+    let trimmed = target_path.trim();
+    if trimmed.is_empty() {
+        return Err("Path cannot be empty".into());
+    }
+
+    if trimmed.contains('\0') || trimmed.contains('\n') || trimmed.contains('\r') {
+        return Err("Path contains invalid control characters".into());
+    }
+
+    // Reject UNC network paths to prevent NTLM hash exfiltration and remote script execution
+    if trimmed.starts_with(r"\\") || trimmed.starts_with("//") {
+        return Err("UNC paths are not permitted for elevated execution".into());
+    }
+
+    let p = Path::new(trimmed);
+    if !p.is_absolute() {
+        return Err("Path must be absolute".into());
+    }
+
+    if !p.exists() || !p.is_file() {
+        return Err("Target file does not exist on local filesystem".into());
+    }
+
+    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    if ext != "exe" && ext != "msc" {
+        return Err(format!(
+            "File extension '.{}' is not permitted for elevated execution (only .exe and .msc are allowed)",
+            ext
+        ));
+    }
+
     let wide_path: Vec<u16> = p.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
 
     unsafe {
@@ -77,7 +110,7 @@ pub fn reveal_in_explorer(target_path: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Opens the specified directory or file's parent in Windows Terminal (or PowerShell fallback)
+/// Opens the specified directory or file's parent in Windows Terminal (or clean PowerShell fallback)
 pub fn open_in_terminal(target_path: &str) -> Result<(), String> {
     let dir = get_target_directory(target_path);
     let dir_str = dir.to_string_lossy().to_string();
@@ -91,9 +124,10 @@ pub fn open_in_terminal(target_path: &str) -> Result<(), String> {
         return Ok(());
     }
 
-    // Fallback to PowerShell
+    // Fallback to PowerShell without -Command argument; working directory is set via current_dir
     Command::new("powershell")
-        .args(["-NoExit", "-Command", &format!("Set-Location -LiteralPath '{}'", dir_str.replace('\'', "''"))])
+        .arg("-NoExit")
+        .current_dir(&dir)
         .spawn()
         .map_err(|e| format!("Failed to launch terminal: {}", e))?;
 
@@ -163,5 +197,36 @@ mod tests {
         let empty_rel = "file.txt";
         let rel_dir = get_target_directory(empty_rel);
         assert_eq!(rel_dir, PathBuf::from("."));
+    }
+
+    #[test]
+    fn test_run_as_admin_rejects_empty() {
+        assert!(run_as_admin("").is_err());
+        assert!(run_as_admin("   ").is_err());
+    }
+
+    #[test]
+    fn test_run_as_admin_rejects_unc() {
+        assert!(run_as_admin(r"\\evil.server\share\payload.exe").is_err());
+        assert!(run_as_admin("//evil.server/share/payload.exe").is_err());
+    }
+
+    #[test]
+    fn test_run_as_admin_rejects_relative() {
+        assert!(run_as_admin("notepad.exe").is_err());
+        assert!(run_as_admin(r".\notepad.exe").is_err());
+    }
+
+    #[test]
+    fn test_run_as_admin_rejects_nonexistent() {
+        assert!(run_as_admin(r"C:\altspace_nonexistent_test_12345\fake.exe").is_err());
+    }
+
+    #[test]
+    fn test_run_as_admin_rejects_scripts() {
+        assert!(run_as_admin(r"C:\Windows\System32\test.bat").is_err());
+        assert!(run_as_admin(r"C:\Windows\System32\test.cmd").is_err());
+        assert!(run_as_admin(r"C:\Windows\System32\test.ps1").is_err());
+        assert!(run_as_admin(r"C:\Windows\System32\test.vbs").is_err());
     }
 }
