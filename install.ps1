@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$TargetDir = $TargetDir.Trim()
 $Repo = 'codecheesee/altspace'
 $BinaryPath = Join-Path $TargetDir 'altspace.exe'
 $DllPath = Join-Path $TargetDir 'Everything64.dll'
@@ -71,16 +72,19 @@ try {
         if ($Tag) {
             $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $headers
         } else {
+            # Retrieve latest release or preview
             try {
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
-            } catch {
-                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=1" -Headers $headers
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=5" -Headers $headers
                 if ($releases -and $releases.Count -gt 0) { $release = $releases[0] }
+            } catch {}
+            if (-not $release) {
+                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
             }
         }
         if (-not $release) {
             throw "Unable to find an AltSpace release on GitHub ($Repo)."
         }
+        Write-Host "[*] Selected release: $($release.tag_name) ($($release.name))" -ForegroundColor Cyan
         $zipAsset = Get-ReleaseAssetByNames $release @('AltSpace-Portable-x64.zip', 'altspace-portable-x64.zip')
         $checksumAsset = Get-ReleaseAsset $release 'SHA256SUMS.txt'
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -Headers $headers -OutFile $portableZip -UseBasicParsing
