@@ -77,6 +77,7 @@ AltSpace connects to local Ollama endpoints (`localhost:11434`) to execute natur
 - Type `? kill port 3000` to dispatch automated process termination.
 - Type `? snap window left` to invoke native window tile management.
 - Type `? summarize selection` to query local LLMs using clipboard context.
+- **Setup Guide**: If you don't have Ollama installed yet, see our step-by-step [Ollama Setup & Optimization Guide](docs/OLLAMA_SETUP_GUIDE.md) to get running in under 2 minutes.
 
 ### 4. User-Level Extension Runtime (`:store`)
 The AltSpace extension engine runs community scripts as child processes:
@@ -150,7 +151,7 @@ Manage local virtualized environments directly from the palette:
 
 ### 17. Private Local Copilot & Multi-Step Approved Actions
 AltSpace provides a Three-Lane model architecture for intelligent developer assistance:
-- **Lane A (Free Forever)**: 100% offline local Ollama inference (`http://localhost:11434`), zero token fees.
+- **Lane A (Free Forever)**: 100% offline local Ollama inference (`http://localhost:11434`), zero token fees. (See [Ollama Setup Guide](docs/OLLAMA_SETUP_GUIDE.md)).
 - **Lane B (BYOK Pro)**: Direct, private access to Anthropic Claude 3.7, OpenAI GPT-4o, or DeepSeek using API keys encrypted in your Windows DPAPI vault.
 - **Deterministic Fast Path**: Natural language diagnostics (e.g. `? fix 5173`, `? reclaim memory`, `? docker restart`) synthesize multi-step action plans in `< 1ms`.
 - **Volatile Failure Ring Buffer**: Automatically captures shell crash exits and stderr in an in-memory ring buffer (10 items max, zero disk writes) to synthesize instant recovery workflows.

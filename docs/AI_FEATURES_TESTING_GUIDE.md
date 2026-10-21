@@ -29,7 +29,7 @@ flowchart TD
 
 ## Test Suite 1: Local Ollama AI Chat (Lane A &mdash; Free Forever)
 
-> **Prerequisite for Lane A**: Ensure [Ollama](https://ollama.com/) is installed and running (`ollama serve` or Ollama desktop app) with a lightweight model pulled (e.g. `ollama run llama3.2` or `mistral`). If Ollama is not installed, test the graceful offline fallback.
+> **Prerequisite for Lane A**: Ensure [Ollama](https://ollama.com/) is installed and running (`ollama serve` or Ollama desktop app) with a lightweight model pulled (e.g. `ollama run llama3.2` or `mistral`). For full Windows setup instructions and model recommendations, see the [Ollama Setup & Optimization Guide](OLLAMA_SETUP_GUIDE.md). If Ollama is not installed, test the graceful offline fallback.
 
 ### Test 1.1: Standard Natural Language Query
 - **Action**: Summon AltSpace (<kbd>Alt</kbd>+<kbd>Space</kbd>) and type:

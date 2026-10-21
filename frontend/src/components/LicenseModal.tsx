@@ -918,12 +918,25 @@ export function LicenseModal({
 
                         {/* Model Lane Info */}
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div className="p-2 rounded-lg bg-zinc-900/60 border border-white/[0.05] space-y-1">
-                            <div className="text-white font-semibold flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              <span>Lane A: Local Ollama</span>
+                          <div className="p-2 rounded-lg bg-zinc-900/60 border border-white/[0.05] space-y-1 flex flex-col justify-between">
+                            <div>
+                              <div className="text-white font-semibold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span>Lane A: Local Ollama</span>
+                              </div>
+                              <p className="text-[10px] text-zinc-400 leading-normal mt-0.5">100% Free & Private • Zero token fees • Runs on device</p>
                             </div>
-                            <p className="text-[10px] text-zinc-400 leading-normal">100% Free & Private • Zero token fees • Runs on device</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace/blob/main/docs/OLLAMA_SETUP_GUIDE.md" });
+                                notify("Opening Ollama Setup Guide in browser...");
+                              }}
+                              className="text-[10px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-mono pt-1 cursor-pointer w-fit"
+                            >
+                              <span>Setup & model guide</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </button>
                           </div>
 
                           <div className="p-2 rounded-lg bg-zinc-900/60 border border-white/[0.05] space-y-1">

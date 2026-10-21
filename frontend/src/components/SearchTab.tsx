@@ -428,6 +428,9 @@ export function SearchTab({
               if (specialCard.data.response) {
                 onCopyClipboard(specialCard.data.response);
                 onCopiedNotification("AI response copied to clipboard!");
+              } else if (specialCard.data.error) {
+                onOpenUrl("https://github.com/codecheesee/altspace/blob/main/docs/OLLAMA_SETUP_GUIDE.md");
+                onCopiedNotification("Opening Ollama Setup Guide in browser...");
               }
             }}
             className={cn(

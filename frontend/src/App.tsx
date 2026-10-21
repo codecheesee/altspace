@@ -833,6 +833,9 @@ export default function App() {
             if (selectedSpecial.data.response) {
               handleCopyClipboard(selectedSpecial.data.response);
               notify("AI response copied!");
+            } else if (selectedSpecial.data.error) {
+              handleOpenUrl("https://github.com/codecheesee/altspace/blob/main/docs/OLLAMA_SETUP_GUIDE.md");
+              notify("Opening Ollama Setup Guide in browser...");
             }
           }
         } else if (selectedItem) {
