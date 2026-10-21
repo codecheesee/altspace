@@ -139,9 +139,90 @@ pub fn delete_secret(key: &str) -> Result<bool, String> {
     }
 }
 
+/// Retrieves or generates a persistent hardware-bound machine identifier for this Windows device.
+/// Formatted as ALTS-XXXX-XXXX-XXXX and safely cached in the DPAPI vault.
+pub fn get_or_create_device_id() -> Result<String, String> {
+    if let Ok(Some(existing)) = retrieve_secret("device_machine_id") {
+        let trimmed = existing.trim();
+        if trimmed.starts_with("ALTS-") && trimmed.len() >= 14 {
+            return Ok(trimmed.to_string());
+        }
+    }
+
+    let mut raw_id = String::new();
+
+    #[cfg(windows)]
+    {
+        use windows::Win32::System::Registry::{
+            RegOpenKeyExW, RegQueryValueExW, HKEY_LOCAL_MACHINE, KEY_READ, REG_VALUE_TYPE,
+        };
+        use windows::core::w;
+
+        unsafe {
+            let mut hkey = windows::Win32::System::Registry::HKEY::default();
+            if RegOpenKeyExW(
+                HKEY_LOCAL_MACHINE,
+                w!("SOFTWARE\\Microsoft\\Cryptography"),
+                0,
+                KEY_READ,
+                &mut hkey,
+            )
+            .is_ok()
+            {
+                let mut buffer = [0u16; 128];
+                let mut size = (buffer.len() * 2) as u32;
+                let mut reg_type = REG_VALUE_TYPE::default();
+                if RegQueryValueExW(
+                    hkey,
+                    w!("MachineGuid"),
+                    None,
+                    Some(&mut reg_type),
+                    Some(buffer.as_mut_ptr() as *mut u8),
+                    Some(&mut size),
+                )
+                .is_ok()
+                {
+                    let len = (size as usize / 2).saturating_sub(1);
+                    raw_id = String::from_utf16_lossy(&buffer[..len]);
+                }
+            }
+        }
+    }
+
+    if raw_id.is_empty() {
+        let comp = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "DEVICE".into());
+        let user = std::env::var("USERNAME").unwrap_or_else(|_| "USER".into());
+        raw_id = format!("{}-{}-{}", comp, user, chrono::Utc::now().timestamp_millis());
+    }
+
+    // Clean and produce a standardized ALTS-XXXX-XXXX-XXXX token
+    let clean: String = raw_id
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .to_uppercase();
+    let padded = format!("{:0<16}", clean);
+    let formatted = format!(
+        "ALTS-{}-{}-{}",
+        &padded[0..4],
+        &padded[4..8],
+        &padded[8..12]
+    );
+
+    let _ = store_secret("device_machine_id", &formatted);
+    Ok(formatted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_device_id_format() {
+        let id = get_or_create_device_id().expect("Device ID should be generated");
+        assert!(id.starts_with("ALTS-"), "Device ID must start with ALTS- prefix");
+        assert_eq!(id.len(), 19, "Device ID must be 19 chars: ALTS-XXXX-XXXX-XXXX");
+    }
 
     #[test]
     fn test_dpapi_roundtrip() {

@@ -21,6 +21,7 @@ import {
   Star,
   ShoppingBag,
   Activity,
+  User,
 } from "lucide-react";
 import { tauriInvoke } from "../lib/appStorage";
 import type {
@@ -435,6 +436,20 @@ export function useContextualActions({
         onImportConfig();
       },
     });
+
+    if (onOpenLicense) {
+      actions.push({
+        id: "sys-about-account",
+        title: "About & Account (Profile, Plan & Machine ID)",
+        section: "CONFIG & TOOLS",
+        shortcut: "Ctrl+,",
+        icon: <User className="w-4 h-4 text-sky-400" />,
+        run: () => {
+          onCloseActionsModal();
+          onOpenLicense();
+        },
+      });
+    }
 
     if (onOpenDiagnostics) {
       actions.push({

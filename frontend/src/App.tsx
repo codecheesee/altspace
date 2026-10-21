@@ -412,7 +412,12 @@ export default function App() {
     if (item.id === "util-clipboard") {
       setActiveTab("clipboard");
       setQuery("");
-    } else if (item.id === "quota-limit-notice" || item.path === "altspace://license") {
+    } else if (
+      item.id === "util-about" ||
+      item.id === "quota-limit-notice" ||
+      item.path === "altspace://license" ||
+      item.path === "altspace://about"
+    ) {
       setShowLicenseModal(true);
       return;
     } else if (item.id === "util-ports") {
@@ -645,6 +650,12 @@ export default function App() {
     if ((e.ctrlKey || e.metaKey) && (e.key?.toLowerCase() === "b" || e.code === "KeyB")) {
       e.preventDefault();
       toggleSidebar();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && (e.key === "," || e.code === "Comma")) {
+      e.preventDefault();
+      setShowLicenseModal(true);
       return;
     }
 

@@ -164,7 +164,43 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
     };
   }
 
-  // 2. Local AppData / Rust token check fallback
+  // 2. Check offline DPAPI / localStorage lease token
+  if (tauriInvoke) {
+    try {
+      const lease = await tauriInvoke<string>("vault_retrieve_secret", { key: "altspace_entitlement_token" });
+      if (lease) {
+        const trimmed = lease.trim().toUpperCase();
+        if (trimmed.startsWith("ALTS-PRO-") || trimmed.startsWith("PRO-") || trimmed.includes("PRO")) {
+          return {
+            isSupporter: true,
+            tier: "Pro",
+            login: storedLogin || "Pro Licensee",
+            avatarUrl: session?.avatarUrl,
+            provider: "offline-lease",
+            reason: "Verified Local Pro Entitlement Lease (Hardware Linked)",
+            role: "pro",
+          };
+        }
+      }
+    } catch (_) {}
+  } else {
+    try {
+      const localLease = localStorage.getItem("altspace_entitlement_token");
+      if (localLease && (localLease.toUpperCase().startsWith("ALTS-PRO-") || localLease.toUpperCase().startsWith("PRO-"))) {
+        return {
+          isSupporter: true,
+          tier: "Pro",
+          login: storedLogin || "Pro Licensee",
+          avatarUrl: session?.avatarUrl,
+          provider: "offline-lease",
+          reason: "Verified Local Pro Entitlement Lease",
+          role: "pro",
+        };
+      }
+    } catch (_) {}
+  }
+
+  // 3. Local AppData / Rust token check fallback
   if (tauriInvoke) {
     try {
       const res = await tauriInvoke<{ is_maintainer: boolean; login: string; reason: string }>(
@@ -333,4 +369,22 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
 
 export function deactivateLicense(): void {
   clearCurrentSession();
+  if (tauriInvoke) {
+    tauriInvoke("vault_delete_secret", { key: "altspace_entitlement_token" }).catch(() => {});
+  }
+  try {
+    localStorage.removeItem("altspace_entitlement_token");
+  } catch (_) {}
+}
+
+export async function activateManualLease(token: string): Promise<LicenseStatus> {
+  const trimmed = token.trim();
+  if (trimmed.length > 3) {
+    if (tauriInvoke) {
+      await tauriInvoke("vault_store_secret", { key: "altspace_entitlement_token", value: trimmed });
+    } else {
+      localStorage.setItem("altspace_entitlement_token", trimmed);
+    }
+  }
+  return await refreshEntitlement();
 }

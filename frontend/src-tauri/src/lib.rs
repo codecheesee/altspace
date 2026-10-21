@@ -874,6 +874,11 @@ fn vault_delete_secret(key: String) -> Result<bool, String> {
     crypto_vault::delete_secret(&key)
 }
 
+#[tauri::command]
+fn get_machine_id() -> Result<String, String> {
+    crypto_vault::get_or_create_device_id()
+}
+
 pub fn run() {
     // Safe-Mode Flag Detection:
     if std::env::args().any(|arg| arg == "--safe-mode")
@@ -990,6 +995,7 @@ pub fn run() {
             vault_store_secret,
             vault_retrieve_secret,
             vault_delete_secret,
+            get_machine_id,
             get_plugin_health,
             reset_plugin_health,
             get_safe_mode_status

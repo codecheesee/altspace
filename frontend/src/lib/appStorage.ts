@@ -230,6 +230,14 @@ export function isPremiumSearchQuery(query: string, searchAllDrives = false): bo
 }
 export const UTILITY_ITEMS: Item[] = [
   {
+    id: "util-about",
+    title: "About & Account",
+    subtitle: "View subscription plan, permissions matrix, hardware machine ID, and sign in",
+    category: "Command",
+    iconType: "cmd",
+    path: "altspace://about",
+  },
+  {
     id: "util-clipboard",
     title: "Clipboard History",
     subtitle: "Search, preview, and restore copied items and snippets",
