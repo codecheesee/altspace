@@ -820,8 +820,8 @@ fn check_app_update() -> Result<updater::UpdateInfo, String> {
 }
 
 #[tauri::command]
-fn trigger_app_update() -> Result<String, String> {
-    updater::apply_update()
+fn trigger_app_update(download_url: Option<String>) -> Result<String, String> {
+    updater::install_update(download_url)
 }
 
 #[tauri::command]

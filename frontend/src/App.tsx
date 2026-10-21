@@ -14,6 +14,7 @@ import { ShellConfirmationModal } from "./components/ShellConfirmationModal";
 import { ActionTimelineDrawer } from "./components/ActionTimelineDrawer";
 import { ActionApprovalModal } from "./components/ActionApprovalModal";
 import { DiagnosticsModal } from "./components/DiagnosticsModal";
+import { UpdateModal } from "./components/UpdateModal";
 import { validateAltConfig, computeConfigDiff } from "./lib/configValidator";
 import type { ActionRequest, ActionEvaluation } from "./lib/actionBroker";
 import { BUILTIN_EXTENSIONS } from "./lib/registry";
@@ -45,15 +46,8 @@ import type {
   GitInfo,
   FilePreview,
   DriveIndexStats,
+  UpdateInfo,
 } from "./types";
-
-interface UpdateInfo {
-  has_update: boolean;
-  current_version: string;
-  latest_version: string;
-  release_url: string;
-  release_notes: string;
-}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Mode>("all");
@@ -63,6 +57,9 @@ export default function App() {
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [licenseModalTab, setLicenseModalTab] = useState<"account" | "features" | "about">("account");
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [isUpdateBannerDismissed, setIsUpdateBannerDismissed] = useState(false);
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{
     request: ActionRequest;
@@ -210,15 +207,33 @@ export default function App() {
     onConfirm: (v: string) => void;
   } | null>(null);
 
-  // Auto-Updater Check on Mount
+  // Auto-Updater Check on Mount & Periodic Interval
   useEffect(() => {
-    tauriInvoke<UpdateInfo>("check_app_update")
-      .then((info) => {
-        if (info && info.has_update) {
-          notify(`⚡ AltSpace Update v${info.latest_version} available!`);
-        }
-      })
-      .catch(() => {});
+    const isAutoCheckEnabled = localStorage.getItem("altspace_auto_check_updates") !== "false";
+    if (!isAutoCheckEnabled) return;
+
+    const performCheck = () => {
+      tauriInvoke<UpdateInfo>("check_app_update")
+        .then((info) => {
+          if (info) {
+            setUpdateInfo(info);
+            if (info.has_update) {
+              notify(`✨ AltSpace Update v${info.latest_version} available!`);
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    // Initial check after 8s grace period to keep startup ultra-fast
+    const initialTimer = setTimeout(performCheck, 8000);
+    // Recurring check every 4 hours
+    const intervalTimer = setInterval(performCheck, 4 * 60 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
   }, [notify]);
 
   // Load autostart and drive settings
@@ -266,6 +281,7 @@ export default function App() {
     let unlisten: (() => void) | null = null;
     let unlistenMode: (() => void) | null = null;
     let unlistenFeedback: (() => void) | null = null;
+    let unlistenUpdates: (() => void) | null = null;
 
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen("window-summoned", () => {
@@ -295,12 +311,19 @@ export default function App() {
       }).then((fn) => {
         unlistenFeedback = fn;
       });
+
+      listen("check-updates", () => {
+        setIsUpdateModalOpen(true);
+      }).then((fn) => {
+        unlistenUpdates = fn;
+      });
     }).catch(() => {});
 
     return () => {
       if (unlisten) unlisten();
       if (unlistenMode) unlistenMode();
       if (unlistenFeedback) unlistenFeedback();
+      if (unlistenUpdates) unlistenUpdates();
     };
   }, [setQuery]);
 
@@ -311,6 +334,7 @@ export default function App() {
     showTimelineDrawer ||
     showActionsModal ||
     quickLookOpen ||
+    isUpdateModalOpen ||
     pendingApproval !== null ||
     inputModalConfig !== null ||
     shellConfirmation !== null
@@ -550,24 +574,9 @@ export default function App() {
       }
       handleDismissWindow();
     } else if (item.id === "util-update" || item.path.startsWith("update://")) {
-      notify("Checking GitHub for the latest AltSpace release...");
-      tauriInvoke<UpdateInfo>("check_app_update")
-        .then((info) => {
-          if (info && info.has_update) {
-            notify(`Update v${info.latest_version} found. Launching updater...`);
-            tauriInvoke("trigger_app_update")
-              .then(() => {
-                notify("Updater running. AltSpace will restart automatically.");
-              })
-              .catch((err) => notify(`Update error: ${err}`));
-          } else {
-            notify(`AltSpace is up to date (v${info?.current_version || "1.0.1"}).`);
-          }
-        })
-        .catch((err) => {
-          notify(`Update check failed: ${err}`);
-        });
-      handleDismissWindow();
+      setIsUpdateModalOpen(true);
+      setQuery("");
+      return;
     } else if (item.id === "util-community") {
       if (tauriInvoke) {
         tauriInvoke("open_url", { url: "https://github.com/codecheesee/altspace" });
@@ -968,6 +977,40 @@ export default function App() {
         </div>
       )}
 
+      {updateInfo?.has_update && !isUpdateBannerDismissed && (
+        <div
+          role="alert"
+          className="bg-gradient-to-r from-emerald-500/10 via-sky-500/10 to-emerald-500/10 border-b border-emerald-500/20 px-3.5 py-1 text-xs text-emerald-300 flex items-center justify-between select-none animate-in fade-in duration-200"
+        >
+          <button
+            type="button"
+            onClick={() => setIsUpdateModalOpen(true)}
+            className="flex items-center gap-2 text-left hover:text-white transition cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-semibold text-white">AltSpace v{updateInfo.latest_version} Available</span>
+            <span className="text-zinc-400 text-[11px] hidden sm:inline">• Click to view changelog and update</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsUpdateModalOpen(true)}
+              className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10.5px] font-semibold border border-emerald-500/30 transition cursor-pointer"
+            >
+              Update
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsUpdateBannerDismissed(true)}
+              className="text-zinc-400 hover:text-white text-xs px-1 cursor-pointer"
+              title="Dismiss for this session"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       <HeaderBar
         currentMode={resolvedMode}
         query={query}
@@ -1127,6 +1170,14 @@ export default function App() {
         activeTheme={activeTheme}
         notify={notify}
         initialTab={licenseModalTab}
+        onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+      />
+
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        notify={notify}
+        initialInfo={updateInfo}
       />
 
       <DiagnosticsModal

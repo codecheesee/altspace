@@ -70,6 +70,7 @@ interface LicenseModalProps {
   activeTheme?: { accentHex: string; bg?: string; borderColor?: string; cardBg?: string };
   notify: (msg: string) => void;
   initialTab?: TabType;
+  onOpenUpdateModal?: () => void;
 }
 
 type AuthMethod = "device" | "token";
@@ -86,7 +87,13 @@ function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-export function LicenseModal({ isOpen, onClose, notify, initialTab }: LicenseModalProps) {
+export function LicenseModal({
+  isOpen,
+  onClose,
+  notify,
+  initialTab,
+  onOpenUpdateModal,
+}: LicenseModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || "account");
   const [featureMatrix, setFeatureMatrix] = useState<FeatureMatrixMap>(getFeatureMatrix());
 
@@ -1048,6 +1055,35 @@ export function LicenseModal({ isOpen, onClose, notify, initialTab }: LicenseMod
                 >
                   <span>Visit AltSpace Official Website & Plans</span>
                   <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Software Updates Section */}
+              <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="text-xs font-semibold text-white">System Updates</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                    Channel: Stable
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-normal">
+                  Check for verified signed releases, view feature changelogs, and install updates.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenUpdateModal) {
+                      onClose();
+                      onOpenUpdateModal();
+                    }
+                  }}
+                  className="w-full py-1.5 px-3 rounded-md bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 border border-white/[0.1] text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3 text-sky-400" />
+                  <span>Check for Updates</span>
                 </button>
               </div>
 

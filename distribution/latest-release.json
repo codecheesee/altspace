@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "name": "AltSpace 2.0.0 — Developer Control Plane",
+  "published_at": "2026-10-21T21:45:00Z",
+  "download_url": "https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Setup-x64.exe",
+  "release_url": "https://github.com/codecheesee/altspace/releases",
+  "features": [
+    "Unified Capability Matrix with Option A Settings & Option C Omnibar hot-toggles (> toggle <id>)",
+    "Intelligent Port & Process Recovery with Toolhelp32 process tree forensics and TCP table polling",
+    "100% Offline Developer Transform Toolkit (JWT inspector, JSON <-> YAML, Regex lab, UUID v4, SHA-256)",
+    "Windows DPAPI Secret Vault & Environment Switcher with child process lpEnvironment block injection",
+    "Docker & WSL2 Cockpit with live container controls, vmmem RAM detection & 1-click memory reclaim",
+    "Private Copilot & Action Planner with Three-Lane Model Router (Ollama, BYOK DPAPI vault, fast path)"
+  ],
+  "fixes": [
+    "Invisibility Rule: Toggled-off capabilities vanish completely from search, tabs, and hotkeys",
+    "Volatile Failure Ring Buffer: Shell crashes stay in-memory (10 max) with zero disk footprint",
+    "Authenticode and SHA-256 release verification scripts for enterprise MSI and NSIS installers",
+    "Sub-5ms multi-drive indexed search and masked clipboard credentials"
+  ]
+}

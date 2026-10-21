@@ -363,7 +363,7 @@ export function useSearchEngine({
             {
               id: "util-update",
               title: "Check for Updates & Upgrade AltSpace",
-              subtitle: "Fetches and applies the latest verified release from GitHub",
+              subtitle: "Opens interactive release manager with features & bug fixes changelog",
               category: "Command",
               iconType: "cmd",
               path: "update://latest",

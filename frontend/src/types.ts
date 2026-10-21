@@ -179,3 +179,16 @@ export interface ActionItem {
   toggleValue?: boolean;
   badge?: string;
 }
+
+export interface UpdateInfo {
+  has_update: boolean;
+  current_version: string;
+  latest_version: string;
+  release_name: string;
+  release_url: string;
+  release_notes: string;
+  features: string[];
+  fixes: string[];
+  download_url?: string | null;
+  published_at?: string | null;
+}
