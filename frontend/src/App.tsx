@@ -584,6 +584,13 @@ export default function App() {
         window.open("https://github.com/codecheesee/altspace", "_blank");
       }
       handleDismissWindow();
+    } else if (item.id === "util-discord" || item.path === "altspace://discord") {
+      if (tauriInvoke) {
+        tauriInvoke("open_url", { url: "https://discord.gg/EtVCN9m7JV" });
+      } else {
+        window.open("https://discord.gg/EtVCN9m7JV", "_blank");
+      }
+      handleDismissWindow();
     } else if (item.category === "Setting") {
       if (tauriInvoke) tauriInvoke("open_settings_uri", { uri: item.path });
       handleDismissWindow();

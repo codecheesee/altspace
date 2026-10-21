@@ -5,6 +5,7 @@ import { tauriInvoke } from "../lib/appStorage";
 import { getCurrentSession } from "../lib/authProvider";
 import {
   DISCORD_WEBHOOK_URL,
+  DISCORD_INVITE_URL,
   GITHUB_REPO_URL,
   GITHUB_DISCUSSIONS_URL,
   GITHUB_ISSUES_URL,
@@ -592,6 +593,14 @@ ${item.comment || "No detailed notes provided."}
 
                 {/* Community Links */}
                 <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400">
+                  <button
+                    onClick={() => handleOpenUrl(DISCORD_INVITE_URL)}
+                    className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Discord</span>
+                  </button>
+
                   <button
                     onClick={() => handleOpenUrl(GITHUB_REPO_URL)}
                     className="flex items-center gap-1 hover:text-white transition cursor-pointer"

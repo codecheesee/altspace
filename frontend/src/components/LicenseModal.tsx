@@ -1053,7 +1053,7 @@ export function LicenseModal({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-white">AltSpace for Windows</span>
-                      <span className="text-[10px] font-mono text-zinc-400">v2.0.0-preview</span>
+                      <span className="text-[10px] font-mono text-zinc-400">v2.1.0</span>
                     </div>
                     <p className="text-[11px] text-zinc-400 leading-normal truncate">
                       Sub-5ms native command palette & file indexer.
@@ -1115,7 +1115,7 @@ export function LicenseModal({
                     <ExternalLink className="w-2.5 h-2.5" />
                   </button>
                 </div>
-                <div className="flex items-center justify-between py-1">
+                <div className="flex items-center justify-between py-1 border-b border-white/[0.05]">
                   <span className="text-zinc-400">Releases & Notes</span>
                   <button
                     onClick={() => handleOpenUrl("https://github.com/codecheesee/altspace/releases")}
@@ -1125,6 +1125,37 @@ export function LicenseModal({
                     <ExternalLink className="w-2.5 h-2.5" />
                   </button>
                 </div>
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-zinc-400">Community</span>
+                  <button
+                    onClick={() => handleOpenUrl("https://discord.gg/EtVCN9m7JV")}
+                    className="text-indigo-400 hover:text-indigo-300 underline cursor-pointer flex items-center gap-1 font-medium"
+                  >
+                    Discord Server
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Developer Community Card */}
+              <div className="p-3 rounded-lg border border-indigo-500/20 bg-indigo-500/[0.06] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">Developer Community</span>
+                  <span className="text-[10px] font-mono text-indigo-300 px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">
+                    Discord
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-normal">
+                  Join the Codecheesee Builds Discord for systems engineering discussion, release alerts, and technical support.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleOpenUrl("https://discord.gg/EtVCN9m7JV")}
+                  className="w-full py-1.5 px-3 rounded-md bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <span>Join Discord Community</span>
+                  <ExternalLink className="w-3 h-3 text-indigo-300" />
+                </button>
               </div>
             </div>
           )}

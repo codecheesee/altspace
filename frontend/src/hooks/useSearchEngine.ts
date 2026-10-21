@@ -356,6 +356,35 @@ export function useSearchEngine({
         path: `theme://${t.id}`,
       }));
 
+      // Discord Community Command
+      const isCommunityFilter =
+        qLower === ":discord" ||
+        qLower === ":community" ||
+        qLower === "discord" ||
+        qLower === "community";
+      if (isCommunityFilter) {
+        setItems([
+          {
+            id: "util-discord",
+            title: "Join Discord Developer Community",
+            subtitle: "Connect with developers, get AltSpace support, and discuss local systems engineering (discord.gg/EtVCN9m7JV)",
+            category: "Command",
+            iconType: "cmd",
+            path: "altspace://discord",
+          },
+          {
+            id: "util-community",
+            title: "Star on GitHub & Discussions",
+            subtitle: "View the open-source repository (codecheesee/altspace) and star the project",
+            category: "Command",
+            iconType: "cmd",
+            path: "altspace://community",
+          },
+        ]);
+        setSelectedIndex(0);
+        return;
+      }
+
       // System Update
       const isUpdateFilter = qLower === ":update" || qLower === ":upgrade" || qLower === "update";
       const updateItems: Item[] = isUpdateFilter

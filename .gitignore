@@ -39,6 +39,8 @@ Desktop.ini
 
 # Scratch & test scripts
 scripts/keys/
+distribution/release-webhook.json
+scripts/tools/
 *.key
 license_master.json
 scratch_capture.ps1

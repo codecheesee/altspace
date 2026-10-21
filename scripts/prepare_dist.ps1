@@ -3,22 +3,28 @@ $dist = Join-Path $PSScriptRoot '..\dist_artifacts'
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
 $releaseBinary = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe'
-$nsisSetup = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis\altspace_2.0.0_x64-setup.exe'
-$msiSetup = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi\altspace_2.0.0_x64_en-US.msi'
+$nsisDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis'
+$msiDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi'
 $dll = Join-Path $PSScriptRoot '..\bin\Everything64.dll'
 $installerScript = Join-Path $PSScriptRoot '..\install.ps1'
 
 if (-not (Test-Path $releaseBinary)) {
     throw "Release binary not found at $releaseBinary"
 }
-if (-not (Test-Path $nsisSetup)) {
-    throw "NSIS setup not found at $nsisSetup"
+
+$nsisSetupItem = Get-ChildItem -Path $nsisDir -Filter '*_x64-setup.exe' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+if (-not $nsisSetupItem) {
+    throw "NSIS setup not found in $nsisDir"
 }
+$nsisSetup = $nsisSetupItem.FullName
+
+$msiSetupItem = Get-ChildItem -Path $msiDir -Filter '*_x64_en-US.msi' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+$msiSetup = if ($msiSetupItem) { $msiSetupItem.FullName } else { $null }
 
 Copy-Item $releaseBinary (Join-Path $dist 'altspace.exe') -Force
 Copy-Item $releaseBinary (Join-Path $dist 'AltSpace-Portable.exe') -Force
 Copy-Item $nsisSetup (Join-Path $dist 'AltSpace-Setup-x64.exe') -Force
-if (Test-Path $msiSetup) {
+if ($msiSetup -and (Test-Path $msiSetup)) {
     Copy-Item $msiSetup (Join-Path $dist 'AltSpace-MSI-x64.msi') -Force
 }
 Copy-Item $dll (Join-Path $dist 'Everything64.dll') -Force

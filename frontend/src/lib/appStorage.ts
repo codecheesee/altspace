@@ -307,4 +307,12 @@ export const UTILITY_ITEMS: Item[] = [
     iconType: "cmd",
     path: "altspace://community",
   },
+  {
+    id: "util-discord",
+    title: "Join Discord Developer Community",
+    subtitle: "Connect with developers, get AltSpace support, and discuss local systems engineering",
+    category: "Command",
+    iconType: "cmd",
+    path: "altspace://discord",
+  },
 ];

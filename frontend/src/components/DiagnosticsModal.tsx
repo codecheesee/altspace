@@ -42,7 +42,7 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
       const snap = generateDiagnosticSnapshot({
         app: {
           name: "AltSpace",
-          version: "2.0.0",
+          version: "2.1.0",
           safeMode,
         },
         storageAndIndex: {

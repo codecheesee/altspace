@@ -1,6 +1,7 @@
 # AltSpace — Native Windows Command Palette and Launcher
 
 [![CI / Release](https://github.com/codecheesee/altspace/actions/workflows/release.yml/badge.svg)](https://github.com/codecheesee/altspace/actions/workflows/release.yml)
+[![Discord Community](https://img.shields.io/discord/1562508214061236364?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/EtVCN9m7JV)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform: Windows 10 / 11](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg?logo=windows)](https://github.com/codecheesee/altspace)
 [![Stack: Rust + React 19 + Tailwind v4](https://img.shields.io/badge/Stack-Rust%20%7C%20React%2019%20%7C%20Tailwind%20v4-7928CA.svg)](https://github.com/codecheesee/altspace)
@@ -269,6 +270,15 @@ cargo test --manifest-path src-tauri/Cargo.toml
 # Run Rust Clippy strict linting
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 ```
+
+---
+
+## Community and Support
+
+- **Discord Community**: Join the official [Codecheesee Builds Discord Server](https://discord.gg/EtVCN9m7JV) for technical discussions, release announcements, and developer support.
+- **GitHub Issues**: Report bugs and submit reproducible test cases via the [Issue Tracker](https://github.com/codecheesee/altspace/issues).
+- **GitHub Discussions**: Propose feature specifications or architectural proposals in [Discussions](https://github.com/codecheesee/altspace/discussions).
+- **Contributing**: Review the [Contributing Guidelines](.github/CONTRIBUTING.md) to inspect open issues and contributor bounties.
 
 ---
 

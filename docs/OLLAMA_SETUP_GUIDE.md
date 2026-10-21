@@ -1,146 +1,143 @@
-# AltSpace Local AI: Complete Ollama Setup & Optimization Guide
+# AltSpace Local AI: Ollama Setup and Configuration Guide
 
-Welcome to local, private developer intelligence. AltSpace is built with a **Zero-Tax Local AI** philosophy: you can run state-of-the-art open-source LLMs directly on your Windows PC with **100% privacy, zero subscription fees, zero token limits, and zero cloud telemetry**.
+This document describes the installation, configuration, and optimization procedures for running local language models with AltSpace on Windows 10 and Windows 11 (x64) via [Ollama](https://ollama.com/).
 
-This guide walks you through installing, configuring, and optimizing [Ollama](https://ollama.com/) for AltSpace on Windows 10 & 11 in under 3 minutes.
+AltSpace connects to Ollama endpoints running on `localhost:11434` using standard HTTP and Model Context Protocol (MCP) conventions. All model inference occurs locally on device with zero cloud data transmission, zero subscription fees, and no external API keys required.
 
 ---
 
-## 🚀 Quick Start (Under 2 Minutes)
+## 1. Installation
 
-### Method 1: Via Windows Terminal (Recommended)
+### Option A: Windows Package Manager (winget)
 
-Open **PowerShell** or **Windows Terminal** and run:
+Execute the following command in PowerShell or Windows Terminal:
 
 ```powershell
 winget install Ollama.Ollama
 ```
 
-*Press `Y` if prompted to accept source agreements.*
+### Option B: Executable Installer
 
-### Method 2: Direct Installer
+1. Download the installer from the official distribution endpoint: [ollama.com/download/windows](https://ollama.com/download/windows).
+2. Run `OllamaSetup.exe` to complete the installation.
+3. The installer registers `ollama.exe` in the system path (`%LOCALAPPDATA%\Programs\Ollama`) and launches the background daemon in the Windows notification area (system tray).
 
-1. Download the official Windows installer from: **[ollama.com/download/windows](https://ollama.com/download/windows)**
-2. Double-click `OllamaSetup.exe` and follow the prompt.
-3. Once installed, Ollama will automatically start as a background service and display an icon in your Windows taskbar system tray.
+### Verification
 
-### Step 2: Verify Installation
-
-Open a terminal and run:
+Verify that the CLI binary is available and listening:
 
 ```powershell
 ollama --version
 ```
 
-If it prints `ollama version 0.x.x`, Ollama is ready!
+Verify that the local API endpoint responds:
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags"
+```
 
 ---
 
-## 🧠 Choosing the Best Model for Your PC
+## 2. Model Selection and Memory Profiles
 
-Ollama allows you to pull and run models with a single command. Depending on your PC's available RAM and GPU VRAM, choose the model that fits your hardware:
+Local model selection depends on the host system memory and GPU VRAM capacity:
 
-| Model Name | Download Size | Minimum RAM / VRAM | Best For | Pull Command |
-| :--- | :--- | :--- | :--- | :--- |
-| **`llama3.2`** *(Recommended Default)* | ~2.0 GB | 8 GB RAM / 2 GB VRAM | Fast general questions, definitions, regex, shell syntax | `ollama run llama3.2` |
-| **`qwen2.5-coder:7b`** | ~4.7 GB | 16 GB RAM / 6 GB VRAM | Elite coding, TypeScript, Rust, Python, Dockerfiles | `ollama run qwen2.5-coder:7b` |
-| **`deepseek-r1:7b`** | ~4.7 GB | 16 GB RAM / 6 GB VRAM | Step-by-step reasoning, tricky debugging, algorithm design | `ollama run deepseek-r1:7b` |
-| **`phi3.5`** | ~2.2 GB | 8 GB RAM / 2 GB VRAM | Ultra-efficient lightweight model designed by Microsoft | `ollama run phi3.5` |
-| **`mistral:7b`** | ~4.1 GB | 16 GB RAM / 6 GB VRAM | Excellent balance of technical depth and creative writing | `ollama run mistral` |
+| Model Identifier | Parameter Count | Disk Footprint | Minimum Memory / VRAM | Recommended Workload | Pull Command |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `llama3.2` | 3B | ~2.0 GB | 8 GB RAM / 2 GB VRAM | Fast general queries, syntax explanation, terminal assistance | `ollama run llama3.2` |
+| `qwen2.5-coder:7b` | 7B | ~4.7 GB | 16 GB RAM / 6 GB VRAM | Source code generation, TypeScript, Rust, PowerShell | `ollama run qwen2.5-coder:7b` |
+| `deepseek-r1:7b` | 7B | ~4.7 GB | 16 GB RAM / 6 GB VRAM | Multi-step reasoning, architectural planning, debugging | `ollama run deepseek-r1:7b` |
+| `phi3.5` | 3.8B | ~2.2 GB | 8 GB RAM / 2 GB VRAM | Low-footprint reasoning and text structuring | `ollama run phi3.5` |
+| `mistral:7b` | 7B | ~4.1 GB | 16 GB RAM / 6 GB VRAM | Technical summarization and command translation | `ollama run mistral` |
 
-### Starting Your First Model
+### Pulling a Model
 
-To download and immediately test your model, run:
+To download and initialize the default recommended model, execute:
 
 ```powershell
 ollama run llama3.2
 ```
 
-Ollama will stream the download progress. Once downloaded, you can chat with it in the terminal, or simply close the terminal—Ollama keeps the model loaded in the background for AltSpace!
+Once the model weights are retrieved, the Ollama service maintains the model in memory. The terminal window may be closed; AltSpace communicates directly with the background daemon.
 
 ---
 
-## ⚡ Using AI in AltSpace
+## 3. AltSpace Integration
 
-Once Ollama is installed, AltSpace automatically detects it on `http://localhost:11434`.
+Once the Ollama daemon is active on `http://localhost:11434`, AltSpace detects the endpoint automatically.
 
-1. Press <kbd>Alt</kbd> + <kbd>Space</kbd> anywhere in Windows.
-2. Type `?` followed by your question:
+1. Invoke the AltSpace palette using the global hotkey (`Alt + Space`).
+2. Prefix queries with `?`:
    ```text
-   ? how to write a rust function that reads a file asynchronously
+   ? explain how to configure windows named pipes in rust
    ```
-   or
-   ```text
-   ? explain the difference between a mutex and a semaphore
-   ```
-3. AltSpace will stream the answer into the right-hand preview card.
-4. Press <kbd>Enter</kbd> or click **Copy** to copy the code or answer directly to your clipboard.
+3. AltSpace streams the response tokens into the contextual preview pane.
+4. Press <kbd>Enter</kbd> or click **Copy** to place the result on the system clipboard.
 
-> [!TIP]
-> **Deterministic Fast Path (<1ms, No AI Required)**:
-> Queries like `? fix 5173`, `? reclaim memory`, or `? clean docker` don't require Ollama at all. AltSpace uses a deterministic local rule engine to inspect ports, WSL distros, and Docker containers instantly.
+> [!NOTE]
+> **Deterministic Fast-Path Execution**:
+> Commands such as `? fix 5173`, `? reclaim memory`, and `? clean docker` do not execute model inference. They are evaluated in under 1 millisecond by AltSpace's local deterministic rule engine, which directly queries Win32 network tables, Hyper-V interfaces, and Docker daemon sockets.
 
 ---
 
-## 🛠️ Windows Power User Configurations
+## 4. Host Environment Configuration
 
-### 1. Save C: Drive Space (Move Models to D: or E: Drive)
+### Custom Storage Path (`OLLAMA_MODELS`)
 
-By default, Ollama stores downloaded models in `C:\Users\<YourUsername>\.ollama\models`. If your `C:` drive has limited space, you can easily point Ollama to a secondary SSD.
+By default, model blobs are stored under `%USERPROFILE%\.ollama\models`. To store weights on a secondary storage volume:
 
-1. Create a folder on your other drive (e.g., `D:\OllamaModels`).
-2. Open PowerShell as your standard user and run:
+1. Create a target directory (for example, `D:\OllamaModels`).
+2. Set the environment variable via PowerShell:
    ```powershell
    [System.Environment]::SetEnvironmentVariable('OLLAMA_MODELS', 'D:\OllamaModels', 'User')
    ```
-3. Restart Ollama:
-   - Right-click the Ollama llama icon in your system tray and click **Quit**.
-   - Launch **Ollama** again from the Windows Start menu.
-4. Future model downloads will now save directly to your `D:` drive!
+3. Restart the Ollama daemon via the system tray context menu.
 
-### 2. Allow WSL2 & Docker Access (`OLLAMA_HOST`)
+### Network Binding for WSL2 and Containers (`OLLAMA_HOST`)
 
-By default, Ollama only listens on `127.0.0.1`. If you want your WSL2 Linux distributions or Docker containers to talk to Ollama:
+By default, Ollama binds exclusively to the loopback interface (`127.0.0.1:11434`). To permit inbound connections from WSL2 distributions or local Docker containers:
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable('OLLAMA_HOST', '0.0.0.0:11434', 'User')
 ```
 
-Then restart Ollama from your system tray.
+Restart the daemon after modifying this variable.
 
-### 3. GPU Hardware Acceleration
+### Hardware Acceleration
 
-Ollama automatically detects and utilizes:
-- **NVIDIA GPUs** (CUDA)
-- **AMD GPUs** (ROCm)
-- **Intel Arc GPUs**
+Ollama automatically detects and initializes supported compute backends:
+- NVIDIA GPUs via CUDA
+- AMD GPUs via ROCm
+- Intel GPUs via oneAPI / Level Zero
 
-To verify if your GPU is being used during inference, open Windows Task Manager (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd>) and watch the **GPU Dedicated Memory / Compute Engine** graph while AltSpace generates an answer.
-
----
-
-## ❓ Troubleshooting & FAQs
-
-### Q: AltSpace displays "Ollama is not running on localhost:11434"
-- **Cause**: The Ollama background process is stopped or has not been installed yet.
-- **Solution**: Search for **Ollama** in your Windows Start menu and launch it, or run `ollama serve` in a terminal. Check your system tray to ensure the Ollama icon is visible.
-
-### Q: Port 11434 is already in use by another app
-- **Solution**: Open AltSpace (<kbd>Alt</kbd>+<kbd>Space</kbd>), type `:11434` to find the process holding the port, and click **Kill Process** to free it.
-
-### Q: Windows Defender / Firewall Warning
-- **Solution**: When first launched, Windows Defender may ask if Ollama can accept connections. Click **Allow access** for **Private networks**.
-
-### Q: Can I use cloud models like Claude 3.7 or GPT-4o instead?
-- **Yes!** AltSpace includes a **BYOK (Bring Your Own Key)** hardware-secured vault.
-- Press <kbd>Ctrl</kbd> + <kbd>,</kbd> to open AltSpace Settings.
-- Under **Local Copilot**, add your Anthropic, OpenAI, or DeepSeek API key. Keys are encrypted with Windows DPAPI and never sent to any third party.
+GPU offloading and layer allocation can be verified during generation via Windows Task Manager (`Ctrl + Shift + Esc`) under the Performance tab.
 
 ---
 
-## 📚 Official Resources
+## 5. Troubleshooting
 
-- [Official Ollama Website](https://ollama.com/)
-- [Ollama Model Library](https://ollama.com/library)
-- [Official Ollama GitHub Repository](https://github.com/ollama/ollama)
-- [AltSpace GitHub Repository](https://github.com/codecheesee/altspace)
+### Port Collision (11434)
+If port 11434 is occupied by an external service, query the owning process using AltSpace:
+1. Type `:11434` into the AltSpace omnibar.
+2. Review the process identifier and binary name.
+3. Terminate the blocking process using the palette action.
+
+### Connection Timeout
+If AltSpace indicates that Ollama is offline:
+1. Verify that `ollama.exe` is running in Task Manager.
+2. Check `http://127.0.0.1:11434/api/tags` in a browser or via `curl.exe http://127.0.0.1:11434/api/tags`.
+3. If the daemon is stopped, start it via the Start Menu shortcut or by running `ollama serve`.
+
+### Alternative Cloud Inference (BYOK)
+For users requiring frontier cloud models alongside local inference, AltSpace includes a hardware-backed DPAPI key vault:
+1. Press `Ctrl + ,` to open Settings.
+2. Select **Local Copilot**.
+3. Provide an Anthropic, OpenAI, or DeepSeek API key. The key is encrypted via Windows DPAPI and stored locally without external telemetry.
+
+---
+
+## 6. Upstream Documentation
+
+- [Ollama Official Documentation](https://ollama.com/)
+- [Ollama Model Repository](https://ollama.com/library)
+- [Ollama GitHub Project](https://github.com/ollama/ollama)

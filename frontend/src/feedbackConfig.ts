@@ -8,8 +8,8 @@
  */
 
 export const DISCORD_WEBHOOK_URL = "";
-export const DISCORD_INVITE_URL = "https://discord.gg/codecheesee";
-export const DISCORD_SUPPORT_URL = "https://discord.gg/codecheesee";
+export const DISCORD_INVITE_URL = "https://discord.gg/EtVCN9m7JV";
+export const DISCORD_SUPPORT_URL = "https://discord.gg/EtVCN9m7JV";
 export const DISCORD_BUG_REPORTS_URL = "https://github.com/codecheesee/altspace/issues/new?template=bug_report.md";
 export const DISCORD_FEATURE_REQUESTS_URL = "https://github.com/codecheesee/altspace/discussions/categories/ideas";
 

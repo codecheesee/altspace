@@ -50,8 +50,8 @@ export function UpdateModal({
         // Dev / Browser preview simulation
         setInfo({
           has_update: false,
-          current_version: "2.0.0",
-          latest_version: "2.0.0",
+          current_version: "2.1.0",
+          latest_version: "2.1.0",
           release_name: "AltSpace 2.0.0 Developer Control Plane",
           release_url: "https://github.com/codecheesee/altspace/releases",
           release_notes: "Latest developer release with DPAPI, Docker, WSL, and Action Planner.",
@@ -174,7 +174,7 @@ export function UpdateModal({
             <div className="space-y-0.5">
               <div className="text-[10px] text-zinc-500 font-mono uppercase">Current Version</div>
               <div className="text-xs font-semibold text-zinc-300 font-mono">
-                v{info?.current_version || "2.0.0"}
+                v{info?.current_version || "2.1.0"}
               </div>
             </div>
 
