@@ -236,6 +236,22 @@ export function isPremiumSearchQuery(query: string, searchAllDrives = false): bo
 }
 export const UTILITY_ITEMS: Item[] = [
   {
+    id: "util-cockpit",
+    title: "Docker + WSL2 Environment Cockpit",
+    subtitle: "Manage Compose containers, inspect distro status, and reclaim WSL RAM (:docker)",
+    category: "Command",
+    iconType: "cmd",
+    path: ":docker",
+  },
+  {
+    id: "util-features",
+    title: "Features & Modules Settings",
+    subtitle: "Toggle, configure, and inspect health of AltSpace features (Ctrl+,)",
+    category: "Setting",
+    iconType: "setting",
+    path: "altspace://features",
+  },
+  {
     id: "util-about",
     title: "About & Account",
     subtitle: "View subscription plan, permissions matrix, hardware machine ID, and sign in",

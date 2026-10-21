@@ -122,6 +122,45 @@ Inspect and export telemetry safely without leaking credentials, private keys, o
 ### 12. Validated Configuration Sync (`.altconfig`)
 Export or import non-sensitive preferences (theme, custom accent, autostart, sidebar visibility, multi-drive preference). The validator strictly rejects prototype pollution and credential keys (`api_key`, `token`, `password`, `vault`) and calculates a dry-run diff preview before applying changes.
 
+### 13. Deep Process Forensics & Port Verification
+Port inspection goes beyond simple PID listening.
+- Toolhelp32 process snapshotting traces child and parent process ancestry (e.g. `npm` &rarr; `node.exe` &rarr; `vite`).
+- Automatically scans current working directories and package descriptors to identify project boundaries.
+- The **Free & Verify Port** capability kills zombie processes and performs live TCP table polling verification to guarantee the port is released.
+
+### 14. 100% Offline Developer Transform Toolkit
+Execute offline formatting, conversions, and cryptographic transforms in `< 1ms` with zero cloud egress:
+- **JWT Inspector**: Decode headers and payloads with expiration status, lifetime timers, and algorithm verification.
+- **JSON &harr; YAML Studio**: Bidirectional format conversion with indentation formatting and syntax validation.
+- **Regex Lab**: Real-time regex testing with capture group extraction and syntax error highlighting.
+- **Hash Calculator**: Compute SHA-256 and MD5 checksums locally with 1-click clipboard copying.
+- **UUID & Timestamp**: Generate cryptographically secure UUID v4 and convert ISO 8601 strings to Unix epoch timestamps.
+
+### 15. DPAPI Secret & Environment Switcher
+Eliminate `.env` file leaks and plaintext secrets in development workflows:
+- Profiles (Development, Staging, Production) are encrypted at rest using Windows DPAPI (`CryptProtectData`).
+- Keys are masked in memory and injected directly into child process environment blocks (`CreateProcessW` `lpEnvironment`), leaving zero disk or `localStorage` footprint.
+
+### 16. Docker & WSL2 Environment Cockpit
+Manage local virtualized environments directly from the palette:
+- Enumerate running containers, image tags, port bindings, and Docker Compose service labels with zero shell parsing vulnerabilities.
+- Inspect WSL2 distributions and monitor real-time Hyper-V memory consumption (`vmmem`).
+- One-click memory reclaim (`wsl --shutdown`) safely returns gigabytes of dynamic RAM back to Windows host memory.
+
+### 17. Private Local Copilot & Multi-Step Approved Actions
+AltSpace provides a Three-Lane model architecture for intelligent developer assistance:
+- **Lane A (Free Forever)**: 100% offline local Ollama inference (`http://localhost:11434`), zero token fees.
+- **Lane B (BYOK Pro)**: Direct, private access to Anthropic Claude 3.7, OpenAI GPT-4o, or DeepSeek using API keys encrypted in your Windows DPAPI vault.
+- **Deterministic Fast Path**: Natural language diagnostics (e.g. `? fix 5173`, `? reclaim memory`, `? docker restart`) synthesize multi-step action plans in `< 1ms`.
+- **Volatile Failure Ring Buffer**: Automatically captures shell crash exits and stderr in an in-memory ring buffer (10 items max, zero disk writes) to synthesize instant recovery workflows.
+- **Glassmorphic Stepper**: Preview planned actions, observe real-time execution pills, and revert modifications with 1-click rollback.
+
+### 18. Unified Capability Matrix & Hybrid Toggles
+Every developer feature can be toggled via two non-intrusive paths:
+- **Option A (Settings)**: Press <kbd>Ctrl</kbd>+<kbd>,</kbd> to manage all capabilities with circuit-breaker health indicators.
+- **Option C (Omnibar)**: Type `> toggle <id>` (e.g. `> toggle docker_wsl`) for instant inline state changes.
+- **Invisibility Rule**: Toggled-off features are completely hidden from search, hotkeys, and tabs, failing closed in Rust IPC in `< 1µs`.
+
 ---
 
 ## Command Palette Syntax
@@ -129,17 +168,23 @@ Export or import non-sensitive preferences (theme, custom accent, autostart, sid
 | Query / Shortcut | Action | Quota Impact |
 | :--- | :--- | :--- |
 | `<search>` | Search installed applications, indexed files, and system settings | **Free Forever** |
-| `:<port>` *(e.g. `:3000`)* | Inspect process listening on port and terminate on <kbd>Enter</kbd> | **Free Forever** |
+| `:<port>` *(e.g. `:3000`)* | Inspect process listening on port with parent tree and 1-click verified release | **Free Forever** |
+| `jwt`, `json`, `yaml` | Open offline JWT inspector and JSON &harr; YAML converter | **Free Forever** |
+| `regex`, `uuid`, `hash`, `ts` | Instant offline regex tester, UUID v4 generator, SHA-256 hash, timestamp tools | **Free Forever** |
+| `docker` | Inspect active containers, Compose labels, and trigger container restart | **Free Forever** |
+| `wsl` | Monitor WSL2 distros and Hyper-V RAM footprint with 1-click memory reclaim | **Free Forever** |
+| `?<prompt>` *(e.g. `? fix 5173`)* | Synthesize multi-step approved action recovery plans via local Ollama or BYOK | **Free Forever (Local)** |
+| `> toggle <id>` | Instantly toggle developer capability on/off inline | **Free Forever** |
 | `:store` / `:plugin` | Browse and manage community extensions | **Free Forever** |
 | `:theme` | Open dynamic theme switcher | **Free Forever** |
 | `:update` | Check for updates and open latest GitHub release | **Free Forever** |
 | `Alt + C` | Switch directly to Clipboard History tab | **Free Forever** |
 | `Alt + P` | Switch directly to Port Inspector tab | **Free Forever** |
 | `Alt + H` | Open Action Execution Timeline and One-Click Undo Drawer | **Free Forever** |
+| `Ctrl + ,` | Open Settings, Capability Matrix, and DPAPI Secret / BYOK Vault | **Free Forever** |
 | `Ctrl + Shift + D` | Open Privacy Diagnostics & Sanitized Report Modal | **Free Forever** |
 | `Ctrl + B` | Toggle contextual Details Sidebar | **Free Forever** |
 | `Ctrl + K` | Open contextual Action Drawer for selected item | **Free Forever** |
-| `?<prompt>` *(or `ai:`)* | Query local/hosted AI via Model Context Protocol | Trial Quota (100 actions / 30 days) |
 | `><cmd>` *(or `cmd:`)* | Execute native terminal shell command | Trial Quota (100 actions / 30 days) |
 
 ---
@@ -204,10 +249,10 @@ npm install
 npm run tauri dev
 ```
 
-### Automated Test Suite (109 Tests)
+### Automated Test Suite (128 Tests)
 
 ```bash
-# Run 70 frontend unit, red-team security, and governance tests
+# Run 77 frontend unit, red-team security, governance, and launch kit tests
 node --test src/lib/*.test.mjs ../scripts/*.test.mjs
 
 # Run frontend production build & type checks
@@ -216,7 +261,7 @@ npm run build
 # Run frontend linter
 npm run lint
 
-# Run 39 native Rust unit and integration tests
+# Run 51 native Rust unit and integration tests (including DPAPI vault, ports, and action broker)
 cargo test --manifest-path src-tauri/Cargo.toml
 
 # Run Rust Clippy strict linting

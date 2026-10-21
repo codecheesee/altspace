@@ -166,6 +166,102 @@ export function useContextualActions({
           },
         });
       } else if (selectedItem) {
+        if (selectedItem.path.startsWith("docker://")) {
+          const cid = selectedItem.path.replace("docker://", "");
+          actions.push({
+            id: "docker-open-shell",
+            title: "Open Interactive Shell in Terminal",
+            section: "DOCKER ACTIONS",
+            shortcut: "↵",
+            icon: <Terminal className="w-4 h-4 text-sky-400" />,
+            run: () => {
+              onItemAction(selectedItem);
+              onCloseActionsModal();
+            },
+          });
+          actions.push({
+            id: "docker-restart-container",
+            title: "Restart Container",
+            section: "DOCKER ACTIONS",
+            icon: <RefreshCw className="w-4 h-4 text-amber-400" />,
+            run: () => {
+              if (tauriInvoke) tauriInvoke("docker_container_action", { id: cid, action: "restart" });
+              onCloseActionsModal();
+            },
+          });
+          actions.push({
+            id: "docker-stop-container",
+            title: "Stop Container",
+            section: "DOCKER ACTIONS",
+            icon: <Power className="w-4 h-4 text-rose-400" />,
+            run: () => {
+              if (tauriInvoke) tauriInvoke("docker_container_action", { id: cid, action: "stop" });
+              onCloseActionsModal();
+            },
+          });
+          actions.push({
+            id: "docker-copy-id",
+            title: `Copy Container ID (${cid.slice(0, 12)})`,
+            section: "STANDARD ACTIONS",
+            shortcut: "Ctrl+C",
+            icon: <Copy className="w-4 h-4 text-neutral-400" />,
+            run: () => {
+              onCopyClipboard(cid);
+              onCloseActionsModal();
+            },
+          });
+          return actions;
+        }
+
+        if (selectedItem.path.startsWith("wsl://")) {
+          const distro = selectedItem.path.replace("wsl://", "");
+          actions.push({
+            id: "wsl-launch-shell",
+            title: distro === "shutdown" ? "Reclaim WSL Virtual Memory" : `Launch ${distro} Shell in Windows Terminal`,
+            section: "WSL ACTIONS",
+            shortcut: "↵",
+            icon: <Terminal className="w-4 h-4 text-sky-400" />,
+            run: () => {
+              onItemAction(selectedItem);
+              onCloseActionsModal();
+            },
+          });
+          if (distro !== "shutdown") {
+            actions.push({
+              id: "wsl-terminate-distro",
+              title: `Terminate Distribution (${distro})`,
+              section: "WSL ACTIONS",
+              icon: <Power className="w-4 h-4 text-rose-400" />,
+              run: () => {
+                if (tauriInvoke) tauriInvoke("wsl_terminate_distro", { distro });
+                onCloseActionsModal();
+              },
+            });
+          }
+          actions.push({
+            id: "wsl-reclaim-ram",
+            title: "Reclaim WSL Virtual Memory (wsl --shutdown)",
+            section: "WSL ACTIONS",
+            icon: <RefreshCw className="w-4 h-4 text-emerald-400" />,
+            run: () => {
+              if (tauriInvoke) tauriInvoke("wsl_shutdown");
+              onCloseActionsModal();
+            },
+          });
+          actions.push({
+            id: "wsl-copy-name",
+            title: `Copy Identifier (${distro})`,
+            section: "STANDARD ACTIONS",
+            shortcut: "Ctrl+C",
+            icon: <Copy className="w-4 h-4 text-neutral-400" />,
+            run: () => {
+              onCopyClipboard(distro);
+              onCloseActionsModal();
+            },
+          });
+          return actions;
+        }
+
         const isGame = selectedItem.category === "Game";
         const isApp = selectedItem.category === "Application";
         const isFolder = selectedItem.category === "Folder";

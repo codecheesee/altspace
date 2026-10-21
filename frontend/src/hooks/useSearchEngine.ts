@@ -16,12 +16,23 @@ import {
 } from "../lib/appStorage";
 import { getLicenseStatus, isUnlimitedTier } from "../lib/license";
 import { streamOllamaResponse, OLLAMA_DEFAULT_MODEL } from "../lib/ai";
+import { evaluateDeveloperTransform } from "../lib/developerTransforms";
+import {
+  getFeatureMatrix,
+  isFeatureEnabled,
+  FEATURE_REGISTRY,
+  type FeatureId,
+} from "../lib/featureMatrix";
+import { listEnvProfiles } from "../lib/secureVault";
+import { getEnvironmentCockpit } from "../lib/dockerWsl";
+import { isPlanQuery, synthesizeActionPlan } from "../lib/actionPlanner";
 import type {
   Item,
   Mode,
   SpecialCard,
   GameItem,
   ShellResult,
+  ActionPlan,
 } from "../types";
 
 export interface PluginItem {
@@ -125,11 +136,29 @@ export function useSearchEngine({
     return () => clearTimeout(timer);
   }, [query]);
 
+  const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
+
+  // Handle Action Plan synthesis (? fix, ? clean, ? reclaim, etc.)
+  useEffect(() => {
+    const qTrim = query.trim();
+    if (isPlanQuery(qTrim) && isFeatureEnabled("local_copilot")) {
+      let active = true;
+      synthesizeActionPlan(qTrim).then((p) => {
+        if (active) setActionPlan(p);
+      });
+      return () => {
+        active = false;
+      };
+    } else {
+      setActionPlan(null);
+    }
+  }, [query]);
+
   // Handle AI query streaming (? or ai: prompt)
   useEffect(() => {
     const qTrim = query.trim();
     const isAiQuery = qTrim.startsWith("?") || qTrim.toLowerCase().startsWith("ai:");
-    if (!isAiQuery) {
+    if (!isAiQuery || (isPlanQuery(qTrim) && isFeatureEnabled("local_copilot"))) {
       if (aiAbortController.current) {
         aiAbortController.current.abort();
         aiAbortController.current = null;
@@ -203,6 +232,27 @@ export function useSearchEngine({
 
       // Check if AI query
       if (qTrim.startsWith("?") || qLower.startsWith("ai:")) {
+        if (isPlanQuery(qTrim) && isFeatureEnabled("local_copilot")) {
+          synthesizeActionPlan(qTrim).then((plan) => {
+            if (plan) {
+              const planItems: Item[] = plan.steps.map((st, i) => ({
+                id: `step-${st.id}`,
+                title: `${i + 1}. ${st.title}`,
+                subtitle: `${st.risk_tier === "read_only_auto" ? "Safe (Auto)" : "Review Required"} • ${st.description}`,
+                category: "Command",
+                iconType: "cmd",
+                path: `plan-exec://${plan.id}/${st.id}`,
+              }));
+              setItems(planItems);
+              setSelectedIndex(0);
+            } else {
+              setItems([]);
+              setSelectedIndex(0);
+            }
+          });
+          return;
+        }
+
         setItems([]);
         setSelectedIndex(0);
         return;
@@ -339,6 +389,184 @@ export function useSearchEngine({
         return;
       }
 
+      // Features & Modules Quick Toggle (Omnibar Option C)
+      const isFeatureList =
+        qLower === "features" ||
+        qLower === ":features" ||
+        qLower === "feature" ||
+        qLower === ":feature" ||
+        qLower === "modules" ||
+        qLower === ":modules";
+
+      const isFeatureCommand =
+        qLower.startsWith("toggle ") ||
+        qLower.startsWith(":toggle ") ||
+        qLower.startsWith("enable ") ||
+        qLower.startsWith(":enable ") ||
+        qLower.startsWith("disable ") ||
+        qLower.startsWith(":disable ");
+
+      if (isFeatureList || isFeatureCommand) {
+        const matrix = getFeatureMatrix();
+        const searchTerm = qLower.replace(/^(:?toggle|:?enable|:?disable)\s*/, "").trim();
+
+        const matchedIds = (Object.keys(FEATURE_REGISTRY) as FeatureId[]).filter((fid) => {
+          if (!searchTerm) return true;
+          const meta = FEATURE_REGISTRY[fid];
+          return (
+            meta.name.toLowerCase().includes(searchTerm) ||
+            meta.keywords.some((k) => k.toLowerCase().includes(searchTerm)) ||
+            fid.toLowerCase().includes(searchTerm)
+          );
+        });
+
+        const featureItems: Item[] = matchedIds.map((fid) => {
+          const meta = FEATURE_REGISTRY[fid];
+          const isEnabled = matrix[fid]?.enabled ?? true;
+          return {
+            id: `feat-${fid}`,
+            title: `${meta.name}: ${isEnabled ? "Enabled" : "Disabled"}`,
+            subtitle: `${isEnabled ? "↵ Press Enter to Disable" : "↵ Press Enter to Enable"} • ${meta.description}`,
+            category: "Setting",
+            iconType: "setting",
+            path: `feature-toggle://${fid}`,
+          };
+        });
+
+        setItems(featureItems);
+        setSelectedIndex(0);
+        return;
+      }
+
+      // DPAPI Environment Profiles & Secret Switcher
+      const isEnvTrigger =
+        qLower === "env" ||
+        qLower === ":env" ||
+        qLower === "vault" ||
+        qLower === ":vault" ||
+        qLower.startsWith("env ") ||
+        qLower.startsWith(":env ") ||
+        qLower.startsWith("vault ");
+
+      if (isEnvTrigger && isFeatureEnabled("secret_vault")) {
+        const searchProfile = qLower.replace(/^(:?env|:?vault)\s*/, "").trim();
+        listEnvProfiles().then((profiles) => {
+          const matched = profiles.filter((p) =>
+            !searchProfile ? true : p.name.toLowerCase().includes(searchProfile)
+          );
+
+          const envItems: Item[] = matched.map((p) => ({
+            id: `env-${p.name}`,
+            title: `Environment: ${p.name}`,
+            subtitle: `${p.var_count} secrets [${p.redacted_keys.slice(0, 3).join(", ")}] • Enter to launch terminal`,
+            category: "Command",
+            iconType: "cmd",
+            path: `env-launch://${p.name}`,
+          }));
+
+          envItems.push({
+            id: "env-new-profile",
+            title: "Create Encrypted Environment Profile",
+            subtitle: "Add new DPAPI-encrypted environment variables & secrets (Ctrl+,)",
+            category: "Setting",
+            iconType: "setting",
+            path: "altspace://features",
+          });
+
+          setItems(envItems);
+          setSelectedIndex(0);
+        });
+        return;
+      }
+
+      // Docker & WSL2 Environment Cockpit (Option A + C Omnibar Trigger)
+      const isDockerWslTrigger =
+        qLower === "docker" ||
+        qLower === ":docker" ||
+        qLower === "wsl" ||
+        qLower === ":wsl" ||
+        qLower === "compose" ||
+        qLower === ":compose" ||
+        qLower === "containers" ||
+        qLower === "vmmem" ||
+        qLower.startsWith("docker ") ||
+        qLower.startsWith(":docker ") ||
+        qLower.startsWith("wsl ") ||
+        qLower.startsWith(":wsl ") ||
+        qLower.startsWith("compose ");
+
+      if (isDockerWslTrigger && isFeatureEnabled("docker_wsl")) {
+        const filterTerm = qLower.replace(/^(:?docker|:?wsl|:?compose)\s*/, "").trim();
+        getEnvironmentCockpit().then((data) => {
+          const cockpitItems: Item[] = [];
+
+          // 1. WSL Section
+          if (!qLower.startsWith("docker ") && !qLower.startsWith(":docker ")) {
+            for (const distro of data.wsl.distros) {
+              if (filterTerm && !distro.name.toLowerCase().includes(filterTerm)) continue;
+              const isRunning = distro.state.toLowerCase() === "running";
+              cockpitItems.push({
+                id: `wsl-${distro.name}`,
+                title: `WSL: ${distro.name} ${distro.is_default ? "★ Default" : ""}`,
+                subtitle: `${isRunning ? "● Running" : "○ Stopped"} • WSL ${distro.version} • Enter to launch shell`,
+                category: "Command",
+                iconType: "cmd",
+                path: `wsl://${distro.name}`,
+              });
+            }
+
+            if (data.wsl.vmmem_detected) {
+              cockpitItems.push({
+                id: "wsl-shutdown-action",
+                title: `Reclaim WSL Memory (${data.wsl.vmmem_ram_mb ? `${data.wsl.vmmem_ram_mb} MB` : "vmmem active"})`,
+                subtitle: "Shutdown WSL VM and free dynamic memory back to Windows",
+                category: "Command",
+                iconType: "cmd",
+                path: "wsl://shutdown",
+              });
+            }
+          }
+
+          // 2. Docker Section
+          if (!qLower.startsWith("wsl ") && !qLower.startsWith(":wsl ")) {
+            if (!data.docker.daemon_running) {
+              cockpitItems.push({
+                id: "docker-offline-action",
+                title: "Docker Desktop Daemon: Offline",
+                subtitle: "Docker pipe not responding • Press Enter to launch Docker Desktop",
+                category: "Command",
+                iconType: "cmd",
+                path: "docker://start-daemon",
+              });
+            } else {
+              for (const c of data.docker.containers) {
+                if (
+                  filterTerm &&
+                  !c.names.toLowerCase().includes(filterTerm) &&
+                  !c.image.toLowerCase().includes(filterTerm) &&
+                  !(c.compose_project && c.compose_project.toLowerCase().includes(filterTerm))
+                ) {
+                  continue;
+                }
+                const isRunning = c.state.toLowerCase() === "running";
+                cockpitItems.push({
+                  id: `docker-${c.id}`,
+                  title: `${c.names || c.id} (${c.image})`,
+                  subtitle: `${isRunning ? "● Running" : "○ Stopped"} ${c.compose_project ? `• [${c.compose_project}]` : ""} ${c.ports ? `• Ports: ${c.ports}` : ""}`,
+                  category: "Command",
+                  iconType: "cmd",
+                  path: `docker://${c.id}`,
+                });
+              }
+            }
+          }
+
+          setItems(cockpitItems);
+          setSelectedIndex(0);
+        });
+        return;
+      }
+
       // Instant optimistic fallback
       const fallbackList = getCachedOrInitialApps();
       if (!qTrim) {
@@ -468,14 +696,24 @@ export function useSearchEngine({
   const isTerminalCommand = currentMode === "all" && query.trim().startsWith(">");
   const terminalCmdText = isTerminalCommand ? query.trim().slice(1).trim() : "";
 
-  const calcResult = currentMode === "all" && !isAiQuery ? evaluateSmartQuery(query) : null;
-  const quickJumpResult = currentMode === "all" && !isAiQuery && !calcResult ? evaluateQuickJump(query) : null;
+  const transformResult =
+    currentMode === "all" && !isAiQuery && !isTerminalCommand
+      ? evaluateDeveloperTransform(query)
+      : null;
+
+  const calcResult = currentMode === "all" && !isAiQuery && !transformResult ? evaluateSmartQuery(query) : null;
+  const quickJumpResult = currentMode === "all" && !isAiQuery && !transformResult && !calcResult ? evaluateQuickJump(query) : null;
   const directSnippetMatch =
-    currentMode === "all" && !isAiQuery && !calcResult && !quickJumpResult && query.trim().startsWith("!")
+    currentMode === "all" && !isAiQuery && !transformResult && !calcResult && !quickJumpResult && query.trim().startsWith("!")
       ? searchSnippets(query.trim())[0] || null
       : null;
 
-  const specialCard: SpecialCard | null = isAiQuery
+  const specialCard: SpecialCard | null = actionPlan
+    ? {
+        kind: "plan",
+        data: actionPlan,
+      }
+    : isAiQuery
     ? {
         kind: "ai",
         data: {
@@ -495,6 +733,8 @@ export function useSearchEngine({
           isRunning: terminalRunning,
         },
       }
+    : transformResult
+    ? { kind: "transform", data: transformResult }
     : calcResult
     ? { kind: "calc", data: calcResult }
     : quickJumpResult

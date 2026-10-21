@@ -19,11 +19,19 @@ import {
   Search,
   BookOpen,
   Globe,
+  KeyRound,
+  Braces,
+  Sparkles,
+  Fingerprint,
+  Binary,
+  Clock,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { PRESET_THEMES } from "../../lib/theme";
 import { formatDisplayPath, getDriveOrigin } from "../../lib/formatters";
 import { MiniScreenBlueprint } from "../MiniScreenBlueprint";
+import { DockerWslPreview } from "./DockerWslPreview";
+import { ActionPlanPreview } from "./ActionPlanPreview";
 import type { Item, SpecialCard, GitInfo, ShellResult } from "../../types";
 
 interface ResultPreviewProps {
@@ -66,6 +74,135 @@ export function ResultPreview({
   onOpenQuickLook,
 }: ResultPreviewProps) {
   if (selectedSpecial) {
+    if (selectedSpecial.kind === "plan") {
+      return (
+        <ActionPlanPreview
+          plan={selectedSpecial.data}
+          onCopiedNotification={onCopiedNotification}
+        />
+      );
+    }
+
+    if (selectedSpecial.kind === "transform") {
+      const t = selectedSpecial.data;
+      return (
+        <div className="w-[300px] border-l border-white/[0.08] bg-[#141418] p-4 flex flex-col justify-between overflow-hidden select-none">
+          <div className="space-y-3.5 overflow-y-auto pr-0.5">
+            {/* Header Card */}
+            <div className="flex flex-col items-center text-center p-3.5 rounded-xl bg-gradient-to-b from-purple-500/[0.08] to-purple-500/[0.02] border border-purple-500/20 shadow-sm relative overflow-hidden">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-sm border bg-purple-500/15 text-purple-400 border-purple-500/30">
+                {t.kind === "jwt" && <KeyRound className="w-5 h-5" />}
+                {(t.kind === "json" || t.kind === "yaml") && <Braces className="w-5 h-5" />}
+                {t.kind === "regex" && <Sparkles className="w-5 h-5" />}
+                {t.kind === "hash" && <Fingerprint className="w-5 h-5" />}
+                {t.kind === "encoding" && <Binary className="w-5 h-5" />}
+                {(t.kind === "uuid" || t.kind === "time") && <Clock className="w-5 h-5" />}
+              </div>
+
+              <div className="text-sm font-bold font-mono text-white tracking-tight break-all">
+                {t.title}
+              </div>
+
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-purple-300 border border-white/[0.08]">
+                  {t.badge}
+                </span>
+                {t.meta?.algorithm && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/30">
+                    {t.meta.algorithm}
+                  </span>
+                )}
+                {t.meta?.expiresIn && (
+                  <span
+                    className={cn(
+                      "text-[10px] font-mono px-1.5 py-0.5 rounded flex items-center gap-1 border",
+                      t.meta.isExpired
+                        ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                        : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        t.meta.isExpired ? "bg-rose-400" : "bg-emerald-400 animate-pulse"
+                      )}
+                    />
+                    {t.meta.expiresIn}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Claims / Details breakdown */}
+            {t.kind === "jwt" && t.meta && (
+              <div className="space-y-1.5 text-xs font-mono">
+                {t.meta.subject && (
+                  <div className="flex justify-between items-center py-1 border-b border-white/[0.04]">
+                    <span className="text-zinc-500">Subject (sub)</span>
+                    <span className="text-zinc-200 truncate max-w-[150px]">{t.meta.subject}</span>
+                  </div>
+                )}
+                {t.meta.issuer && (
+                  <div className="flex justify-between items-center py-1 border-b border-white/[0.04]">
+                    <span className="text-zinc-500">Issuer (iss)</span>
+                    <span className="text-zinc-200 truncate max-w-[150px]">{t.meta.issuer}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Main Code Viewport */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                <span>Output Result</span>
+                <span className="text-zinc-500 font-mono">100% Offline</span>
+              </div>
+              <div className="bg-black/50 border border-white/[0.06] rounded-xl p-2.5 font-mono text-[11px] text-zinc-200 overflow-y-auto max-h-[180px] break-all leading-relaxed whitespace-pre-wrap selection:bg-purple-500/30">
+                {t.output}
+              </div>
+            </div>
+
+            {t.meta?.headerJson && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                  Token Header
+                </span>
+                <div className="bg-black/40 border border-white/[0.04] rounded-lg p-2 font-mono text-[10.5px] text-zinc-400 max-h-16 overflow-y-auto whitespace-pre-wrap">
+                  {t.meta.headerJson}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-3 border-t border-white/[0.06] space-y-1.5">
+            <button
+              onClick={() => {
+                onCopyClipboard(t.output);
+                onCopiedNotification(`Copied ${t.title}!`);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/30 transition shadow-sm cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy Output (Enter)</span>
+            </button>
+
+            {t.meta?.yamlOutput && (
+              <button
+                onClick={() => {
+                  onCopyClipboard(t.meta?.yamlOutput || "");
+                  onCopiedNotification("YAML copied to clipboard!");
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] font-medium text-zinc-300 border border-white/[0.06] transition cursor-pointer"
+              >
+                <span>Copy as YAML</span>
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     if (selectedSpecial.kind === "calc") {
       return (
         <div className="w-[300px] border-l border-white/[0.08] bg-[#141418] p-4 flex flex-col justify-between overflow-hidden">
@@ -406,6 +543,15 @@ export function ResultPreview({
 
   if (!selectedItem) {
     return null;
+  }
+
+  if (selectedItem.path.startsWith("docker://") || selectedItem.path.startsWith("wsl://")) {
+    return (
+      <DockerWslPreview
+        itemPath={selectedItem.path}
+        onCopiedNotification={onCopiedNotification}
+      />
+    );
   }
 
   // Normal selected item preview

@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::LocalFree;
 use windows::Win32::Security::Cryptography::{
@@ -139,6 +141,208 @@ pub fn delete_secret(key: &str) -> Result<bool, String> {
     }
 }
 
+fn get_profiles_dir() -> Result<PathBuf, String> {
+    let p = get_vault_dir()?.join("profiles");
+    fs::create_dir_all(&p).map_err(|e| format!("Failed to create profiles vault directory: {}", e))?;
+    Ok(p)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnvVariableEntry {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnvProfileSummary {
+    pub name: String,
+    pub var_count: usize,
+    pub updated_at: i64,
+    pub redacted_keys: Vec<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnvProfilePayload {
+    pub name: String,
+    pub description: Option<String>,
+    pub updated_at: i64,
+    pub variables: Vec<EnvVariableEntry>,
+}
+
+pub fn sanitize_profile_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() || trimmed.len() > 32 {
+        return Err("Profile name must be between 1 and 32 characters".into());
+    }
+    if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+        return Err("Profile name must only contain alphanumeric characters, underscores, or hyphens".into());
+    }
+    Ok(trimmed.to_lowercase())
+}
+
+pub fn sanitize_env_key(key: &str) -> Result<String, String> {
+    let trimmed = key.trim();
+    if trimmed.is_empty() || trimmed.len() > 64 {
+        return Err("Environment variable key must be between 1 and 64 characters".into());
+    }
+    let mut chars = trimmed.chars();
+    let first = chars.next().unwrap();
+    if !first.is_ascii_alphabetic() && first != '_' {
+        return Err("Environment variable key must begin with a letter or underscore".into());
+    }
+    if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        return Err("Environment variable key must contain only letters, numbers, or underscores".into());
+    }
+    Ok(trimmed.to_uppercase())
+}
+
+pub fn redact_secret_value(val: &str) -> String {
+    let len = val.len();
+    if len <= 4 {
+        return "****".to_string();
+    }
+    let prefix_len = std::cmp::min(4, len / 4);
+    format!("{}***{}", &val[..prefix_len], &val[len.saturating_sub(2)..])
+}
+
+pub fn save_env_profile(mut profile: EnvProfilePayload) -> Result<(), String> {
+    let clean_name = sanitize_profile_name(&profile.name)?;
+    profile.name = clean_name.clone();
+
+    // Sanitize and deduplicate all variable keys
+    let mut clean_vars = Vec::new();
+    let mut seen_keys = std::collections::HashSet::new();
+
+    for mut entry in profile.variables {
+        let clean_k = sanitize_env_key(&entry.key)?;
+        if seen_keys.insert(clean_k.clone()) {
+            entry.key = clean_k;
+            clean_vars.push(entry);
+        }
+    }
+    profile.variables = clean_vars;
+    profile.updated_at = chrono::Utc::now().timestamp();
+
+    // Serialize to JSON, then encrypt using Windows DPAPI
+    let serialized = serde_json::to_vec(&profile)
+        .map_err(|e| format!("Failed to serialize profile payload: {}", e))?;
+    let ciphertext = protect_bytes(&serialized)?;
+
+    let path = get_profiles_dir()?.join(format!("{}.dpapi", clean_name));
+    fs::write(&path, ciphertext)
+        .map_err(|e| format!("Failed to persist encrypted environment profile: {}", e))
+}
+
+pub fn retrieve_profile_payload(profile_name: &str) -> Result<EnvProfilePayload, String> {
+    let clean_name = sanitize_profile_name(profile_name)?;
+    let path = get_profiles_dir()?.join(format!("{}.dpapi", clean_name));
+    if !path.exists() {
+        return Err(format!("Environment profile '{}' not found", clean_name));
+    }
+
+    let ciphertext = fs::read(&path)
+        .map_err(|e| format!("Failed to read encrypted profile: {}", e))?;
+    let plaintext_bytes = unprotect_bytes(&ciphertext)?;
+    let payload: EnvProfilePayload = serde_json::from_slice(&plaintext_bytes)
+        .map_err(|e| format!("Failed to parse decrypted profile JSON: {}", e))?;
+    Ok(payload)
+}
+
+pub fn list_env_profiles() -> Result<Vec<EnvProfileSummary>, String> {
+    let dir = get_profiles_dir()?;
+    let mut profiles = Vec::new();
+
+    let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read profiles directory: {}", e))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) == Some("dpapi") {
+            if let Some(file_stem) = path.file_stem().and_then(|s| s.to_str()) {
+                if let Ok(payload) = retrieve_profile_payload(file_stem) {
+                    let redacted_keys = payload
+                        .variables
+                        .iter()
+                        .take(5)
+                        .map(|v| format!("{} ({})", v.key, redact_secret_value(&v.value)))
+                        .collect();
+
+                    profiles.push(EnvProfileSummary {
+                        name: payload.name,
+                        var_count: payload.variables.len(),
+                        updated_at: payload.updated_at,
+                        redacted_keys,
+                        description: payload.description,
+                    });
+                }
+            }
+        }
+    }
+
+    profiles.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(profiles)
+}
+
+pub fn delete_env_profile(profile_name: &str) -> Result<bool, String> {
+    let clean_name = sanitize_profile_name(profile_name)?;
+    let path = get_profiles_dir()?.join(format!("{}.dpapi", clean_name));
+    if path.exists() {
+        fs::remove_file(&path).map_err(|e| format!("Failed to delete profile: {}", e))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub fn launch_with_profile(
+    profile_name: &str,
+    target: &str,
+) -> Result<String, String> {
+    let payload = retrieve_profile_payload(profile_name)?;
+
+    let mut cmd = match target {
+        "code" => {
+            let mut c = Command::new("cmd");
+            c.args(["/C", "code", "."]);
+            c
+        }
+        "powershell" => {
+            let mut c = Command::new("powershell");
+            c.args(["-NoExit", "-NoLogo"]);
+            c
+        }
+        _ => {
+            let mut c = Command::new("wt.exe");
+            c.args(["-d", "."]);
+            c
+        }
+    };
+
+    // INJECT SECRETS EXCLUSIVELY VIA CHILD PROCESS ENVIRONMENT BLOCK
+    // Windows CreateProcess lpEnvironment prevents visible command line disclosure in Task Manager or Event ID 4688
+    for entry in &payload.variables {
+        cmd.env(&entry.key, &entry.value);
+    }
+
+    let spawn_result = cmd.spawn();
+    if spawn_result.is_err() && target != "powershell" {
+        let mut fallback = Command::new("powershell");
+        fallback.args(["-NoExit", "-NoLogo"]);
+        for entry in &payload.variables {
+            fallback.env(&entry.key, &entry.value);
+        }
+        fallback.spawn().map_err(|e| format!("Failed to launch terminal with environment: {}", e))?;
+    } else if let Err(e) = spawn_result {
+        return Err(format!("Failed to launch process with environment: {}", e));
+    }
+
+    Ok(format!(
+        "Transiently injected {} secrets into {} session ({})",
+        payload.variables.len(),
+        target,
+        profile_name
+    ))
+}
+
 /// Retrieves or generates a persistent hardware-bound machine identifier for this Windows device.
 /// Formatted as ALTS-XXXX-XXXX-XXXX and safely cached in the DPAPI vault.
 pub fn get_or_create_device_id() -> Result<String, String> {
@@ -213,9 +417,86 @@ pub fn get_or_create_device_id() -> Result<String, String> {
     Ok(formatted)
 }
 
+pub fn store_byok_key(provider: &str, api_key: &str) -> Result<(), String> {
+    let clean_provider = sanitize_key(provider)?;
+    let trimmed = api_key.trim();
+    if trimmed.is_empty() {
+        let _ = delete_byok_key(&clean_provider);
+        return Ok(());
+    }
+    let encrypted = protect_bytes(trimmed.as_bytes())?;
+    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create byok dir: {}", e))?;
+    }
+    fs::write(&path, encrypted).map_err(|e| format!("Failed to write byok key: {}", e))?;
+    Ok(())
+}
+
+pub fn retrieve_byok_key(provider: &str) -> Result<Option<String>, String> {
+    let clean_provider = sanitize_key(provider)?;
+    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    if !path.exists() {
+        return Ok(None);
+    }
+    let raw = fs::read(&path).map_err(|e| format!("Failed to read byok key: {}", e))?;
+    let decrypted = unprotect_bytes(&raw)?;
+    let key_str = String::from_utf8(decrypted).map_err(|e| format!("Invalid UTF-8 in byok key: {}", e))?;
+    Ok(Some(key_str))
+}
+
+pub fn list_byok_providers() -> Result<Vec<String>, String> {
+    let byok_dir = get_vault_dir()?.join("byok");
+    if !byok_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut providers = Vec::new();
+    if let Ok(entries) = fs::read_dir(&byok_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("dpapi") {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    providers.push(stem.to_string());
+                }
+            }
+        }
+    }
+    Ok(providers)
+}
+
+pub fn delete_byok_key(provider: &str) -> Result<bool, String> {
+    let clean_provider = sanitize_key(provider)?;
+    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    if path.exists() {
+        fs::remove_file(&path).map_err(|e| format!("Failed to delete byok key: {}", e))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_byok_roundtrip() {
+        let provider = "anthropic_test";
+        let key = "sk-ant-api03-test-token-12345";
+        store_byok_key(provider, key).expect("Store BYOK key should succeed");
+
+        let retrieved = retrieve_byok_key(provider).expect("Retrieve BYOK should succeed");
+        assert_eq!(retrieved.as_deref(), Some(key));
+
+        let providers = list_byok_providers().expect("List BYOK providers should succeed");
+        assert!(providers.contains(&provider.to_string()));
+
+        let deleted = delete_byok_key(provider).expect("Delete BYOK key should succeed");
+        assert!(deleted);
+
+        let after_delete = retrieve_byok_key(provider).unwrap();
+        assert_eq!(after_delete, None);
+    }
 
     #[test]
     fn test_device_id_format() {

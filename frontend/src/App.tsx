@@ -17,6 +17,14 @@ import { DiagnosticsModal } from "./components/DiagnosticsModal";
 import { validateAltConfig, computeConfigDiff } from "./lib/configValidator";
 import type { ActionRequest, ActionEvaluation } from "./lib/actionBroker";
 import { BUILTIN_EXTENSIONS } from "./lib/registry";
+import { toggleFeature, FEATURE_REGISTRY, type FeatureId } from "./lib/featureMatrix";
+import { launchEnvProfile } from "./lib/secureVault";
+import {
+  wslShutdown,
+  wslLaunchShell,
+  dockerStartDaemon,
+  dockerOpenShell,
+} from "./lib/dockerWsl";
 import { useThemeEngine } from "./hooks/useThemeEngine";
 import { usePortInspector } from "./hooks/usePortInspector";
 import { useClipboardHistory } from "./hooks/useClipboardHistory";
@@ -54,6 +62,7 @@ export default function App() {
   // Notification Toast State
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [licenseModalTab, setLicenseModalTab] = useState<"account" | "features" | "about">("account");
   const [showTimelineDrawer, setShowTimelineDrawer] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{
     request: ActionRequest;
@@ -129,6 +138,9 @@ export default function App() {
     qTrimLower === ":ports" ||
     qTrimLower.startsWith(":port ") ||
     qTrimLower.startsWith(":ports ") ||
+    qTrimLower.startsWith("free ") ||
+    qTrimLower.startsWith("kill port ") ||
+    qTrimLower.startsWith("port ") ||
     /^:\d+/.test(qTrimLower);
 
   const isStoreMode =
@@ -144,7 +156,7 @@ export default function App() {
     qTrimLower === ":clipboard" ||
     qTrimLower.startsWith(":clip ") ||
     qTrimLower.startsWith(":clipboard ");
-  const smartPortMode = isPortMode;
+
   const resolvedMode: Mode = isStoreMode
     ? "store"
     : isPortMode
@@ -158,9 +170,10 @@ export default function App() {
     portStatusMsg,
     setPortStatusMsg,
     fetchPorts,
+    fetchForensics,
     handleKillPort,
     handlePurgeAllDevServers,
-  } = usePortInspector(query, smartPortMode);
+  } = usePortInspector(query);
 
   // 4. Clipboard History Hook
   const {
@@ -424,6 +437,91 @@ export default function App() {
       return;
     }
 
+    if (item.path.startsWith("feature-toggle://")) {
+      const fid = item.path.replace("feature-toggle://", "") as FeatureId;
+      const next = toggleFeature(fid);
+      const meta = FEATURE_REGISTRY[fid];
+      notify(`${meta ? meta.name : fid}: ${next ? "Enabled" : "Disabled"}`);
+      setQuery("");
+      return;
+    }
+
+    if (item.path.startsWith("env-launch://")) {
+      const profileName = item.path.replace("env-launch://", "");
+      notify(`Transiently injecting secrets for '${profileName}'...`);
+      launchEnvProfile(profileName, "wt")
+        .then((msg) => {
+          notify(msg);
+          setQuery("");
+        })
+        .catch((err: any) => {
+          notify(`Launch error: ${err.message || err}`);
+        });
+      return;
+    }
+
+    if (item.path.startsWith("plan-exec://")) {
+      notify(`Action plan step active: ${item.title}. Press Enter or click 'Approve & Execute' in preview drawer.`);
+      return;
+    }
+
+    if (item.path === "wsl://shutdown") {
+      notify("Shutting down WSL virtual machine to reclaim RAM...");
+      wslShutdown()
+        .then((res) => {
+          notify(res.message);
+          setQuery("");
+        })
+        .catch((err: any) => notify(`WSL shutdown error: ${err.message || err}`));
+      return;
+    }
+
+    if (item.path.startsWith("wsl://")) {
+      const distro = item.path.replace("wsl://", "");
+      notify(`Launching WSL shell for '${distro}' in Windows Terminal...`);
+      wslLaunchShell(distro)
+        .then((msg) => {
+          notify(msg);
+          setQuery("");
+        })
+        .catch((err: any) => notify(`WSL error: ${err.message || err}`));
+      return;
+    }
+
+    if (item.path === "docker://start-daemon") {
+      notify("Launching Docker Desktop...");
+      dockerStartDaemon()
+        .then((msg) => {
+          notify(msg);
+          setQuery("");
+        })
+        .catch((err: any) => notify(`Docker launch error: ${err.message || err}`));
+      return;
+    }
+
+    if (item.path.startsWith("docker://")) {
+      const cid = item.path.replace("docker://", "");
+      notify(`Opening interactive shell for container ${cid.slice(0, 10)}...`);
+      dockerOpenShell(cid)
+        .then((msg) => {
+          notify(msg);
+          setQuery("");
+        })
+        .catch((err: any) => notify(`Docker shell error: ${err.message || err}`));
+      return;
+    }
+
+    if (item.id === "util-cockpit" || item.path === ":docker") {
+      setQuery("docker");
+      return;
+    }
+
+    if (item.id === "util-features" || item.path === "altspace://features") {
+      setLicenseModalTab("features");
+      setShowLicenseModal(true);
+      return;
+    }
+
     if (item.id === "util-clipboard") {
       setActiveTab("clipboard");
       setQuery("");
@@ -433,6 +531,7 @@ export default function App() {
       item.path === "altspace://license" ||
       item.path === "altspace://about"
     ) {
+      setLicenseModalTab("account");
       setShowLicenseModal(true);
       return;
     } else if (item.id === "util-ports") {
@@ -670,6 +769,7 @@ export default function App() {
 
     if ((e.ctrlKey || e.metaKey) && (e.key === "," || e.code === "Comma")) {
       e.preventDefault();
+      setLicenseModalTab("features");
       setShowLicenseModal(true);
       return;
     }
@@ -706,6 +806,10 @@ export default function App() {
         if (selectedSpecial) {
           if (selectedSpecial.kind === "calc") {
             handleCopyClipboard(selectedSpecial.data.result);
+            setQuery("");
+          } else if (selectedSpecial.kind === "transform") {
+            handleCopyClipboard(selectedSpecial.data.output);
+            notify(`✓ Copied ${selectedSpecial.data.title}`);
             setQuery("");
           } else if (selectedSpecial.kind === "quickjump") {
             handleOpenUrl(selectedSpecial.data.url);
@@ -937,6 +1041,7 @@ export default function App() {
             isSidebarVisible={isSidebarVisible}
             onKillPort={handleKillPort}
             onRefreshPorts={fetchPorts}
+            fetchForensics={fetchForensics}
           />
         )}
 
@@ -1021,6 +1126,7 @@ export default function App() {
         onClose={() => setShowLicenseModal(false)}
         activeTheme={activeTheme}
         notify={notify}
+        initialTab={licenseModalTab}
       />
 
       <DiagnosticsModal

@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from "react";
 import { tauriInvoke } from "../lib/appStorage";
-import type { PortItem } from "../types";
+import type { PortItem, PortProcessForensics, KillVerifyResult } from "../types";
 
-export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
+export function usePortInspector(query: string) {
   const [ports, setPorts] = useState<PortItem[]>([]);
   const [portStatusMsg, setPortStatusMsg] = useState<string | null>(null);
 
@@ -13,8 +13,20 @@ export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
     } catch (_) {}
   }, []);
 
+  const fetchForensics = useCallback(async (port: number, pid: number): Promise<PortProcessForensics | null> => {
+    if (!tauriInvoke) return null;
+    try {
+      const res = await tauriInvoke<PortProcessForensics>("get_port_process_forensics", { port, pid });
+      return res || null;
+    } catch (_) {
+      return null;
+    }
+  }, []);
+
   const filteredPorts = useMemo(() => {
-    const rawFilter = isSmartPortPrefix ? query.slice(1).trim().toLowerCase() : query.trim().toLowerCase();
+    let rawFilter = query.trim().toLowerCase();
+    if (rawFilter.startsWith(":")) rawFilter = rawFilter.slice(1).trim();
+    rawFilter = rawFilter.replace(/^(free|kill\s*port|ports?)\s*/i, "").trim();
     if (!rawFilter) return ports;
     return ports.filter(
       (p) =>
@@ -22,23 +34,34 @@ export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
         p.process_name.toLowerCase().includes(rawFilter) ||
         p.pid.toString().includes(rawFilter)
     );
-  }, [ports, query, isSmartPortPrefix]);
+  }, [ports, query]);
 
   const handleKillPort = useCallback(async (pid: number, port: number) => {
     if (tauriInvoke) {
       try {
-        await tauriInvoke("kill_port_process", { pid });
-        setPortStatusMsg(`Terminated PID ${pid} (Port :${port} Freed)`);
+        const verifyRes = await tauriInvoke<KillVerifyResult>("kill_and_verify_port", { port, pid });
+        if (verifyRes?.verified_free) {
+          setPortStatusMsg(`✓ Port :${port} Freed & Verified (${verifyRes.elapsed_ms}ms)`);
+        } else {
+          setPortStatusMsg(verifyRes?.message || `PID ${pid} terminated`);
+        }
         setTimeout(() => setPortStatusMsg(null), 3000);
         fetchPorts();
         return;
       } catch (err: any) {
-        setPortStatusMsg(`Kill error: ${err}`);
+        // Safe auto-healing fallback to basic kill
+        try {
+          await tauriInvoke("kill_port_process", { pid });
+          setPortStatusMsg(`Port :${port} freed (fallback kill)`);
+          fetchPorts();
+        } catch (fallbackErr: any) {
+          setPortStatusMsg(`Kill error: ${fallbackErr || err}`);
+        }
         setTimeout(() => setPortStatusMsg(null), 3000);
       }
     } else {
       setPorts((prev) => prev.filter((p) => p.pid !== pid));
-      setPortStatusMsg(`Terminated PID ${pid} (Port :${port} Freed)`);
+      setPortStatusMsg(`✓ Port :${port} Freed (Mock)`);
       setTimeout(() => setPortStatusMsg(null), 3000);
     }
   }, [fetchPorts]);
@@ -61,6 +84,7 @@ export function usePortInspector(query: string, isSmartPortPrefix: boolean) {
     portStatusMsg,
     setPortStatusMsg,
     fetchPorts,
+    fetchForensics,
     handleKillPort,
     handlePurgeAllDevServers,
   };

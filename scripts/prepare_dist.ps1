@@ -4,6 +4,7 @@ New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
 $releaseBinary = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe'
 $nsisSetup = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis\altspace_2.0.0_x64-setup.exe'
+$msiSetup = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi\altspace_2.0.0_x64_en-US.msi'
 $dll = Join-Path $PSScriptRoot '..\bin\Everything64.dll'
 $installerScript = Join-Path $PSScriptRoot '..\install.ps1'
 
@@ -17,6 +18,9 @@ if (-not (Test-Path $nsisSetup)) {
 Copy-Item $releaseBinary (Join-Path $dist 'altspace.exe') -Force
 Copy-Item $releaseBinary (Join-Path $dist 'AltSpace-Portable.exe') -Force
 Copy-Item $nsisSetup (Join-Path $dist 'AltSpace-Setup-x64.exe') -Force
+if (Test-Path $msiSetup) {
+    Copy-Item $msiSetup (Join-Path $dist 'AltSpace-MSI-x64.msi') -Force
+}
 Copy-Item $dll (Join-Path $dist 'Everything64.dll') -Force
 Copy-Item $installerScript (Join-Path $dist 'install.ps1') -Force
 
@@ -34,6 +38,9 @@ $files = @(
     'Everything64.dll',
     'install.ps1'
 )
+if (Test-Path (Join-Path $dist 'AltSpace-MSI-x64.msi')) {
+    $files += 'AltSpace-MSI-x64.msi'
+}
 
 $hashLines = foreach ($f in $files) {
     $full = Join-Path $dist $f

@@ -1,6 +1,9 @@
 import type { CalcResult } from "./lib/calc";
 import type { QuickJumpResult } from "./lib/quickjumps";
 import type { SnippetMatch } from "./lib/snippets";
+import type { TransformResult } from "./lib/developerTransforms";
+
+export type { TransformResult };
 
 export interface ShellResult {
   success: boolean;
@@ -35,12 +38,36 @@ export interface AICardData {
   error?: string | null;
 }
 
+export interface ActionPlanStep {
+  id: string;
+  title: string;
+  description: string;
+  risk_tier: "read_only_auto" | "preview_then_approve" | "always_approve";
+  requires_approval: boolean;
+  status: "pending" | "running" | "completed" | "failed";
+  action: any;
+  result_message?: string;
+}
+
+export interface ActionPlan {
+  id: string;
+  title: string;
+  summary: string;
+  target_context: string;
+  steps: ActionPlanStep[];
+  provider?: string;
+  model?: string;
+  is_byok?: boolean;
+}
+
 export type SpecialCard =
   | { kind: "calc"; data: CalcResult }
   | { kind: "quickjump"; data: QuickJumpResult }
   | { kind: "snippet"; data: SnippetMatch }
   | { kind: "terminal"; data: TerminalCardData }
-  | { kind: "ai"; data: AICardData };
+  | { kind: "ai"; data: AICardData }
+  | { kind: "transform"; data: TransformResult }
+  | { kind: "plan"; data: ActionPlan };
 
 export interface DriveIndexStats {
   search_all_drives: boolean;
@@ -91,6 +118,29 @@ export interface PortItem {
   pid: number;
   process_name: string;
   state: string;
+  forensics?: PortProcessForensics;
+}
+
+export interface PortProcessForensics {
+  port: number;
+  pid: number;
+  process_name: string;
+  parent_pid?: number | null;
+  parent_name?: string | null;
+  command_line?: string | null;
+  executable_path?: string | null;
+  project_hint?: string | null;
+  is_wsl_or_docker: boolean;
+  is_protected: boolean;
+}
+
+export interface KillVerifyResult {
+  success: boolean;
+  port: number;
+  pid: number;
+  verified_free: boolean;
+  elapsed_ms: number;
+  message: string;
 }
 
 export interface ClipboardHistoryItem {

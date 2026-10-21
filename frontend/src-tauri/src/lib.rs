@@ -15,6 +15,7 @@ pub mod broker;
 pub mod named_pipe;
 pub mod license_verifier;
 pub mod github_auth;
+pub mod docker_wsl;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
@@ -133,6 +134,43 @@ pub struct SearchItem {
 
 static APP_INDEX: LazyLock<Mutex<AppIndex>> = LazyLock::new(|| Mutex::new(AppIndex::new()));
 static EVERYTHING_CLIENT: LazyLock<EverythingClient> = LazyLock::new(EverythingClient::new);
+
+static FEATURE_FLAGS: LazyLock<Mutex<std::collections::HashMap<String, bool>>> = LazyLock::new(|| {
+    let mut map = std::collections::HashMap::new();
+    map.insert("ports_advanced".into(), true);
+    map.insert("developer_transforms".into(), true);
+    map.insert("secret_vault".into(), true);
+    map.insert("docker_wsl".into(), true);
+    map.insert("local_copilot".into(), true);
+    Mutex::new(map)
+});
+
+pub fn is_feature_enabled(id: &str) -> bool {
+    if let Ok(guard) = FEATURE_FLAGS.lock() {
+        *guard.get(id).unwrap_or(&true)
+    } else {
+        true
+    }
+}
+
+#[tauri::command]
+fn set_feature_flags(flags: std::collections::HashMap<String, bool>) -> Result<(), String> {
+    if let Ok(mut guard) = FEATURE_FLAGS.lock() {
+        for (k, v) in flags {
+            guard.insert(k, v);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn get_feature_flags() -> std::collections::HashMap<String, bool> {
+    if let Ok(guard) = FEATURE_FLAGS.lock() {
+        guard.clone()
+    } else {
+        std::collections::HashMap::new()
+    }
+}
 
 #[tauri::command]
 fn search(query: String) -> Vec<SearchItem> {
@@ -307,6 +345,30 @@ fn kill_port_process(pid: u32) -> Result<(), String> {
     ports::kill_pid(pid)
 }
 
+#[tauri::command]
+fn get_port_process_forensics(port: u16, pid: u32) -> Result<ports::PortProcessForensics, String> {
+    if !is_feature_enabled("ports_advanced") {
+        return Err("Intelligent Port Forensics is disabled in Settings".into());
+    }
+    ports::get_port_process_forensics(port, pid)
+}
+
+#[tauri::command]
+fn kill_and_verify_port(port: u16, pid: u32) -> Result<ports::KillVerifyResult, String> {
+    if !is_feature_enabled("ports_advanced") {
+        ports::kill_pid(pid)?;
+        return Ok(ports::KillVerifyResult {
+            success: true,
+            port,
+            pid,
+            verified_free: true,
+            elapsed_ms: 0,
+            message: format!("Port :{} killed (basic)", port),
+        });
+    }
+    ports::kill_and_verify_port(port, pid)
+}
+
 // Clipboard History commands
 #[tauri::command]
 fn get_clipboard_history() -> Vec<clipboard::ClipboardItem> {
@@ -363,7 +425,21 @@ fn snap_window(window: tauri::WebviewWindow, position: String) -> Result<(), Str
 
 #[tauri::command]
 fn execute_shell_command(command: String) -> Result<terminal_runner::ShellExecutionResult, String> {
-    terminal_runner::execute_shell_command(&command)
+    let res = terminal_runner::execute_shell_command(&command);
+    if let Ok(ref result) = res {
+        if !result.success || result.exit_code != 0 {
+            broker::record_failure_event(broker::FailureEvent {
+                id: format!("term_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()),
+                source: "terminal".into(),
+                command_or_target: command.clone(),
+                exit_code: Some(result.exit_code),
+                error_message: if !result.stderr.is_empty() { result.stderr.clone() } else { format!("Exited with code {}", result.exit_code) },
+                stdout_excerpt: if !result.stdout.is_empty() { Some(result.stdout.chars().take(500).collect()) } else { None },
+                timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(),
+            });
+        }
+    }
+    res
 }
 
 #[tauri::command]
@@ -877,8 +953,156 @@ fn vault_delete_secret(key: String) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn vault_list_profiles() -> Result<Vec<crypto_vault::EnvProfileSummary>, String> {
+    if !is_feature_enabled("secret_vault") {
+        return Err("DPAPI Secret Vault is disabled in Settings".into());
+    }
+    crypto_vault::list_env_profiles()
+}
+
+#[tauri::command]
+fn vault_save_profile(profile: crypto_vault::EnvProfilePayload) -> Result<(), String> {
+    if !is_feature_enabled("secret_vault") {
+        return Err("DPAPI Secret Vault is disabled in Settings".into());
+    }
+    crypto_vault::save_env_profile(profile)
+}
+
+#[tauri::command]
+fn vault_get_profile(name: String) -> Result<crypto_vault::EnvProfilePayload, String> {
+    if !is_feature_enabled("secret_vault") {
+        return Err("DPAPI Secret Vault is disabled in Settings".into());
+    }
+    crypto_vault::retrieve_profile_payload(&name)
+}
+
+#[tauri::command]
+fn vault_delete_profile(name: String) -> Result<bool, String> {
+    if !is_feature_enabled("secret_vault") {
+        return Err("DPAPI Secret Vault is disabled in Settings".into());
+    }
+    crypto_vault::delete_env_profile(&name)
+}
+
+#[tauri::command]
+fn vault_launch_profile(name: String, target: String) -> Result<String, String> {
+    if !is_feature_enabled("secret_vault") {
+        return Err("DPAPI Secret Vault is disabled in Settings".into());
+    }
+    crypto_vault::launch_with_profile(&name, &target)
+}
+
+#[tauri::command]
+fn get_environment_cockpit() -> Result<docker_wsl::EnvironmentCockpitData, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    Ok(docker_wsl::get_environment_cockpit_snapshot())
+}
+
+#[tauri::command]
+fn docker_container_action(id: String, action: String) -> Result<docker_wsl::CockpitActionResult, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    Ok(docker_wsl::docker_action(&id, &action))
+}
+
+#[tauri::command]
+fn docker_container_logs(id: String, tail: u32) -> Result<String, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    docker_wsl::docker_logs(&id, tail)
+}
+
+#[tauri::command]
+fn docker_open_shell(id: String) -> Result<String, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    docker_wsl::docker_open_shell(&id)
+}
+
+#[tauri::command]
+fn docker_start_daemon() -> Result<String, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    docker_wsl::start_docker_desktop()
+}
+
+#[tauri::command]
+fn wsl_shutdown() -> Result<docker_wsl::CockpitActionResult, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    Ok(docker_wsl::wsl_shutdown())
+}
+
+#[tauri::command]
+fn wsl_terminate_distro(distro: String) -> Result<docker_wsl::CockpitActionResult, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    Ok(docker_wsl::wsl_terminate(&distro))
+}
+
+#[tauri::command]
+fn wsl_launch_shell(distro: String) -> Result<String, String> {
+    if !is_feature_enabled("docker_wsl") {
+        return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
+    }
+    docker_wsl::wsl_launch_shell(&distro)
+}
+
+#[tauri::command]
 fn get_machine_id() -> Result<String, String> {
     crypto_vault::get_or_create_device_id()
+}
+
+#[tauri::command]
+fn record_terminal_failure(command: String, exit_code: i32, stderr: String, stdout: Option<String>) {
+    broker::record_failure_event(broker::FailureEvent {
+        id: format!("term_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()),
+        source: "terminal".into(),
+        command_or_target: command,
+        exit_code: Some(exit_code),
+        error_message: stderr,
+        stdout_excerpt: stdout,
+        timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(),
+    });
+}
+
+#[tauri::command]
+fn get_recent_failure_context() -> Result<Vec<broker::FailureEvent>, String> {
+    Ok(broker::get_recent_failures())
+}
+
+#[tauri::command]
+fn clear_failure_context() -> Result<(), String> {
+    broker::clear_failures();
+    Ok(())
+}
+
+#[tauri::command]
+fn vault_store_byok_key(provider: String, api_key: String) -> Result<(), String> {
+    crypto_vault::store_byok_key(&provider, &api_key)
+}
+
+#[tauri::command]
+fn vault_retrieve_byok_key(provider: String) -> Result<Option<String>, String> {
+    crypto_vault::retrieve_byok_key(&provider)
+}
+
+#[tauri::command]
+fn vault_list_byok_providers() -> Result<Vec<String>, String> {
+    crypto_vault::list_byok_providers()
+}
+
+#[tauri::command]
+fn vault_delete_byok_key(provider: String) -> Result<bool, String> {
+    crypto_vault::delete_byok_key(&provider)
 }
 
 pub fn run() {
@@ -1004,7 +1228,31 @@ pub fn run() {
             license_verifier::verify_and_activate_license,
             license_verifier::get_active_verified_license,
             github_auth::github_device_code_request,
-            github_auth::github_device_token_poll
+            github_auth::github_device_token_poll,
+            set_feature_flags,
+            get_feature_flags,
+            get_port_process_forensics,
+            kill_and_verify_port,
+            vault_list_profiles,
+            vault_save_profile,
+            vault_get_profile,
+            vault_delete_profile,
+            vault_launch_profile,
+            get_environment_cockpit,
+            docker_container_action,
+            docker_container_logs,
+            docker_open_shell,
+            docker_start_daemon,
+            wsl_shutdown,
+            wsl_terminate_distro,
+            wsl_launch_shell,
+            record_terminal_failure,
+            get_recent_failure_context,
+            clear_failure_context,
+            vault_store_byok_key,
+            vault_retrieve_byok_key,
+            vault_list_byok_providers,
+            vault_delete_byok_key
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));

@@ -8,6 +8,12 @@ import {
   BookOpen,
   Globe,
   AlignLeft,
+  KeyRound,
+  Braces,
+  Sparkles,
+  Clock,
+  Fingerprint,
+  Binary,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -96,6 +102,92 @@ export function SearchTab({
         className="flex-1 overflow-y-auto p-2 space-y-1.5 focus:outline-none"
       >
         {/* Special Cards at index 0 */}
+        {specialCard && specialCard.kind === "transform" && (
+          <div
+            key="transform-result"
+            role="option"
+            id="result-option-0"
+            aria-selected={isSpecialSelected}
+            data-index={0}
+            onClick={() => setSelectedIndex(0)}
+            onDoubleClick={() => {
+              onCopyClipboard(specialCard.data.output);
+              onCopiedNotification(`Copied ${specialCard.data.title}!`);
+              setQuery("");
+            }}
+            className={cn(
+              "min-h-[58px] flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-sm select-none relative group transition-all duration-150 border",
+              isSpecialSelected
+                ? "bg-gradient-to-r from-purple-950/40 via-zinc-900/60 to-zinc-900/80 text-white shadow-[0_0_25px_-5px_rgba(168,85,247,0.25)] border-purple-500/40 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-gradient-to-b before:from-purple-400 before:to-pink-500"
+                : "text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100 border-white/[0.06] bg-black/20"
+            )}
+          >
+            <div className="flex items-center gap-3.5 min-w-0 pr-3">
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-transform duration-200 group-hover:scale-105",
+                  specialCard.data.kind === "jwt"
+                    ? "bg-purple-500/15 text-purple-400 border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+                    : specialCard.data.kind === "json" || specialCard.data.kind === "yaml"
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                    : specialCard.data.kind === "regex"
+                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                    : "bg-sky-500/15 text-sky-400 border-sky-500/30"
+                )}
+              >
+                {specialCard.data.kind === "jwt" && <KeyRound className="w-4 h-4" />}
+                {(specialCard.data.kind === "json" || specialCard.data.kind === "yaml") && <Braces className="w-4 h-4" />}
+                {specialCard.data.kind === "regex" && <Sparkles className="w-4 h-4" />}
+                {specialCard.data.kind === "hash" && <Fingerprint className="w-4 h-4" />}
+                {specialCard.data.kind === "encoding" && <Binary className="w-4 h-4" />}
+                {(specialCard.data.kind === "uuid" || specialCard.data.kind === "time") && <Clock className="w-4 h-4" />}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-[13.5px] truncate tracking-tight text-white font-mono">
+                    {specialCard.data.title}
+                  </span>
+                  {specialCard.data.meta?.expiresIn && (
+                    <span
+                      className={cn(
+                        "px-1.5 py-0.2 rounded-full text-[9.5px] font-mono font-medium flex items-center gap-1 border shrink-0",
+                        specialCard.data.meta.isExpired
+                          ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                          : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          specialCard.data.meta.isExpired ? "bg-rose-400" : "bg-emerald-400 animate-pulse"
+                        )}
+                      />
+                      {specialCard.data.meta.expiresIn}
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-zinc-400 truncate font-mono mt-0.5 max-w-[420px]">
+                  {specialCard.data.output.replace(/\n\s*/g, " ").slice(0, 80)}
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md border font-mono bg-white/[0.05] text-zinc-300 border-white/[0.08] shadow-sm">
+                {specialCard.data.badge}
+              </span>
+              <ChevronRight
+                className={cn(
+                  "w-3.5 h-3.5 transition",
+                  isSpecialSelected ? "text-purple-400 translate-x-0.5" : "text-transparent"
+                )}
+              />
+            </div>
+          </div>
+        )}
+
         {specialCard && specialCard.kind === "calc" && (
           <div
             key="calc-result"

@@ -68,6 +68,14 @@ pub enum TypedAction {
     InstallUpdate {
         release_url: String,
     },
+    FreePortAndVerify {
+        port: u16,
+        pid: u32,
+    },
+    RestartDockerContainer {
+        id: String,
+    },
+    ReclaimWslMemory,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,6 +118,43 @@ pub struct LedgerEntry {
     pub target: String,
     pub timestamp: u64,
     pub undo_available: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FailureEvent {
+    pub id: String,
+    pub source: String,
+    pub command_or_target: String,
+    pub exit_code: Option<i32>,
+    pub error_message: String,
+    pub stdout_excerpt: Option<String>,
+    pub timestamp: u64,
+}
+
+static FAILURE_RING_BUFFER: LazyLock<Arc<Mutex<Vec<FailureEvent>>>> =
+    LazyLock::new(|| Arc::new(Mutex::new(Vec::with_capacity(10))));
+
+pub fn record_failure_event(event: FailureEvent) {
+    if let Ok(mut buf) = FAILURE_RING_BUFFER.lock() {
+        if buf.len() >= 10 {
+            buf.remove(0);
+        }
+        buf.push(event);
+    }
+}
+
+pub fn get_recent_failures() -> Vec<FailureEvent> {
+    if let Ok(buf) = FAILURE_RING_BUFFER.lock() {
+        buf.clone()
+    } else {
+        Vec::new()
+    }
+}
+
+pub fn clear_failures() {
+    if let Ok(mut buf) = FAILURE_RING_BUFFER.lock() {
+        buf.clear();
+    }
 }
 
 // In-memory session approvals set: (action_type, target_prefix)
@@ -223,6 +268,33 @@ pub fn evaluate_action(request: &ActionRequest) -> ActionEvaluation {
             requires_approval: false,
             target_summary: format!("Open verified release page: {}", release_url),
             diff_preview: None,
+            reversibility: false,
+            requires_entitlement: false,
+        },
+        TypedAction::FreePortAndVerify { port, pid } => ActionEvaluation {
+            id: request.id.clone(),
+            risk_tier: RiskTier::PreviewThenApprove,
+            requires_approval: !request.bypass_approval,
+            target_summary: format!("Free TCP port :{} (PID {}) with verification", port, pid),
+            diff_preview: Some(format!("taskkill.exe /PID {} /T /F -> Poll TCP Table", pid)),
+            reversibility: false,
+            requires_entitlement: false,
+        },
+        TypedAction::RestartDockerContainer { id } => ActionEvaluation {
+            id: request.id.clone(),
+            risk_tier: RiskTier::PreviewThenApprove,
+            requires_approval: !request.bypass_approval,
+            target_summary: format!("Restart Docker container '{}'", id),
+            diff_preview: Some(format!("docker.exe restart {}", id)),
+            reversibility: false,
+            requires_entitlement: false,
+        },
+        TypedAction::ReclaimWslMemory => ActionEvaluation {
+            id: request.id.clone(),
+            risk_tier: RiskTier::PreviewThenApprove,
+            requires_approval: !request.bypass_approval,
+            target_summary: "Reclaim WSL2 hypervisor dynamic memory".into(),
+            diff_preview: Some("wsl.exe --shutdown -> Reclaim VMMem memory".into()),
             reversibility: false,
             requires_entitlement: false,
         },
@@ -407,6 +479,34 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
             match Command::new("explorer.exe").arg(release_url).creation_flags(CREATE_NO_WINDOW).spawn() {
                 Ok(_) => make_success(&request.id, format!("Opened release page: {}", release_url), String::new(), start.elapsed(), false),
                 Err(e) => make_failure(&request.id, &format!("Failed to open browser: {}", e), start.elapsed()),
+            }
+        }
+        TypedAction::FreePortAndVerify { port, pid } => {
+            match crate::ports::kill_and_verify_port(*port, *pid) {
+                Ok(res) => {
+                    if res.verified_free || res.success {
+                        make_success(&request.id, res.message, String::new(), start.elapsed(), false)
+                    } else {
+                        make_failure(&request.id, &res.message, start.elapsed())
+                    }
+                }
+                Err(e) => make_failure(&request.id, &e, start.elapsed()),
+            }
+        }
+        TypedAction::RestartDockerContainer { id } => {
+            let res = crate::docker_wsl::docker_action(id, "restart");
+            if res.success {
+                make_success(&request.id, res.message, res.stdout.unwrap_or_default(), start.elapsed(), false)
+            } else {
+                make_failure(&request.id, &res.message, start.elapsed())
+            }
+        }
+        TypedAction::ReclaimWslMemory => {
+            let res = crate::docker_wsl::wsl_shutdown();
+            if res.success {
+                make_success(&request.id, res.message, res.stdout.unwrap_or_default(), start.elapsed(), false)
+            } else {
+                make_failure(&request.id, &res.message, start.elapsed())
             }
         }
     }

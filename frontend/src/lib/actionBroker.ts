@@ -26,7 +26,10 @@ export type TypedAction =
         script_content: string;
       };
     }
-  | { type: "InstallUpdate"; payload: { release_url: string } };
+  | { type: "InstallUpdate"; payload: { release_url: string } }
+  | { type: "FreePortAndVerify"; payload: { port: number; pid: number } }
+  | { type: "RestartDockerContainer"; payload: { id: string } }
+  | { type: "ReclaimWslMemory"; payload: Record<string, never> };
 
 export interface ActionRequest {
   id: string;
@@ -85,4 +88,38 @@ export async function undoAction(actionId: string): Promise<string | null> {
 export async function getActionLedger(): Promise<LedgerEntry[]> {
   const entries = await tauriInvoke<LedgerEntry[]>("broker_get_ledger");
   return entries || [];
+}
+
+export interface FailureEvent {
+  id: string;
+  source: string;
+  command_or_target: string;
+  exit_code?: number | null;
+  error_message: string;
+  stdout_excerpt?: string | null;
+  timestamp: number;
+}
+
+export async function getRecentFailureContext(): Promise<FailureEvent[]> {
+  return (await tauriInvoke<FailureEvent[]>("get_recent_failure_context")) || [];
+}
+
+export async function clearFailureContext(): Promise<void> {
+  await tauriInvoke("clear_failure_context");
+}
+
+export async function storeByokKey(provider: string, apiKey: string): Promise<void> {
+  await tauriInvoke("vault_store_byok_key", { provider, apiKey });
+}
+
+export async function retrieveByokKey(provider: string): Promise<string | null> {
+  return (await tauriInvoke<string | null>("vault_retrieve_byok_key", { provider })) || null;
+}
+
+export async function listByokProviders(): Promise<string[]> {
+  return (await tauriInvoke<string[]>("vault_list_byok_providers")) || [];
+}
+
+export async function deleteByokKey(provider: string): Promise<boolean> {
+  return (await tauriInvoke<boolean>("vault_delete_byok_key", { provider })) || false;
 }

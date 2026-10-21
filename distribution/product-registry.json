@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": 1,
+  "products": [
+    {
+      "slug": "altspace",
+      "name": "AltSpace",
+      "tagline": "Native Windows developer control plane",
+      "description": "Fast file search, TCP port inspection & process recovery, Docker Compose and WSL2 utilities, Windows DPAPI-backed local secrets, and local Ollama-based AI copilot.",
+      "currentVersion": "2.0.0",
+      "websiteUrl": "https://altspace.dev",
+      "docsUrl": "https://docs.altspace.dev",
+      "downloadUrl": "https://github.com/codecheesee/altspace/releases/latest",
+      "githubRepo": "codecheesee/altspace",
+      "discordCategoryName": "ALTSPACE",
+      "supportChannelId": "123456789012345678",
+      "bugForumChannelId": "123456789012345679",
+      "featureForumChannelId": "123456789012345680",
+      "releaseChannelId": "123456789012345681",
+      "userRoleId": "123456789012345682",
+      "betaRoleId": "123456789012345683",
+      "proRoleId": "123456789012345684",
+      "status": "active",
+      "enabled": true
+    }
+  ]
+}

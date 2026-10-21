@@ -21,8 +21,39 @@ pub struct PortProcess {
     pub state: String,
 }
 
-// Map PIDs to Process Names using Windows Toolhelp snapshot
-pub fn get_process_names() -> HashMap<u32, String> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessSnapshot {
+    pub pid: u32,
+    pub name: String,
+    pub parent_pid: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortProcessForensics {
+    pub port: u16,
+    pub pid: u32,
+    pub process_name: String,
+    pub parent_pid: Option<u32>,
+    pub parent_name: Option<String>,
+    pub command_line: Option<String>,
+    pub executable_path: Option<String>,
+    pub project_hint: Option<String>,
+    pub is_wsl_or_docker: bool,
+    pub is_protected: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KillVerifyResult {
+    pub success: bool,
+    pub port: u16,
+    pub pid: u32,
+    pub verified_free: bool,
+    pub elapsed_ms: u64,
+    pub message: String,
+}
+
+// Map PIDs to Process Snapshot using Windows Toolhelp snapshot
+pub fn get_process_tree_map() -> HashMap<u32, ProcessSnapshot> {
     let mut map = HashMap::new();
     unsafe {
         if let Ok(snapshot) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
@@ -36,7 +67,14 @@ pub fn get_process_names() -> HashMap<u32, String> {
                     let name = String::from_utf16_lossy(
                         &entry.szExeFile[..entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len())],
                     );
-                    map.insert(entry.th32ProcessID, name);
+                    map.insert(
+                        entry.th32ProcessID,
+                        ProcessSnapshot {
+                            pid: entry.th32ProcessID,
+                            name,
+                            parent_pid: entry.th32ParentProcessID,
+                        },
+                    );
                     if Process32NextW(snapshot, &mut entry).is_err() {
                         break;
                     }
@@ -46,6 +84,14 @@ pub fn get_process_names() -> HashMap<u32, String> {
         }
     }
     map
+}
+
+// Map PIDs to Process Names using Windows Toolhelp snapshot
+pub fn get_process_names() -> HashMap<u32, String> {
+    get_process_tree_map()
+        .into_iter()
+        .map(|(pid, p)| (pid, p.name))
+        .collect()
 }
 
 // Retrieve listening TCP ports and their owning processes
@@ -203,6 +249,130 @@ pub fn kill_pid(pid: u32) -> Result<(), String> {
         let stderr = String::from_utf8_lossy(&status.stderr);
         Err(format!("Termination failed: {}", stderr.trim()))
     }
+}
+
+fn extract_project_hint(cmd: Option<&str>, _exe: Option<&str>) -> Option<String> {
+    if let Some(c) = cmd {
+        for part in c.split_whitespace() {
+            let clean = part.trim_matches('"').trim_matches('\'');
+            if (clean.contains('\\') || clean.contains('/'))
+                && (clean.ends_with(".js")
+                    || clean.ends_with(".ts")
+                    || clean.ends_with(".json")
+                    || clean.ends_with(".rs")
+                    || clean.ends_with(".py"))
+            {
+                if let Some(parent) = std::path::Path::new(clean).parent() {
+                    if let Some(folder_name) = parent.file_name() {
+                        let name_str = folder_name.to_string_lossy().to_string();
+                        if !name_str.eq_ignore_ascii_case("bin") && !name_str.eq_ignore_ascii_case("dist") {
+                            return Some(name_str);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn query_process_details_safe(pid: u32) -> (Option<String>, Option<String>, Option<String>) {
+    use std::os::windows::process::CommandExt;
+    let script = format!(
+        "$p = Get-CimInstance Win32_Process -Filter 'ProcessId = {}' -ErrorAction SilentlyContinue; if ($p) {{ [PSCustomObject]@{{ c = $p.CommandLine; e = $p.ExecutablePath }} | ConvertTo-Json -Compress }}",
+        pid
+    );
+
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .output();
+
+    if let Ok(res) = output {
+        if res.status.success() {
+            let stdout = String::from_utf8_lossy(&res.stdout).trim().to_string();
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&stdout) {
+                let cmd = val.get("c").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let exe = val.get("e").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let hint = extract_project_hint(cmd.as_deref(), exe.as_deref());
+                return (cmd, exe, hint);
+            }
+        }
+    }
+    (None, None, None)
+}
+
+pub fn get_port_process_forensics(port: u16, pid: u32) -> Result<PortProcessForensics, String> {
+    let tree_map = get_process_tree_map();
+    let proc_info = tree_map.get(&pid);
+
+    let process_name = proc_info
+        .map(|p| p.name.clone())
+        .unwrap_or_else(|| format!("PID {}", pid));
+
+    let parent_pid = proc_info.map(|p| p.parent_pid);
+    let parent_name = parent_pid.and_then(|ppid| tree_map.get(&ppid).map(|p| p.name.clone()));
+
+    let name_lower = process_name.to_lowercase();
+    let protected = [
+        "csrss.exe", "lsass.exe", "services.exe", "smss.exe", "wininit.exe",
+        "winlogon.exe", "dwm.exe", "system",
+    ];
+    let is_protected = pid <= 4 || protected.iter().any(|&p| name_lower == p);
+
+    let is_wsl_or_docker = name_lower.contains("wsl") || name_lower.contains("docker") || name_lower.contains("vpnkit");
+
+    let (command_line, executable_path, project_hint) = if !is_protected {
+        query_process_details_safe(pid)
+    } else {
+        (None, None, None)
+    };
+
+    Ok(PortProcessForensics {
+        port,
+        pid,
+        process_name,
+        parent_pid,
+        parent_name,
+        command_line,
+        executable_path,
+        project_hint,
+        is_wsl_or_docker,
+        is_protected,
+    })
+}
+
+pub fn kill_and_verify_port(port: u16, pid: u32) -> Result<KillVerifyResult, String> {
+    let start = std::time::Instant::now();
+
+    // 1. Kill process tree cleanly
+    kill_pid(pid)?;
+
+    // 2. Poll listening ports table up to 600ms to verify liberation
+    let mut verified_free = false;
+    for _ in 0..12 {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let active = get_listening_ports();
+        if !active.iter().any(|p| p.port == port) {
+            verified_free = true;
+            break;
+        }
+    }
+
+    let elapsed_ms = start.elapsed().as_millis() as u64;
+
+    Ok(KillVerifyResult {
+        success: true,
+        port,
+        pid,
+        verified_free,
+        elapsed_ms,
+        message: if verified_free {
+            format!("Port :{} freed and verified in {}ms", port, elapsed_ms)
+        } else {
+            format!("Process {} terminated, port :{} in TIME_WAIT / draining", pid, port)
+        },
+    })
 }
 
 #[cfg(test)]
