@@ -3,6 +3,7 @@
 
 param(
     [switch]$LocalOnly,
+    [string]$Tag = '',
     [string]$TargetDir = "$env:LOCALAPPDATA\Programs\AltSpace"
 )
 
@@ -66,7 +67,20 @@ try {
     } else {
         Write-Host "[*] Resolving the latest verified GitHub release for $Repo..." -ForegroundColor Green
         $headers = @{ 'User-Agent' = 'AltSpace-Installer'; 'Accept' = 'application/vnd.github+json' }
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
+        $release = $null
+        if ($Tag) {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $headers
+        } else {
+            try {
+                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
+            } catch {
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=1" -Headers $headers
+                if ($releases -and $releases.Count -gt 0) { $release = $releases[0] }
+            }
+        }
+        if (-not $release) {
+            throw "Unable to find an AltSpace release on GitHub ($Repo)."
+        }
         $zipAsset = Get-ReleaseAssetByNames $release @('AltSpace-Portable-x64.zip', 'altspace-portable-x64.zip')
         $checksumAsset = Get-ReleaseAsset $release 'SHA256SUMS.txt'
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -Headers $headers -OutFile $portableZip -UseBasicParsing
@@ -93,6 +107,15 @@ try {
     $shortcut.Description = 'AltSpace - Instant Command Palette for Windows'
     $shortcut.WorkingDirectory = $TargetDir
     $shortcut.Save()
+
+    $desktopDir = [Environment]::GetFolderPath('Desktop')
+    if (Test-Path $desktopDir) {
+        $desktopShortcut = $wshShell.CreateShortcut((Join-Path $desktopDir 'AltSpace.lnk'))
+        $desktopShortcut.TargetPath = $BinaryPath
+        $desktopShortcut.Description = 'AltSpace - Instant Command Palette for Windows'
+        $desktopShortcut.WorkingDirectory = $TargetDir
+        $desktopShortcut.Save()
+    }
 
     $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     $pathEntries = @($currentPath -split ';' | Where-Object { $_ })
