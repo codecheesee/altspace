@@ -13,7 +13,6 @@ export interface UserSession {
   name?: string;
   avatarUrl?: string;
   email?: string;
-  accessToken?: string;
   authenticatedAt: number;
   expiresAt?: string;
 }
@@ -44,7 +43,8 @@ export const GITHUB_CLIENT_ID =
     : "Ov23liEeGEfUkCBd5gSd";
 
 /**
- * Retrieves the currently active user session from local storage
+ * Retrieves the currently active user session from local storage,
+ * proactively purging any legacy plaintext OAuth access tokens.
  */
 export function getCurrentSession(): UserSession | null {
   try {
@@ -52,6 +52,11 @@ export function getCurrentSession(): UserSession | null {
     if (!raw) return null;
     const session = JSON.parse(raw) as UserSession;
     if (session && typeof session.login === "string" && session.login.trim()) {
+      // Security: Purge any legacy accessToken from localStorage
+      if ("accessToken" in session) {
+        delete (session as any).accessToken;
+        localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session));
+      }
       return session;
     }
   } catch (_) {}
@@ -59,22 +64,25 @@ export function getCurrentSession(): UserSession | null {
 }
 
 /**
- * Saves an authenticated user session
+ * Saves an authenticated user session without any token material.
  */
 export function saveCurrentSession(session: UserSession): void {
   try {
-    localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session));
+    const clean = { ...session };
+    delete (clean as any).accessToken;
+    localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(clean));
   } catch (_) {}
 }
 
 /**
- * Clears the active user session
+ * Clears the active user session from local storage.
  */
 export function clearCurrentSession(): void {
   try {
     localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
     // Also clear legacy keys
     localStorage.removeItem("altspace_github_user_session_v1");
+    localStorage.removeItem("altspace_entitlement_token");
   } catch (_) {}
 }
 
@@ -125,7 +133,9 @@ export async function startGitHubDeviceFlow(clientId = GITHUB_CLIENT_ID): Promis
 }
 
 /**
- * Polls GitHub OAuth token endpoint until user enters code and authorizes in browser
+ * Polls GitHub OAuth token endpoint until user enters code and authorizes in browser.
+ * SECURITY: In Tauri desktop mode, the token is encrypted directly into Windows DPAPI
+ * by the Rust backend and is NEVER passed to the WebView or persisted in localStorage.
  */
 export async function pollGitHubDeviceToken(
   clientId: string,
@@ -146,13 +156,30 @@ export async function pollGitHubDeviceToken(
     if (isTauri) {
       try {
         const data = await invokeStrict<{
-          access_token?: string;
+          success?: boolean;
+          user?: {
+            login: string;
+            id: number;
+            name?: string;
+            avatar_url?: string;
+            email?: string;
+          };
           error?: string;
           error_description?: string;
         }>("github_device_token_poll", { clientId, deviceCode });
 
-        if (data?.access_token) {
-          return data.access_token;
+        if (data?.success && data?.user) {
+          const session: UserSession = {
+            provider: "github",
+            login: String(data.user.login || "").toLowerCase(),
+            id: data.user.id,
+            name: data.user.name || data.user.login,
+            avatarUrl: data.user.avatar_url,
+            email: data.user.email || undefined,
+            authenticatedAt: Date.now(),
+          };
+          saveCurrentSession(session);
+          return session.login;
         }
         if (data?.error === "authorization_pending") {
           continue;
@@ -208,13 +235,39 @@ export async function pollGitHubDeviceToken(
 }
 
 /**
- * Fetches user profile from GitHub API using the acquired access token
+ * Fetches user profile from GitHub API.
  */
-export async function fetchGitHubUserProfile(token: string): Promise<UserSession> {
+export async function fetchGitHubUserProfile(token?: string): Promise<UserSession> {
+  if (isTauri) {
+    const user = await invokeStrict<{
+      login: string;
+      id: number;
+      name?: string;
+      avatar_url?: string;
+      email?: string;
+    } | null>("github_get_current_user");
+
+    if (!user) {
+      throw new Error("No active authenticated GitHub session found.");
+    }
+
+    const session: UserSession = {
+      provider: "github",
+      login: String(user.login || "").toLowerCase(),
+      id: user.id,
+      name: user.name || user.login,
+      avatarUrl: user.avatar_url,
+      email: user.email || undefined,
+      authenticatedAt: Date.now(),
+    };
+    saveCurrentSession(session);
+    return session;
+  }
+
   const res = await fetch("https://api.github.com/user", {
     headers: {
       Accept: "application/vnd.github.v3+json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token || ""}`,
     },
   });
 
@@ -230,7 +283,6 @@ export async function fetchGitHubUserProfile(token: string): Promise<UserSession
     name: profile.name || profile.login,
     avatarUrl: profile.avatar_url,
     email: profile.email || undefined,
-    accessToken: token,
     authenticatedAt: Date.now(),
   };
 
@@ -239,12 +291,35 @@ export async function fetchGitHubUserProfile(token: string): Promise<UserSession
 }
 
 /**
- * Connects directly using a GitHub Personal Access Token (classic or fine-grained)
- * Validates with GitHub API and securely saves the session
+ * Connects directly using a GitHub Personal Access Token (classic or fine-grained).
+ * In Tauri desktop mode, the token is transmitted to Rust to encrypt into Windows DPAPI
+ * and is NEVER persisted in localStorage.
  */
 export async function connectWithGitHubToken(token: string): Promise<UserSession> {
   const cleanToken = token.trim();
   if (!cleanToken) throw new Error("Please enter a valid GitHub token.");
+
+  if (isTauri) {
+    const user = await invokeStrict<{
+      login: string;
+      id: number;
+      name?: string;
+      avatar_url?: string;
+      email?: string;
+    }>("github_store_manual_pat", { pat: cleanToken });
+
+    const session: UserSession = {
+      provider: "github",
+      login: String(user.login || "").toLowerCase(),
+      id: user.id,
+      name: user.name || user.login,
+      avatarUrl: user.avatar_url,
+      email: user.email || undefined,
+      authenticatedAt: Date.now(),
+    };
+    saveCurrentSession(session);
+    return session;
+  }
 
   const res = await fetch("https://api.github.com/user", {
     headers: {
@@ -268,14 +343,12 @@ export async function connectWithGitHubToken(token: string): Promise<UserSession
     name: profile.name || profile.login,
     avatarUrl: profile.avatar_url,
     email: profile.email || undefined,
-    accessToken: cleanToken,
     authenticatedAt: Date.now(),
   };
 
   saveCurrentSession(session);
   return session;
 }
-
 
 /**
  * Direct Sovereign Maintainer Activation
@@ -295,8 +368,19 @@ export function activateSovereignMaintainer(_passkey?: string): UserSession {
 }
 
 /**
+ * Signs out and purges token from Windows DPAPI and local storage
+ */
+export async function signOut(): Promise<void> {
+  clearCurrentSession();
+  if (isTauri) {
+    try {
+      await invokeStrict("github_sign_out");
+    } catch (_) {}
+  }
+}
+
+/**
  * Pluggable Google Auth Provider (Pre-architected slot for free-tier Google Sign-In)
- * Will connect to Supabase / Firebase free tier when ready without modifying UI logic.
  */
 export class GoogleAuthProviderSlot implements AuthProvider {
   id = "google" as const;

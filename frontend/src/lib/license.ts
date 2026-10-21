@@ -194,36 +194,18 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
     } catch (_) {}
   }
 
-  // 2. Check offline DPAPI / localStorage lease token
+  // 2. Check offline DPAPI lease token
   if (tauriInvoke) {
     try {
-      const lease = await tauriInvoke<string>("vault_retrieve_secret", { key: "altspace_entitlement_token" });
-      if (lease) {
-        const trimmed = lease.trim().toUpperCase();
-        if (trimmed.startsWith("ALTS-PRO-") || trimmed.startsWith("PRO-") || trimmed.includes("PRO")) {
-          return {
-            isSupporter: true,
-            tier: "Pro",
-            login: storedLogin || "Pro Licensee",
-            avatarUrl: session?.avatarUrl,
-            provider: "offline-lease",
-            reason: "Verified Local Pro Entitlement Lease (Hardware Linked)",
-            role: "pro",
-          };
-        }
-      }
-    } catch (_) {}
-  } else {
-    try {
-      const localLease = localStorage.getItem("altspace_entitlement_token");
-      if (localLease && (localLease.toUpperCase().startsWith("ALTS-PRO-") || localLease.toUpperCase().startsWith("PRO-"))) {
+      const hasProLease = await tauriInvoke<boolean>("vault_check_entitlement_lease");
+      if (hasProLease) {
         return {
           isSupporter: true,
           tier: "Pro",
           login: storedLogin || "Pro Licensee",
           avatarUrl: session?.avatarUrl,
           provider: "offline-lease",
-          reason: "Verified Local Pro Entitlement Lease",
+          reason: "Verified Local Pro Entitlement Lease (Hardware Linked)",
           role: "pro",
         };
       }

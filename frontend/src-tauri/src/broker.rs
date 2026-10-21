@@ -135,7 +135,39 @@ pub struct FailureEvent {
 static FAILURE_RING_BUFFER: LazyLock<Arc<Mutex<Vec<FailureEvent>>>> =
     LazyLock::new(|| Arc::new(Mutex::new(Vec::with_capacity(10))));
 
-pub fn record_failure_event(event: FailureEvent) {
+pub fn redact_sensitive_str(input: &str) -> String {
+    let mut s = input.to_string();
+
+    // 1. Anthropic keys (must be evaluated before generic sk-)
+    if let Ok(re) = regex::Regex::new(r"\bsk-ant-[a-zA-Z0-9_\-]{15,}\b") {
+        s = re.replace_all(&s, "[REDACTED_ANTHROPIC_KEY]").to_string();
+    }
+    // 2. OpenAI / generic AI keys
+    if let Ok(re) = regex::Regex::new(r"\bsk-(?:proj-)?[a-zA-Z0-9_\-]{15,}\b") {
+        s = re.replace_all(&s, "[REDACTED_API_KEY]").to_string();
+    }
+    // 3. GitHub tokens (ghp, gho, ghu, ghs, ghr)
+    if let Ok(re) = regex::Regex::new(r"\bgh[pousr]_[a-zA-Z0-9]{20,}\b") {
+        s = re.replace_all(&s, "[REDACTED_GITHUB_TOKEN]").to_string();
+    }
+    // 4. Bearer tokens
+    if let Ok(re) = regex::Regex::new(r"(?i)\bbearer\s+[a-zA-Z0-9_\-\.~+/]+=*") {
+        s = re.replace_all(&s, "Bearer [REDACTED_TOKEN]").to_string();
+    }
+    // 5. Windows user paths
+    if let Ok(re) = regex::Regex::new(r"(?i)[a-z]:\\users\\[^\\]+\\") {
+        s = re.replace_all(&s, "~\\").to_string();
+    }
+
+    s
+}
+
+pub fn record_failure_event(mut event: FailureEvent) {
+    event.command_or_target = redact_sensitive_str(&event.command_or_target);
+    event.error_message = redact_sensitive_str(&event.error_message);
+    if let Some(ref mut out) = event.stdout_excerpt {
+        *out = redact_sensitive_str(out);
+    }
     if let Ok(mut buf) = FAILURE_RING_BUFFER.lock() {
         if buf.len() >= 10 {
             buf.remove(0);
@@ -660,7 +692,8 @@ pub fn get_action_ledger() -> Vec<LedgerEntry> {
     }
 }
 
-fn record_ledger(entry: LedgerEntry) {
+fn record_ledger(mut entry: LedgerEntry) {
+    entry.target = redact_sensitive_str(&entry.target);
     if let Ok(mut lock) = ACTION_LEDGER.lock() {
         lock.push(entry);
         if lock.len() > 100 {
@@ -970,5 +1003,46 @@ mod tests {
         let res = execute_action(&exec_req);
         assert!(!res.success, "CallHttpEndpoint must fail closed");
         assert!(res.error_message.unwrap().contains("CallHttpEndpoint execution route is permanently removed"));
+    }
+
+    #[test]
+    fn test_ledger_and_failure_events_redact_secrets() {
+        let raw_target = "Execute binary: cli.exe with args: [\"--api-key\", \"sk-proj-superSecretOpenAiKey1234567890\"]";
+        let entry = LedgerEntry {
+            id: "led-secret-test".into(),
+            action_name: "RunProgram".into(),
+            risk_tier: RiskTier::AlwaysApprove,
+            status: ActionStatus::Started,
+            target: raw_target.into(),
+            timestamp: 1000,
+            undo_available: false,
+        };
+        record_ledger(entry);
+
+        let recent = get_action_ledger();
+        let found = recent.iter().find(|e| e.id == "led-secret-test").expect("Ledger entry must exist");
+        assert!(!found.target.contains("sk-proj-superSecretOpenAiKey1234567890"), "Ledger target must not leak plaintext key");
+        assert!(found.target.contains("[REDACTED_API_KEY]"), "Ledger target must contain redacted placeholder");
+
+        let failure = FailureEvent {
+            id: "fail-secret-test".into(),
+            source: "cli".into(),
+            command_or_target: "git clone https://ghp_secretGitHubToken1234567890abcdef@github.com/org/repo".into(),
+            exit_code: Some(1),
+            error_message: "Failed for user C:\\Users\\alice\\AppData with sk-ant-secretAnthropicKey1234567".into(),
+            stdout_excerpt: Some("Authorization: Bearer mySecretJwtToken123456".into()),
+            timestamp: 1000,
+        };
+        record_failure_event(failure);
+
+        let failures = get_recent_failures();
+        let f = failures.iter().find(|e| e.id == "fail-secret-test").expect("Failure must exist");
+        assert!(!f.command_or_target.contains("ghp_secretGitHubToken1234567890abcdef"));
+        assert!(f.command_or_target.contains("[REDACTED_GITHUB_TOKEN]"));
+        assert!(!f.error_message.contains("sk-ant-secretAnthropicKey1234567"));
+        assert!(f.error_message.contains("[REDACTED_ANTHROPIC_KEY]"));
+        assert!(!f.error_message.contains("C:\\Users\\alice\\"));
+        assert!(f.error_message.contains("~\\"));
+        assert_eq!(f.stdout_excerpt.as_deref(), Some("Authorization: Bearer [REDACTED_TOKEN]"));
     }
 }

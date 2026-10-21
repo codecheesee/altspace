@@ -16,6 +16,7 @@ pub mod named_pipe;
 pub mod license_verifier;
 pub mod github_auth;
 pub mod docker_wsl;
+pub mod byok;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
@@ -1026,8 +1027,23 @@ fn vault_store_secret(key: String, value: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn vault_retrieve_secret(key: String) -> Result<Option<String>, String> {
-    crypto_vault::retrieve_secret(&key)
+fn vault_retrieve_secret(_key: String) -> Result<Option<String>, String> {
+    Err("Direct plaintext secret retrieval across IPC is prohibited by security policy. Secrets remain locked in DPAPI.".to_string())
+}
+
+#[tauri::command]
+fn vault_has_secret(key: String) -> Result<bool, String> {
+    crypto_vault::has_secret(&key)
+}
+
+#[tauri::command]
+fn vault_check_entitlement_lease() -> Result<bool, String> {
+    if let Ok(Some(lease)) = crypto_vault::retrieve_secret("altspace_entitlement_token") {
+        let trimmed = lease.trim().to_uppercase();
+        Ok(trimmed.starts_with("ALTS-PRO-") || trimmed.starts_with("PRO-") || trimmed.contains("PRO"))
+    } else {
+        Ok(false)
+    }
 }
 
 #[tauri::command]
@@ -1056,7 +1072,7 @@ fn vault_get_profile(name: String) -> Result<crypto_vault::EnvProfilePayload, St
     if !is_feature_enabled("secret_vault") {
         return Err("DPAPI Secret Vault is disabled in Settings".into());
     }
-    crypto_vault::retrieve_profile_payload(&name)
+    crypto_vault::get_masked_profile_payload(&name)
 }
 
 #[tauri::command]
@@ -1174,8 +1190,18 @@ fn vault_store_byok_key(provider: String, api_key: String) -> Result<(), String>
 }
 
 #[tauri::command]
-fn vault_retrieve_byok_key(provider: String) -> Result<Option<String>, String> {
-    crypto_vault::retrieve_byok_key(&provider)
+fn vault_retrieve_byok_key(_provider: String) -> Result<Option<String>, String> {
+    Err("Direct retrieval of BYOK API keys across IPC is prohibited by security policy. Use backend AI completion.".to_string())
+}
+
+#[tauri::command]
+fn vault_get_byok_status(provider: String) -> Result<Option<byok::ByokProviderStatus>, String> {
+    byok::get_byok_status(&provider)
+}
+
+#[tauri::command]
+fn byok_chat_completion(request: byok::ByokChatRequest) -> Result<byok::ByokChatResponse, String> {
+    byok::chat_completion(request)
 }
 
 #[tauri::command]
@@ -1303,6 +1329,8 @@ pub fn run() {
             broker_get_ledger,
             vault_store_secret,
             vault_retrieve_secret,
+            vault_has_secret,
+            vault_check_entitlement_lease,
             vault_delete_secret,
             get_machine_id,
             get_plugin_health,
@@ -1312,6 +1340,9 @@ pub fn run() {
             license_verifier::get_active_verified_license,
             github_auth::github_device_code_request,
             github_auth::github_device_token_poll,
+            github_auth::github_get_current_user,
+            github_auth::github_sign_out,
+            github_auth::github_store_manual_pat,
             set_feature_flags,
             get_feature_flags,
             get_port_process_forensics,
@@ -1334,6 +1365,8 @@ pub fn run() {
             clear_failure_context,
             vault_store_byok_key,
             vault_retrieve_byok_key,
+            vault_get_byok_status,
+            byok_chat_completion,
             vault_list_byok_providers,
             vault_delete_byok_key
         ])

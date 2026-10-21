@@ -129,6 +129,13 @@ pub fn retrieve_secret(key: &str) -> Result<Option<String>, String> {
     Ok(Some(text))
 }
 
+/// Checks whether an encrypted secret exists under the given key without decrypting or exposing it
+pub fn has_secret(key: &str) -> Result<bool, String> {
+    let clean_key = sanitize_key(key)?;
+    let path = get_vault_dir()?.join(format!("{}.dpapi", clean_key));
+    Ok(path.exists())
+}
+
 /// Deletes an encrypted secret from the vault
 pub fn delete_secret(key: &str) -> Result<bool, String> {
     let clean_key = sanitize_key(key)?;
@@ -246,6 +253,15 @@ pub fn retrieve_profile_payload(profile_name: &str) -> Result<EnvProfilePayload,
     let plaintext_bytes = unprotect_bytes(&ciphertext)?;
     let payload: EnvProfilePayload = serde_json::from_slice(&plaintext_bytes)
         .map_err(|e| format!("Failed to parse decrypted profile JSON: {}", e))?;
+    Ok(payload)
+}
+
+/// Retrieves environment profile payload with all secret values masked for safe WebView display
+pub fn get_masked_profile_payload(profile_name: &str) -> Result<EnvProfilePayload, String> {
+    let mut payload = retrieve_profile_payload(profile_name)?;
+    for var in &mut payload.variables {
+        var.value = redact_secret_value(&var.value);
+    }
     Ok(payload)
 }
 
@@ -529,5 +545,47 @@ mod tests {
         assert!(sanitize_key("valid_key-1").is_ok());
         assert!(sanitize_key("../invalid").is_err());
         assert!(sanitize_key("").is_err());
+    }
+
+    #[test]
+    fn test_has_secret_and_masked_profile() {
+        let test_key = "test_presence_key";
+        let _ = delete_secret(test_key);
+        assert!(!has_secret(test_key).unwrap());
+
+        store_secret(test_key, "super_secret_token_123").unwrap();
+        assert!(has_secret(test_key).unwrap());
+        delete_secret(test_key).unwrap();
+        assert!(!has_secret(test_key).unwrap());
+
+        let prof = EnvProfilePayload {
+            name: "test_mask_prof".into(),
+            description: Some("Test profile".into()),
+            updated_at: 0,
+            variables: vec![
+                EnvVariableEntry {
+                    key: "SECRET_KEY".into(),
+                    value: "sk-ant-live01-1234567890abcdef".into(),
+                },
+                EnvVariableEntry {
+                    key: "SHORT_PIN".into(),
+                    value: "1234".into(),
+                },
+            ],
+        };
+        save_env_profile(prof).unwrap();
+
+        // retrieve_profile_payload keeps plaintext for process injection
+        let raw = retrieve_profile_payload("test_mask_prof").unwrap();
+        assert_eq!(raw.variables[0].value, "sk-ant-live01-1234567890abcdef");
+        assert_eq!(raw.variables[1].value, "1234");
+
+        // get_masked_profile_payload masks values before returning to WebView
+        let masked = get_masked_profile_payload("test_mask_prof").unwrap();
+        assert_ne!(masked.variables[0].value, "sk-ant-live01-1234567890abcdef");
+        assert!(masked.variables[0].value.contains("***"));
+        assert_eq!(masked.variables[1].value, "****");
+
+        delete_env_profile("test_mask_prof").unwrap();
     }
 }

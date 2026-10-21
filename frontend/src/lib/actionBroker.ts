@@ -1,4 +1,4 @@
-import { tauriInvoke } from "./appStorage";
+import { invokeStrict, tauriInvoke } from "./appStorage";
 
 export type RiskTier = "read_only_auto" | "preview_then_approve" | "always_approve";
 export type ActionStatus =
@@ -113,8 +113,39 @@ export async function storeByokKey(provider: string, apiKey: string): Promise<vo
   await tauriInvoke("vault_store_byok_key", { provider, apiKey });
 }
 
-export async function retrieveByokKey(provider: string): Promise<string | null> {
-  return (await tauriInvoke<string | null>("vault_retrieve_byok_key", { provider })) || null;
+export async function retrieveByokKey(_provider: string): Promise<string | null> {
+  // Prohibited by security policy: BYOK API keys remain in DPAPI and never cross IPC
+  return null;
+}
+
+export interface ByokProviderStatus {
+  provider: string;
+  is_configured: boolean;
+  fingerprint: string;
+}
+
+export async function getByokStatus(provider: string): Promise<ByokProviderStatus | null> {
+  return (await tauriInvoke<ByokProviderStatus | null>("vault_get_byok_status", { provider })) || null;
+}
+
+export interface ByokChatRequest {
+  provider: string;
+  model?: string;
+  prompt: string;
+  system_prompt?: string;
+  max_tokens?: number;
+  temperature?: number;
+}
+
+export interface ByokChatResponse {
+  provider: string;
+  model: string;
+  content: string;
+  finish_reason?: string;
+}
+
+export async function byokChatCompletion(request: ByokChatRequest): Promise<ByokChatResponse> {
+  return await invokeStrict<ByokChatResponse>("byok_chat_completion", { request });
 }
 
 export async function listByokProviders(): Promise<string[]> {
