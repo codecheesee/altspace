@@ -83,12 +83,16 @@ AltSpace has completed a comprehensive architectural, security, and monetization
 | Quota & Trial Policy | `frontend/src/lib/quota.test.mjs` | 12 tests | **Passed** |
 | Entitlements & Webhooks | `frontend/src/lib/entitlement.test.mjs` | 10 tests | **Passed** |
 | First-Run & Privacy | `frontend/src/lib/firstRunPrivacy.test.mjs` | 8 tests | **Passed** |
+| Action Broker & Policy | `frontend/src/lib/actionBroker.test.mjs` | 6 tests | **Passed** |
+| Red-Team Adversarial Suite | `frontend/src/lib/redTeamSecurity.test.mjs` | 7 tests | **Passed** |
+| Privacy Diagnostics & Redaction | `frontend/src/lib/diagnostics.test.mjs` | 5 tests | **Passed** |
+| Configuration Schema & Diff | `frontend/src/lib/configValidator.test.mjs` | 5 tests | **Passed** |
 | Bounty & Treasury Sync | `frontend/src/lib/bountySync.test.mjs` | 4 tests | **Passed** |
 | Regional Pricing & Currency | `frontend/src/lib/checkout.test.mjs` | 5 tests | **Passed** |
-| Launch Kit & Distribution Assets | `scripts/verify_launch_kit.test.mjs` | 4 tests | **Passed** |
-| Rust Unit & Integration Tests | `frontend/src-tauri/src/*.rs` | 27 tests | **Passed** |
+| Launch Kit & Distribution Assets | `scripts/releaseChecklist.test.mjs` + `buildVerification.test.mjs` | 8 tests | **Passed** |
+| Rust Unit & Integration Tests | `frontend/src-tauri/src/*.rs` | 39 tests | **Passed** |
 
-**Total Automated Coverage**: 43 Node.js test cases + 27 Rust test cases = 70 tests passing with zero failures.
+**Total Automated Coverage**: 70 Node.js test cases + 39 Rust test cases = **109 tests passing with zero failures**. Clippy `-D warnings` and TypeScript compiler verification pass cleanly.
 
 ---
 

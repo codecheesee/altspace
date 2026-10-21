@@ -94,11 +94,34 @@ Search and restore clipboard history with automated credential masking:
 - Clipboard, listening ports, installed games, and drive data are exposed only in their explicit modes or after a meaningful query.
 - No starter plugin or hardcoded workspace path is created on installation.
 
+### 8. Capability-Based Execution Broker & 3-Tier Policy
+Every native operation, AI-suggested intent, plugin request, shell command, and filesystem change passes through a centralized execution broker:
+- **Level 1 (ReadOnlyAuto)**: Read-only searches, metadata inspection, and offline calculation run automatically without prompt friction.
+- **Level 2 (PreviewThenApprove)**: File writes, renames, configuration changes, and network calls require dry-run preview and user consent (with optional session-remembering).
+- **Level 3 (AlwaysApprove)**: File deletions, arbitrary executable launches, PowerShell execution, and port process termination strictly mandate explicit confirmation every time.
+- **Timeline Ledger & One-Click Undo**: The in-memory action ledger records all operations with timestamps, targets, and reversal callbacks. Summon with `Alt + H`.
+
+### 9. Windows DPAPI Credential Vault
+User tokens, GitHub OAuth sessions, and commercial entitlement leases are encrypted using Windows DPAPI (`CryptProtectData`) tied to the active Windows user login. No plaintext secrets or tokens are stored in `localStorage` or configuration files.
+
+### 10. Privacy-Preserving Observability & Diagnostics
+Inspect and export telemetry safely without leaking credentials, private keys, or personal filesystem paths:
+- Press `Ctrl + Shift + D` or invoke from the Footer/Context menu to open the sanitized diagnostics modal.
+- Automated regex engine redacts OpenAI API keys (`sk-...`), GitHub tokens (`ghp_...`), Anthropic keys, RSA private keys, and user home directories (`C:\Users\<user>\` $\to$ `~\`).
+
+### 11. Extension Trust Tiers, Auto-Quarantine & Safe Mode
+- **Trust Tiers**: Extensions are classified as `BuiltIn`, `Verified`, `Community`, `LocalDev`, or `Revoked`. Known malicious IDs are blocked automatically.
+- **Auto-Quarantine Health Tracker**: If an extension crashes 3 consecutive times or times out twice, it is quarantined to prevent runaway process loops.
+- **Safe Mode**: Launch AltSpace with `--safe-mode` or `ALTSPACE_SAFE_MODE=1` to bypass all third-party plugins and custom themes during troubleshooting.
+
+### 12. Validated Configuration Sync (`.altconfig`)
+Export or import non-sensitive preferences (theme, custom accent, autostart, sidebar visibility, multi-drive preference). The validator strictly rejects prototype pollution and credential keys (`api_key`, `token`, `password`, `vault`) and calculates a dry-run diff preview before applying changes.
+
 ---
 
 ## Command Palette Syntax
 
-| Query Syntax | Action | Quota Impact |
+| Query / Shortcut | Action | Quota Impact |
 | :--- | :--- | :--- |
 | `<search>` | Search installed applications, indexed files, and system settings | **Free Forever** |
 | `:<port>` *(e.g. `:3000`)* | Inspect process listening on port and terminate on <kbd>Enter</kbd> | **Free Forever** |
@@ -107,6 +130,9 @@ Search and restore clipboard history with automated credential masking:
 | `:update` | Check for updates and open latest GitHub release | **Free Forever** |
 | `Alt + C` | Switch directly to Clipboard History tab | **Free Forever** |
 | `Alt + P` | Switch directly to Port Inspector tab | **Free Forever** |
+| `Alt + H` | Open Action Execution Timeline and One-Click Undo Drawer | **Free Forever** |
+| `Ctrl + Shift + D` | Open Privacy Diagnostics & Sanitized Report Modal | **Free Forever** |
+| `Ctrl + B` | Toggle contextual Details Sidebar | **Free Forever** |
 | `Ctrl + K` | Open contextual Action Drawer for selected item | **Free Forever** |
 | `?<prompt>` *(or `ai:`)* | Query local/hosted AI via Model Context Protocol | Trial Quota (100 actions / 30 days) |
 | `><cmd>` *(or `cmd:`)* | Execute native terminal shell command | Trial Quota (100 actions / 30 days) |
@@ -173,10 +199,10 @@ npm install
 npm run tauri dev
 ```
 
-### Automated Test Suite
+### Automated Test Suite (109 Tests)
 
 ```bash
-# Run frontend unit tests (quota, entitlements, first-run privacy, bounties)
+# Run 70 frontend unit, red-team security, and governance tests
 node --test src/lib/*.test.mjs ../scripts/*.test.mjs
 
 # Run frontend production build & type checks
@@ -185,9 +211,11 @@ npm run build
 # Run frontend linter
 npm run lint
 
-# Run Rust unit and integration tests
-cd src-tauri
-cargo test
+# Run 39 native Rust unit and integration tests
+cargo test --manifest-path src-tauri/Cargo.toml
+
+# Run Rust Clippy strict linting
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 ```
 
 ---
