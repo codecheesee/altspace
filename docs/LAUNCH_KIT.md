@@ -116,9 +116,10 @@ I would like to share AltSpace, an open-source spotlight launcher and command pa
 - **Win32 Message Loop**: Uses raw Win32 bindings (`RegisterHotKey`, `AttachThreadInput`, `ShellExecuteW`) for low-latency invocation and window management.
 - **Process Safeguards**: User-level child script execution with strict path verification and automated job object termination timeouts.
 
-The full test suite (26 unit and integration tests) runs in CI. Feedback on memory optimization and Win32 safety invariants is appreciated.
+The full test suite (39 Rust tests, 70 Node/security tests, 109 total automated tests) runs in CI. Feedback on memory optimization and Win32 safety invariants is appreciated.
 
 Repository: https://github.com/codecheesee/altspace
+Download / Landing Page: https://codecheesee.github.io/altspace/
 ```
 
 ---
@@ -148,7 +149,8 @@ Technical Design:
 4. Sustainable Open-Core Governance: The core app is Apache 2.0. For supporters who purchase an optional license, 20% of revenue is dedicated to public GitHub bounties for extension authors.
 
 Code: https://github.com/codecheesee/altspace
-Website: https://altspace.dev
+Website / Download: https://codecheesee.github.io/altspace/
+Direct Installer: https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe
 
 We welcome discussion regarding our plugin security architecture and system integration choices.
 ```

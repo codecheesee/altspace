@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AltSpace — The Modern Extensible Raycast for Windows</title>
-  <meta name="description" content="Lightning-fast, extensible spotlight launcher for Windows with local AI (MCP), SQLite frecency, dev port killer, and a 20% open-source contributor bounty treasury." />
+  <title>AltSpace — High-Performance Native Command Palette for Windows</title>
+  <meta name="description" content="Lightning-fast, extensible spotlight launcher for Windows with sub-5ms search, local AI (Ollama + MCP), dev port killer, DPAPI vault, and a 20% open-source contributor bounty treasury." />
   
   <!-- Open Graph / Facebook / LinkedIn / Discord -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://altspace.dev/" />
-  <meta property="og:title" content="AltSpace — The Modern Extensible Raycast for Windows" />
-  <meta property="og:description" content="Lightning-fast, extensible spotlight launcher for Windows with local AI (MCP), SQLite frecency, dev port killer, and a 20% open-source contributor bounty treasury." />
+  <meta property="og:url" content="https://codecheesee.github.io/altspace/" />
+  <meta property="og:title" content="AltSpace — High-Performance Native Command Palette for Windows" />
+  <meta property="og:description" content="Sub-5ms Rust core, 18MB RAM, 1-click port killer, DPAPI secret vault, and a 20% community bounty treasury. Free Apache 2.0." />
   <meta property="og:image" content="./og-preview.svg" />
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content="https://altspace.dev/" />
-  <meta name="twitter:title" content="AltSpace — The Modern Extensible Raycast for Windows" />
-  <meta name="twitter:description" content="Sub-5ms Rust core, 18MB RAM, 1-click port killer, and a 20% community bounty treasury. Free Apache 2.0." />
+  <meta name="twitter:url" content="https://codecheesee.github.io/altspace/" />
+  <meta name="twitter:title" content="AltSpace — High-Performance Native Command Palette for Windows" />
+  <meta name="twitter:description" content="Sub-5ms Rust core, 18MB RAM, 1-click port killer, DPAPI vault, and a 20% community bounty treasury. Free Apache 2.0." />
   <meta name="twitter:image" content="./og-preview.svg" />
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,6 +56,11 @@
     .glass-card:hover {
       border-color: rgba(255, 255, 255, 0.16);
     }
+    .tab-active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body class="min-h-screen relative overflow-x-hidden selection:bg-zinc-700 selection:text-white">
@@ -68,15 +74,16 @@
         Alt
       </div>
       <span class="text-xl font-bold tracking-tight text-white">AltSpace</span>
-      <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 ml-1">
-        v1.0.1 • Apache 2.0
+      <span class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 ml-1">
+        v2.0.0-preview • Apache 2.0
       </span>
     </div>
 
     <div class="flex items-center gap-4 text-sm font-medium">
       <a href="#features" class="text-neutral-400 hover:text-white transition">Features</a>
-      <a href="#treasury" class="text-neutral-300 hover:text-white transition">Bounty Treasury</a>
-      <a href="#bounties" class="text-neutral-400 hover:text-white transition">Bounties</a>
+      <a href="#download" class="text-neutral-300 hover:text-white transition">Download</a>
+      <a href="#pricing" class="text-neutral-400 hover:text-white transition">Editions</a>
+      <a href="#treasury" class="text-neutral-400 hover:text-white transition">Bounty Treasury</a>
       <a href="https://github.com/codecheesee/altspace" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition border border-zinc-700">
         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         <span>GitHub</span>
@@ -85,11 +92,12 @@
   </nav>
 
   <!-- Hero Section -->
-  <section class="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
-    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/80 border border-zinc-700/80 text-zinc-300 text-xs font-semibold mb-6">
-      <span>High-Performance Windows Command Center</span>
+  <section class="max-w-5xl mx-auto px-6 pt-16 pb-16 text-center">
+    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-800/80 border border-zinc-700/80 text-zinc-300 text-xs font-semibold mb-6">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      <span>v2.0.0-preview Available Now</span>
       <span class="text-zinc-500">•</span>
-      <span class="text-white">Rust + React 19 + Tailwind CSS v4</span>
+      <span class="text-white">Rust + Tauri v2 + React 19</span>
     </div>
 
     <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
@@ -100,22 +108,83 @@
     </h1>
 
     <p class="text-lg text-neutral-400 max-w-2xl mx-auto mt-6">
-      Low-latency desktop productivity featuring SQLite frecency search, local AI via Model Context Protocol (MCP), developer port management, clipboard history, and a sandboxed extension store.
+      Low-latency desktop productivity featuring SQLite frecency search, local offline AI via Model Context Protocol (MCP), developer port killer, Windows DPAPI secret vault, and a 20% open-source contributor bounty treasury.
     </p>
 
-    <!-- 1-Click Install Command -->
-    <div class="mt-8 max-w-xl mx-auto">
-      <div class="glass-card rounded-2xl p-2 flex items-center justify-between gap-3 shadow-xl">
-        <div class="flex items-center gap-3 pl-3 text-neutral-300 text-sm font-mono overflow-x-auto whitespace-nowrap">
-          <span class="text-zinc-500 select-none">PS &gt;</span>
-          <span id="install-cmd">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
+    <!-- Global Download Hub -->
+    <div id="download" class="mt-10 max-w-2xl mx-auto scroll-mt-24">
+      <div class="glass-card rounded-2xl p-6 shadow-2xl border border-white/[0.12] text-left">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+          <!-- Primary Setup Button -->
+          <a
+            href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe"
+            class="w-full sm:w-auto flex-1 flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-sm transition shadow-lg hover:shadow-xl cursor-pointer"
+          >
+            <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <div class="text-left">
+              <div>Download for Windows</div>
+              <div class="text-[10px] text-zinc-600 font-mono font-normal">AltSpace-Setup-x64.exe • 3.7 MB</div>
+            </div>
+          </a>
+
+          <!-- Portable Zip Button -->
+          <a
+            href="https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Portable-x64.zip"
+            class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm transition border border-zinc-700 cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <div class="text-left">
+              <div>Portable (.zip)</div>
+              <div class="text-[10px] text-zinc-400 font-mono font-normal">Zero-Install • 4.9 MB</div>
+            </div>
+          </a>
         </div>
-        <button id="copy-btn" onclick="copyInstallCmd()" class="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-          <span id="copy-text">Copy</span>
-        </button>
+
+        <!-- Terminal & Package Manager Methods -->
+        <div class="mt-4 pt-2">
+          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-400 mb-2">
+            <span>Terminal & Package Manager Options</span>
+          </div>
+
+          <!-- Winget Command -->
+          <div class="glass-card rounded-xl p-2.5 flex items-center justify-between gap-3 text-xs mb-2">
+            <div class="flex items-center gap-2 text-neutral-300 font-mono overflow-x-auto whitespace-nowrap">
+              <span class="text-zinc-500 select-none">winget &gt;</span>
+              <span id="cmd-winget">winget install codecheesee.altspace</span>
+            </div>
+            <button onclick="copyToClipboard('cmd-winget', this)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition border border-zinc-700 cursor-pointer shrink-0">
+              Copy
+            </button>
+          </div>
+
+          <!-- PowerShell One-Liner -->
+          <div class="glass-card rounded-xl p-2.5 flex items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2 text-neutral-300 font-mono overflow-x-auto whitespace-nowrap">
+              <span class="text-zinc-500 select-none">pwsh &gt;</span>
+              <span id="cmd-ps">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
+            </div>
+            <button onclick="copyToClipboard('cmd-ps', this)" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-mono transition border border-zinc-700 cursor-pointer shrink-0">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Windows SmartScreen Friendly Advisory -->
+        <div class="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs">
+          <span class="text-amber-400 text-base leading-none">🛡️</span>
+          <div class="text-neutral-300 leading-relaxed text-[11px]">
+            <strong class="text-amber-300">Windows SmartScreen Note:</strong> AltSpace is community-funded open source. If Windows displays <em>"Windows protected your PC"</em>, click <strong class="text-white">More info</strong> &rarr; <strong class="text-white">Run anyway</strong>. All binaries are built and checksum-verified transparently on GitHub Actions.
+          </div>
+        </div>
       </div>
-      <p class="text-xs text-neutral-500 mt-2">Requires Windows 10/11 • 100% Free Core & Open-Source</p>
+
+      <div class="flex items-center justify-center gap-6 mt-3 text-xs text-neutral-500">
+        <span>Requires Windows 10/11 (64-bit)</span>
+        <span>•</span>
+        <a href="https://github.com/codecheesee/altspace/releases/tag/v2.0.0-preview" target="_blank" class="text-zinc-400 hover:text-white underline">
+          View v2.0.0-preview Release on GitHub &rarr;
+        </a>
+      </div>
     </div>
 
     <!-- Launcher Preview Mockup -->
@@ -127,7 +196,7 @@
           <span class="text-white text-sm font-medium">kill port 3000</span>
           <span class="w-1.5 h-4 bg-white animate-pulse"></span>
           <span class="ml-auto text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-            ⚡ MCP System Action
+            ⚡ Broker Action (Level 3)
           </span>
         </div>
 
@@ -137,11 +206,209 @@
             <span class="text-emerald-400 font-bold">✓</span>
             <div>
               <div class="font-semibold text-emerald-300">Port 3000 Terminated</div>
-              <div class="text-neutral-400 text-[11px]">Killed node.exe (PID 18420) • Freed in 3.2ms</div>
+              <div class="text-neutral-400 text-[11px]">Killed node.exe (PID 18420) • Freed in 3.2ms • Audited via broker.rs</div>
             </div>
           </div>
           <kbd class="kbd-cap">↵ Enter</kbd>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-pink-400">Engineered for Power Users</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Everything You Need at Your Fingertips</h2>
+      <p class="text-neutral-400 text-sm mt-3">Native performance, zero cloud lock-in, and capability-based security by design.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 1. SQLite Frecency -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg">⚡</div>
+        <h3 class="font-bold text-white text-base">Sub-5ms SQLite Frecency</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Powered by Rust and SQLite. Employs logarithmic time-decay frecency ranking and Everything SDK fallback so your most relevant apps and documents appear instantly.
+        </p>
+      </div>
+
+      <!-- 2. Local AI & MCP -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center text-lg">🤖</div>
+        <h3 class="font-bold text-white text-base">Local AI & Native MCP Tools</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Connects to Ollama (Llama 3.2) locally with zero token tracking. Native Model Context Protocol (MCP) tool execution lets the AI inspect ports, snap windows, and search files safely.
+        </p>
+      </div>
+
+      <!-- 3. Dev Port Killer -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg">💀</div>
+        <h3 class="font-bold text-white text-base">Instant Dev Port Killer</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Type <code class="text-emerald-300 font-mono">:3000</code> to inspect listening sockets, identify zombie Node/Vite processes, and terminate them in 3.2ms without touching Task Manager.
+        </p>
+      </div>
+
+      <!-- 4. Capability Execution Broker -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center text-lg">🛡️</div>
+        <h3 class="font-bold text-white text-base">Capability Execution Broker</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          3-tier policy broker intercepts all system commands. Non-destructive operations run immediately, while writes, deletes, and shell executions require interactive dry-run approvals.
+        </p>
+      </div>
+
+      <!-- 5. Windows DPAPI Secret Vault -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-lg">🔐</div>
+        <h3 class="font-bold text-white text-base">Windows DPAPI Secret Vault</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Hardware-backed encryption via Windows Data Protection API (CryptProtectData). API keys and tokens are encrypted with your Windows account—never stored in plaintext.
+        </p>
+      </div>
+
+      <!-- 6. Privacy Diagnostics & Quarantine -->
+      <div class="glass-card rounded-2xl p-6 space-y-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg">📊</div>
+        <h3 class="font-bold text-white text-base">Local Diagnostics & Safe Mode</h3>
+        <p class="text-neutral-400 text-xs leading-relaxed">
+          Press <kbd class="kbd-cap">Ctrl+Shift+D</kbd> for an in-app privacy-safe diagnostics viewer. Broken or hanging extensions are auto-quarantined with <code class="text-indigo-300 font-mono">--safe-mode</code> recovery.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Editions & Commercial Entitlement Matrix -->
+  <section id="pricing" class="max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.08]">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400">Transparent & Sustainable</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Simple, Honest Editions</h2>
+      <p class="text-neutral-400 text-sm mt-3">
+        The core desktop application is 100% Free and Open Source under Apache 2.0. Supporter licenses fund active development and our 20% Contributor Bounty Treasury.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Tier 1: Community Core -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase font-bold text-neutral-400">Community Core</span>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">Apache 2.0</span>
+          </div>
+          <div class="text-3xl font-extrabold text-white">$0</div>
+          <div class="text-xs text-neutral-500 mt-1">Free Forever • 100% Offline</div>
+
+          <ul class="mt-6 space-y-2.5 text-xs text-neutral-300">
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Sub-5ms App & File Search
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Dev Port Killer (:3000)
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Local Offline AI (Ollama MCP)
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Windows DPAPI Secret Vault
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Unlimited Local Extensions
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Clipboard History & Secret Masking
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Zero Telemetry & Privacy Safe
+            </li>
+          </ul>
+        </div>
+
+        <a href="#download" class="mt-8 block text-center py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs transition border border-zinc-700">
+          Download Free
+        </a>
+      </div>
+
+      <!-- Tier 2: Supporter / Pro (Highlighted) -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between border-purple-500/40 relative shadow-2xl bg-gradient-to-b from-purple-500/[0.08] to-transparent">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-md">
+          Most Popular • 20% to Bounty Pool
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase font-bold text-purple-300">Supporter / Pro</span>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Lifetime</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="tier-price-display" class="text-3xl font-extrabold text-white">₹299</span>
+            <span class="text-xs text-neutral-400">or $12 USD</span>
+          </div>
+          <div class="text-xs text-purple-300/80 mt-1">One-time purchase • 20% to Contributor Treasury</div>
+
+          <ul class="mt-6 space-y-2.5 text-xs text-neutral-300">
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> <strong>Everything in Community</strong>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> Cloud AI Connectors (Claude, OpenAI)
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> Multi-Device Config Sync Leases
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> Verified Extension Store Badges
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> Priority GitHub Bounty Voting Rights
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-purple-400 font-bold">✓</span> Supporter Discord / Issue Badge
+            </li>
+          </ul>
+        </div>
+
+        <a href="https://github.com/codecheesee/altspace/blob/main/SPONSORS.md" target="_blank" class="mt-8 block text-center py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg">
+          Get Supporter License &rarr;
+        </a>
+      </div>
+
+      <!-- Tier 3: Teams & Commercial -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase font-bold text-neutral-400">Teams & Enterprise</span>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">Annual</span>
+          </div>
+          <div class="text-3xl font-extrabold text-white">$49</div>
+          <div class="text-xs text-neutral-500 mt-1">Per Seat / Year • Centralized SLA</div>
+
+          <ul class="mt-6 space-y-2.5 text-xs text-neutral-300">
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> <strong>Everything in Supporter</strong>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Centralized Policy & Extension Control
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Team Command Palette & Dev Snippets
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Organization Billing & Tax Compliance
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Private Internal Extension Hosting
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">✓</span> Priority Enterprise SLA Support
+            </li>
+          </ul>
+        </div>
+
+        <a href="https://github.com/codecheesee/altspace/issues/new?title=%5BEnterprise%5D+Team+Inquiry" target="_blank" class="mt-8 block text-center py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs transition border border-zinc-700">
+          Contact for Teams
+        </a>
       </div>
     </div>
   </section>
@@ -194,12 +461,12 @@
           <div class="flex items-center justify-between">
             <span class="text-[11px] uppercase font-semibold text-neutral-400">Supporter Tier</span>
             <div class="flex items-center bg-white/[0.06] p-0.5 rounded border border-white/[0.08]">
-              <button id="curr-btn-inr" onclick="setCurrency('INR')" class="px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-amber-400 text-black font-semibold">₹ INR</button>
-              <button id="curr-btn-usd" onclick="setCurrency('USD')" class="px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white">$ USD</button>
+              <button id="curr-btn-inr" onclick="setCurrency('INR')" class="px-1.5 py-0.5 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold">₹ INR</button>
+              <button id="curr-btn-usd" onclick="setCurrency('USD')" class="px-1.5 py-0.5 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white">$ USD</button>
             </div>
           </div>
           <div id="price-display" class="text-2xl font-bold text-white mt-1">₹299</div>
-          <div id="ppp-note" class="text-[11px] text-neutral-500 mt-1">~$25/mo • Regional PPP Active</div>
+          <div id="ppp-note" class="text-[11px] text-neutral-500 mt-1">~$3.60 • Regional PPP Active</div>
         </div>
 
         <div class="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25">
@@ -224,72 +491,8 @@
           </div>
         </div>
         <a id="checkout-link-btn" href="https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr" target="_blank" rel="noreferrer" class="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition shrink-0 cursor-pointer shadow-md">
-          Get Supporter License →
+          Get Supporter License &rarr;
         </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features Grid -->
-  <section id="features" class="max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.08]">
-    <div class="text-center max-w-2xl mx-auto mb-16">
-      <span class="text-xs font-mono font-semibold uppercase tracking-wider text-pink-400">Engineered for Power Users</span>
-      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 tracking-tight">Everything You Need at Your Fingertips</h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- 1. SQLite Frecency -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg">⚡</div>
-        <h3 class="font-bold text-white text-base">Sub-5ms SQLite Frecency</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Powered by Rust and SQLite. Employs exponential time-decay frecency ranking so your most relevant apps and documents appear with zero keystroke delay.
-        </p>
-      </div>
-
-      <!-- 2. Model Context Protocol -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center text-lg">🤖</div>
-        <h3 class="font-bold text-white text-base">Local AI & Native MCP Tools</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Connects to Ollama (Llama 3.2). Native Model Context Protocol (MCP) tool execution lets the AI inspect ports, snap windows, search files, and run commands.
-        </p>
-      </div>
-
-      <!-- 3. Dev Port Killer -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg">💀</div>
-        <h3 class="font-bold text-white text-base">Instant Dev Port Killer</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Type <code class="text-emerald-300 font-mono">:3000</code> to view and terminate rogue Node.js, Vite, or Python servers without opening Task Manager.
-        </p>
-      </div>
-
-      <!-- 4. Community Extension Store -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center text-lg">🔌</div>
-        <h3 class="font-bold text-white text-base">1-Click Sandboxed Store</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Decoupled remote extension registry with path boundary verification, 15-second execution timeouts, and direct author tipping buttons.
-        </p>
-      </div>
-
-      <!-- 5. Clipboard Manager -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-lg">📋</div>
-        <h3 class="font-bold text-white text-base">Infinite Clipboard History</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Categorizes clipboard snippets by links, colors, code, and text. Automatic secret masking hides API keys and tokens from prying eyes.
-        </p>
-      </div>
-
-      <!-- 6. Window Snapping -->
-      <div class="glass-card rounded-2xl p-6 space-y-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg">🪟</div>
-        <h3 class="font-bold text-white text-base">Window Tiling & Snapping</h3>
-        <p class="text-neutral-400 text-xs leading-relaxed">
-          Snap foreground windows to halves, thirds, or quadrants using keyboard shortcuts. Raycast-style multi-monitor window arrangement on Windows.
-        </p>
       </div>
     </div>
   </section>
@@ -305,15 +508,40 @@
     </div>
 
     <!-- Live Synced Bounties Grid -->
-    <div id="bounties-grid" class="max-w-3xl mx-auto">
+    <div id="bounties-grid" class="max-w-3xl mx-auto space-y-3">
       <div class="glass-card rounded-2xl p-6 text-center border border-white/[0.08]">
         <h3 class="text-base font-semibold text-white mb-2">Funded by 20% of Supporter Revenue</h3>
         <p class="text-xs text-neutral-400 max-w-xl mx-auto leading-relaxed mb-4">
-          All feature bounties are tracked transparently on GitHub Issues under the <code class="text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">bounty</code> label. When community members propose and complete requested extensions, bounties are disbursed via Polar.sh / Open Collective.
+          All feature bounties are tracked transparently on GitHub Issues under the <code class="text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">bounty</code> label. When community members propose and complete requested extensions, bounties are disbursed via Polar.sh / GitHub Sponsors.
         </p>
         <a href="https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/30 text-xs font-semibold transition">
-          View Active GitHub Bounties & Propose Features →
+          View Active GitHub Bounties & Propose Features &rarr;
         </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="max-w-4xl mx-auto px-6 py-16 border-t border-white/[0.08]">
+    <h2 class="text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
+    <div class="space-y-4 text-xs">
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="font-semibold text-white text-sm">Why does Windows SmartScreen show a blue warning?</h3>
+        <p class="text-neutral-400 mt-1 leading-relaxed">
+          Microsoft SmartScreen displays a warning for any executable that hasn't established automated cloud reputation via millions of downloads or an expensive Extended Validation (EV) certificate. AltSpace is 100% open-source; you can verify all code on GitHub and review reproducible GitHub Actions build logs. Simply click <strong>"More info"</strong> and <strong>"Run anyway"</strong>.
+        </p>
+      </div>
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="font-semibold text-white text-sm">Does AltSpace require an internet connection?</h3>
+        <p class="text-neutral-400 mt-1 leading-relaxed">
+          No! AltSpace is engineered local-first. App launching, file search, port termination, clipboard history, and local AI (via Ollama at localhost:11434) run completely offline without transmitting any telemetry or user data.
+        </p>
+      </div>
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="font-semibold text-white text-sm">How does the 20% Contributor Treasury work?</h3>
+        <p class="text-neutral-400 mt-1 leading-relaxed">
+          For every supporter license or sponsor payment, 20% is set aside into a public treasury pool. Maintainers post wanted features and extension ideas as GitHub Issues with attached bounties. Community developers submit PRs, and once merged, bounties are paid directly via Polar.sh or GitHub Sponsors.
+        </p>
       </div>
     </div>
   </section>
@@ -325,8 +553,10 @@
     </div>
     <div class="flex items-center gap-6">
       <a href="https://github.com/codecheesee/altspace" class="hover:text-white transition">GitHub</a>
+      <a href="https://github.com/codecheesee/altspace/releases" class="hover:text-white transition">Releases</a>
       <a href="https://github.com/codecheesee/altspace/blob/main/.github/CONTRIBUTING.md" class="hover:text-white transition">Contributing</a>
       <a href="https://github.com/codecheesee/altspace/issues" class="hover:text-white transition">Issues</a>
+      <a href="https://github.com/codecheesee/altspace/blob/main/LICENSE" class="hover:text-white transition">Apache 2.0 License</a>
     </div>
   </footer>
 
@@ -340,18 +570,21 @@
       const priceDisplay = document.getElementById('price-display');
       const pppNote = document.getElementById('ppp-note');
       const checkoutBtn = document.getElementById('checkout-link-btn');
+      const tierPrice = document.getElementById('tier-price-display');
 
       if (curr === 'INR') {
-        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
-        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
+        inrBtn.className = 'px-1.5 py-0.5 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
+        usdBtn.className = 'px-1.5 py-0.5 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
         priceDisplay.innerText = '₹299';
-        pppNote.innerText = '~₹25/mo • Regional PPP Active';
+        if (tierPrice) tierPrice.innerText = '₹299';
+        pppNote.innerText = '~$3.60 • Regional PPP Active';
         checkoutBtn.href = 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-inr';
       } else {
-        usdBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
-        inrBtn.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
+        usdBtn.className = 'px-1.5 py-0.5 rounded text-[10px] font-mono transition bg-zinc-700 text-white font-semibold';
+        inrBtn.className = 'px-1.5 py-0.5 rounded text-[10px] font-mono transition text-neutral-400 hover:text-white';
         priceDisplay.innerText = '$12';
-        pppNote.innerText = '$1/mo • Global Supporter Tier';
+        if (tierPrice) tierPrice.innerText = '$12';
+        pppNote.innerText = '$12 Lifetime • Global Supporter Tier';
         checkoutBtn.href = 'https://github.com/codecheesee/altspace/blob/main/SPONSORS.md#supporter-usd';
       }
 
@@ -372,13 +605,13 @@
       document.getElementById('bounties-funded-display').innerText = fundedBounties + ' Bounties';
     }
 
-    function copyInstallCmd() {
-      const cmd = document.getElementById('install-cmd').innerText;
-      navigator.clipboard.writeText(cmd);
-      const btnText = document.getElementById('copy-text');
-      btnText.innerText = 'Copied!';
+    function copyToClipboard(elementId, btn) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text);
+      const origText = btn.innerText;
+      btn.innerText = 'Copied!';
       setTimeout(() => {
-        btnText.innerText = 'Copy';
+        btn.innerText = origText;
       }, 2000);
     }
 
@@ -399,7 +632,7 @@
     // Dynamic SWR GitHub Bounty Sync
     async function syncGitHubBounties() {
       try {
-        const res = await fetch('https://api.github.com/repos/codecheesee/altspace/issues?labels=bounty&state=all&per_page=8');
+        const res = await fetch('https://api.github.com/repos/codecheesee/altspace/issues?labels=bounty&state=all&per_page=6');
         if (!res.ok) return;
         const issues = await res.json();
         if (!Array.isArray(issues) || issues.length === 0) return;
