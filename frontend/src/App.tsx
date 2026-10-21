@@ -284,16 +284,35 @@ export default function App() {
       });
     }).catch(() => {});
 
-    const onFocus = () => inputRef.current?.focus();
-    window.addEventListener("focus", onFocus);
-
     return () => {
       if (unlisten) unlisten();
       if (unlistenMode) unlistenMode();
       if (unlistenFeedback) unlistenFeedback();
-      window.removeEventListener("focus", onFocus);
     };
   }, [setQuery]);
+
+  const isAnyModalOpen = Boolean(
+    showFeedbackModal ||
+    showLicenseModal ||
+    showDiagnosticsModal ||
+    showTimelineDrawer ||
+    showActionsModal ||
+    quickLookOpen ||
+    pendingApproval !== null ||
+    inputModalConfig !== null ||
+    shellConfirmation !== null
+  );
+
+  // Focus omnibar when window regains focus, but never steal focus from an active modal
+  useEffect(() => {
+    const onFocus = () => {
+      if (!isAnyModalOpen) {
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [isAnyModalOpen]);
 
   // Contextual file preview and Git info
   useEffect(() => {
@@ -607,62 +626,21 @@ export default function App() {
 
   // Global Keyboard Navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (showLicenseModal) {
+    // If any modal/drawer is open, modals handle their own keys (Esc, Enter, inputs)
+    if (isAnyModalOpen) {
       if (e.key === "Escape") {
-        e.preventDefault();
-        setShowLicenseModal(false);
-        return;
+        if (showLicenseModal) setShowLicenseModal(false);
+        if (showDiagnosticsModal) setShowDiagnosticsModal(false);
+        if (showTimelineDrawer) setShowTimelineDrawer(false);
+        if (showFeedbackModal) setShowFeedbackModal(false);
+        if (showActionsModal) setShowActionsModal(false);
+        if (quickLookOpen) setQuickLookOpen(false);
       }
+      return;
     }
-    if (showDiagnosticsModal) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setShowDiagnosticsModal(false);
-        return;
-      }
-    }
-    if (showTimelineDrawer) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setShowTimelineDrawer(false);
-        return;
-      }
-    }
-    if (showFeedbackModal) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setShowFeedbackModal(false);
-        return;
-      }
-    }
-    if (showActionsModal) {
-      const actions = getContextualActions();
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActionSelectedIndex((prev) => (prev < actions.length - 1 ? prev + 1 : prev));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActionSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        actions[actionSelectedIndex]?.run();
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setShowActionsModal(false);
-        return;
-      }
-      if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        setShowActionsModal(false);
-        return;
-      }
-    }
+
+    const activeEl = document.activeElement;
+    const isTyping = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement;
 
     if ((e.ctrlKey || e.metaKey) && (e.key?.toLowerCase() === "b" || e.code === "KeyB")) {
       e.preventDefault();
@@ -673,6 +651,19 @@ export default function App() {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key?.toLowerCase() === "d" || e.code === "KeyD")) {
       e.preventDefault();
       setShowDiagnosticsModal((prev) => !prev);
+      return;
+    }
+
+    if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      setShowActionsModal((prev) => !prev);
+      setActionSelectedIndex(0);
+      return;
+    }
+
+    if ((e.key?.toLowerCase() === "h" || e.code === "KeyH") && e.altKey) {
+      e.preventDefault();
+      setShowTimelineDrawer((prev) => !prev);
       return;
     }
 
@@ -715,17 +706,11 @@ export default function App() {
         handleCopyClipboard(selectedClip.content);
       }
     } else if (e.key === " " && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      if (resolvedMode === "all" && selectedItem && (document.activeElement !== inputRef.current || query === "" || e.shiftKey)) {
+      // Space for QuickLook: Only when NOT typing in an input or textarea
+      if (!isTyping && resolvedMode === "all" && selectedItem && (document.activeElement !== inputRef.current || query === "" || e.shiftKey)) {
         e.preventDefault();
         setQuickLookOpen((prev) => !prev);
       }
-    } else if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      setShowActionsModal((prev) => !prev);
-      setActionSelectedIndex(0);
-    } else if ((e.key?.toLowerCase() === "h" || e.code === "KeyH") && e.altKey) {
-      e.preventDefault();
-      setShowTimelineDrawer((prev) => !prev);
     } else if (e.key === "Escape") {
       if (quickLookOpen) setQuickLookOpen(false);
       else if (showActionsModal) setShowActionsModal(false);
@@ -733,6 +718,24 @@ export default function App() {
       else handleDismissWindow();
     }
   };
+
+  // Window-level keydown listener to guarantee reliable shortcuts regardless of DOM focus
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      if (isAnyModalOpen) return;
+      if (e.key === "Escape") {
+        if (query) {
+          e.preventDefault();
+          setQuery("");
+        } else {
+          e.preventDefault();
+          handleDismissWindow();
+        }
+      }
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => window.removeEventListener("keydown", onWindowKeyDown);
+  }, [isAnyModalOpen, query]);
 
   return (
     <div

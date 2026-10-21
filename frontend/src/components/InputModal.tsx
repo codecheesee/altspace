@@ -33,6 +33,19 @@ export function InputModal({
     }
   }, [isOpen, defaultValue]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   return (
@@ -63,8 +76,9 @@ export function InputModal({
           onChange={e => setValue(e.target.value)}
           placeholder={placeholder}
           onKeyDown={e => {
+            e.stopPropagation();
             if (e.key === 'Enter') onConfirm(value);
-            if (e.key === 'Escape') { e.stopPropagation(); onCancel(); }
+            if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
           }}
           style={{
             width: '100%', boxSizing: 'border-box',

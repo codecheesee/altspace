@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FileText, Copy, X, HardDrive, ExternalLink } from "lucide-react";
 import type { Item, FilePreview } from "../types";
 
@@ -18,6 +19,21 @@ export function QuickLookModal({
   onLaunch,
   onCopiedNotification,
 }: QuickLookModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !selectedItem) return null;
 
   return (
@@ -57,7 +73,7 @@ export function QuickLookModal({
             )}
             <button
               onClick={onClose}
-              className="p-1 rounded-md hover:bg-white/[0.08] text-neutral-400 hover:text-white transition"
+              className="p-1 rounded-md hover:bg-white/[0.08] text-neutral-400 hover:text-white transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

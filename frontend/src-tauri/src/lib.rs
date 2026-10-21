@@ -334,7 +334,22 @@ fn show_window(window: tauri::WebviewWindow) -> Result<(), String> {
         windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
     }
     let _ = window.show();
+    let _ = window.unminimize();
     let _ = window.set_focus();
+    if let Ok(hwnd) = window.hwnd() {
+        force_foreground_window(HWND(hwnd.0 as _));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn focus_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    let _ = window.show();
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+    if let Ok(hwnd) = window.hwnd() {
+        force_foreground_window(HWND(hwnd.0 as _));
+    }
     Ok(())
 }
 
@@ -934,6 +949,7 @@ pub fn run() {
             clear_clipboard_history,
             hide_window,
             show_window,
+            focus_window,
             get_autostart_status,
             set_autostart,
             execute_system_command,

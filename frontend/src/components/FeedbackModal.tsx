@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Star, MessageSquare, Send, Heart, X, ExternalLink, ThumbsUp, Settings, History, Copy, Check } from "lucide-react";
 import { tauriInvoke } from "../lib/appStorage";
 import { getCurrentSession } from "../lib/authProvider";
 import {
@@ -22,6 +22,15 @@ interface FeedbackModalProps {
 }
 
 type FeedbackType = "rating" | "feature" | "bug" | "contribute";
+
+interface StoredFeedback {
+  stars: number;
+  type: FeedbackType;
+  comment: string;
+  contact: string;
+  timestamp: string;
+  platform: string;
+}
 
 const STAR_LABELS = [
   "",
@@ -62,11 +71,60 @@ export function FeedbackModal({
     const s = getCurrentSession();
     return s?.login ? `@${s.login}` : "";
   });
+  const [activeTab, setActiveTab] = useState<"write" | "history">("write");
   const [submitted, setSubmitted] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webhookInput, setWebhookInput] = useState(() => {
     return localStorage.getItem("altspace_feedback_webhook") || DISCORD_WEBHOOK_URL;
   });
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load past feedbacks from localStorage
+  const getStoredFeedback = (): StoredFeedback[] => {
+    try {
+      return JSON.parse(localStorage.getItem("altspace_user_feedback") || "[]");
+    } catch (_) {
+      return [];
+    }
+  };
+
+  const [historyList, setHistoryList] = useState<StoredFeedback[]>([]);
+
+  // Keydown and auto-focus lifecycle
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (tauriInvoke) {
+      tauriInvoke("focus_window").catch(() => {});
+    }
+
+    setHistoryList(getStoredFeedback());
+
+    // Auto-focus comment area when in write mode
+    if (activeTab === "write") {
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, activeTab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -86,13 +144,48 @@ export function FeedbackModal({
     notify("Discord Webhook saved!");
   };
 
+  const buildGitHubUrl = (item: { type: FeedbackType; comment: string; stars: number; contact?: string }) => {
+    const titlePrefix =
+      item.type === "bug"
+        ? "[Bug]: "
+        : item.type === "feature"
+        ? "[Feature]: "
+        : item.type === "contribute"
+        ? "[Contributor]: "
+        : "[Feedback]: ";
+
+    const summary = item.comment.split("\n")[0].slice(0, 50).trim() || `${item.stars}-star review`;
+    const title = encodeURIComponent(`${titlePrefix}${summary}`);
+
+    const bodyText = `### Feedback & Rating Report
+- **Rating**: ${"⭐".repeat(item.stars)} (${item.stars}/5)
+- **Category**: ${item.type}
+- **Submitted by**: ${item.contact || "AltSpace User"}
+- **OS**: Windows (AltSpace Desktop)
+
+---
+### Details
+${item.comment || "No detailed notes provided."}
+`;
+
+    const labels =
+      item.type === "bug"
+        ? "bug,user-feedback"
+        : item.type === "feature"
+        ? (item.stars >= 4 ? "enhancement,community-request,bounty-candidate" : "enhancement,community-request")
+        : "user-feedback";
+
+    const body = encodeURIComponent(bodyText);
+    return `${GITHUB_ISSUES_URL}/new?title=${title}&body=${body}&labels=${encodeURIComponent(labels)}`;
+  };
+
   const handleDirectSubmit = async () => {
     if (!comment.trim() && stars === 0) {
       notify("Please pick a star rating or leave a comment.");
       return;
     }
 
-    const payload = {
+    const payload: StoredFeedback = {
       stars,
       type,
       comment: comment.trim(),
@@ -103,13 +196,14 @@ export function FeedbackModal({
 
     // 1. Store in local feedback collection
     try {
-      const stored = JSON.parse(localStorage.getItem("altspace_user_feedback") || "[]");
+      const stored = getStoredFeedback();
       stored.unshift(payload);
       localStorage.setItem("altspace_user_feedback", JSON.stringify(stored.slice(0, 50)));
       localStorage.setItem("altspace_has_rated", "true");
+      setHistoryList(stored);
     } catch (_) {}
 
-    // 2. Dispatch to Discord Webhook
+    // 2. Dispatch to Discord Webhook if configured
     const targetWebhook = webhookInput.trim() || DISCORD_WEBHOOK_URL;
     if (targetWebhook && targetWebhook.startsWith("https://discord.com/api/webhooks/")) {
       try {
@@ -157,50 +251,23 @@ export function FeedbackModal({
     }
 
     setSubmitted(true);
-    notify("Thank you for your feedback! ⭐");
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 1800);
+    notify("Feedback saved to your local history! ⭐");
   };
 
   const handlePostGitHubIssue = () => {
-    const titlePrefix =
-      type === "bug"
-        ? "[Bug]: "
-        : type === "feature"
-        ? "[Feature]: "
-        : type === "contribute"
-        ? "[Contributor]: "
-        : "[Feedback]: ";
-
-    const summary = comment.slice(0, 50).trim() || `${stars}-star review`;
-    const title = encodeURIComponent(`${titlePrefix}${summary}`);
-
-    const bodyText = `### Feedback & Rating Report
-- **Rating**: ${"⭐".repeat(stars)} (${stars}/5)
-- **Category**: ${type}
-- **Submitted by**: ${contact || "AltSpace User"}
-- **OS**: Windows
-
----
-### Details
-${comment || "No detailed notes provided."}
-`;
-
-    const labels =
-      type === "bug"
-        ? "bug,user-feedback"
-        : type === "feature"
-        ? (stars >= 4 ? "enhancement,community-request,bounty-candidate" : "enhancement,community-request")
-        : "user-feedback";
-
-    const body = encodeURIComponent(bodyText);
-    const url = `${GITHUB_ISSUES_URL}/new?title=${title}&body=${body}&labels=${encodeURIComponent(labels)}`;
+    const url = buildGitHubUrl({ type, comment, stars, contact });
     handleOpenUrl(url);
     localStorage.setItem("altspace_has_rated", "true");
     onClose();
     notify("Opened labeled GitHub Issue draft in browser!");
+  };
+
+  const handleCopyPastFeedback = (entry: StoredFeedback, idx: number) => {
+    const text = `Feedback (${entry.type}) - ${entry.stars} Stars\n${entry.comment}\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(String(idx));
+    setTimeout(() => setCopiedId(null), 1500);
+    notify("Copied feedback to clipboard!");
   };
 
   return (
@@ -209,7 +276,7 @@ ${comment || "No detailed notes provided."}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-5 flex flex-col gap-4 text-zinc-100 animate-in zoom-in-95 duration-100 relative"
+        className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-5 flex flex-col gap-4 text-zinc-100 animate-in zoom-in-95 duration-100 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Controls */}
@@ -217,7 +284,7 @@ ${comment || "No detailed notes provided."}
           <button
             onClick={() => setShowWebhookConfig((prev) => !prev)}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-            title="Configure Discord Webhook"
+            title="Configure Private Webhook"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -238,23 +305,49 @@ ${comment || "No detailed notes provided."}
               style={{ color: activeTheme.accentHex, fill: activeTheme.accentHex }}
             />
             <h2 className="text-base font-semibold text-white tracking-tight">
-              Rate & Shape AltSpace
+              Community Feedback & Issue Tracker
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            AltSpace is open-source. Your feedback and ratings directly determine our roadmap.
+            AltSpace is 100% open-source. Rate the app, request features, or report issues directly to maintainers.
           </p>
+
+          {/* Tab Selector */}
+          <div className="flex items-center gap-2 mt-3 border-b border-white/[0.08] pb-2">
+            <button
+              onClick={() => { setActiveTab("write"); setSubmitted(false); }}
+              className={`text-xs font-medium px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                activeTab === "write"
+                  ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Write Feedback
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                activeTab === "history"
+                  ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Past Submissions ({historyList.length})</span>
+            </button>
+          </div>
         </div>
 
         {showWebhookConfig && (
           <div className="p-3 rounded-xl bg-black/40 border border-white/[0.08] flex flex-col gap-2 animate-in fade-in">
             <span className="text-xs font-semibold text-zinc-200">
-              Private Discord Webhook URL:
+              Private Discord / Slack Webhook URL:
             </span>
             <input
               type="text"
               value={webhookInput}
               onChange={(e) => setWebhookInput(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
               placeholder="https://discord.com/api/webhooks/..."
               className="w-full bg-zinc-900 border border-white/[0.1] rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none"
             />
@@ -277,140 +370,245 @@ ${comment || "No detailed notes provided."}
           </div>
         )}
 
-        {submitted ? (
-          <div className="py-8 text-center flex flex-col items-center justify-center gap-2 animate-in zoom-in-95">
-            <ThumbsUp className="w-10 h-10 text-emerald-400 animate-bounce" />
-            <h3 className="text-sm font-semibold text-white">Feedback Recorded!</h3>
-            <p className="text-xs text-zinc-400">
-              Thank you for helping make Windows developer tools better.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* 1-5 Star Rating */}
-            <div className="flex flex-col items-center gap-1.5 py-1">
-              <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setStars(star)}
-                    onMouseEnter={() => setHoverStars(star)}
-                    onMouseLeave={() => setHoverStars(0)}
-                    className="p-1 rounded-md transition hover:scale-110 cursor-pointer focus:outline-none"
-                  >
-                    <Star
-                      className={`w-7 h-7 transition-colors ${
-                        star <= activeStarCount
-                          ? "text-amber-400 fill-amber-400"
-                          : "text-zinc-700 hover:text-zinc-500"
-                      }`}
-                    />
-                  </button>
-                ))}
+        {/* Tab 1: Past Submissions */}
+        {activeTab === "history" && (
+          <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+            {historyList.length === 0 ? (
+              <div className="py-12 text-center text-xs text-zinc-500 space-y-2">
+                <History className="w-8 h-8 mx-auto text-zinc-600" />
+                <div>No past feedback found on this device.</div>
+                <div className="text-[11px] text-zinc-600">Submissions are saved locally in your app storage.</div>
               </div>
-              <span className="text-xs font-mono text-zinc-400 h-4">
-                {STAR_LABELS[activeStarCount]}
-              </span>
-            </div>
-
-            {/* Category Pills */}
-            <div className="flex items-center gap-1.5 justify-center flex-wrap">
-              {[
-                { id: "rating", label: "Review" },
-                { id: "feature", label: "Feature" },
-                { id: "bug", label: "Bug" },
-                { id: "contribute", label: "Contribute" },
-              ].map((pill) => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  onClick={() => setType(pill.id as FeedbackType)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg transition font-medium border cursor-pointer ${
-                    type === pill.id
-                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                      : "bg-transparent text-zinc-400 hover:text-white border-transparent hover:bg-white/[0.04]"
-                  }`}
+            ) : (
+              historyList.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-black/40 border border-white/[0.08] space-y-2 hover:border-white/[0.15] transition"
                 >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-400 font-mono text-[11px]">
+                        {"⭐".repeat(entry.stars || 1)} ({entry.stars}/5)
+                      </span>
+                      <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                        {entry.type}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {new Date(entry.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
 
-            {/* Feedback Textarea */}
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder={
-                type === "bug"
-                  ? "Describe what happened, error message, or steps to reproduce..."
-                  : type === "feature"
-                  ? "Describe your feature idea or command you'd love to see..."
-                  : type === "contribute"
-                  ? "Tell us what you'd like to help build (Rust, React, plugins, docs)..."
-                  : "What do you like? What could be faster or better?"
-              }
-              rows={3}
-              className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 resize-none"
-            />
+                  <p className="text-xs text-zinc-200 whitespace-pre-wrap leading-relaxed select-text">
+                    {entry.comment || "*(No notes provided)*"}
+                  </p>
 
-            {/* Optional contact input */}
-            <input
-              type="text"
-              value={contact}
-              onChange={(e) => setContact(e.target.value)}
-              placeholder="Your GitHub username or Discord (optional)"
-              className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-            />
+                  <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-[11px]">
+                    <span className="text-zinc-500 text-[10px]">
+                      Saved locally • {entry.contact}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleCopyPastFeedback(entry, idx)}
+                        className="flex items-center gap-1 text-zinc-400 hover:text-white transition cursor-pointer text-[10px]"
+                        title="Copy to clipboard"
+                      >
+                        {copiedId === String(idx) ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedId === String(idx) ? "Copied" : "Copy"}</span>
+                      </button>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleDirectSubmit}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium transition cursor-pointer border border-zinc-700 shadow-sm"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Submit Feedback</span>
-              </button>
+                      <button
+                        onClick={() => handleOpenUrl(buildGitHubUrl(entry))}
+                        className="flex items-center gap-1 text-sky-400 hover:text-sky-300 transition cursor-pointer text-[10px] font-medium"
+                        title="Post as public issue on GitHub"
+                      >
+                        <GithubIcon className="w-3 h-3" />
+                        <span>Publish to GitHub &rarr;</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
-              <button
-                type="button"
-                onClick={handlePostGitHubIssue}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium transition cursor-pointer border border-zinc-800"
-                title="Open pre-filled GitHub issue in browser"
-              >
-                <GithubIcon className="w-3.5 h-3.5" />
-                <span>Post on GitHub</span>
-              </button>
-            </div>
+        {/* Tab 2: Write Feedback */}
+        {activeTab === "write" && (
+          <>
+            {submitted ? (
+              <div className="py-6 text-center flex flex-col items-center justify-center gap-3 animate-in zoom-in-95">
+                <ThumbsUp className="w-9 h-9 text-emerald-400 animate-bounce" />
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Feedback Recorded in Local History!</h3>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+                    Your feedback is saved in your local app storage. To have maintainers and bounty contributors track it publicly, publish it as a GitHub Issue below:
+                  </p>
+                </div>
 
-            {/* Community Links */}
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400">
-              <button
-                onClick={() => handleOpenUrl(GITHUB_REPO_URL)}
-                className="flex items-center gap-1 hover:text-white transition cursor-pointer"
-              >
-                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                <span>Star on GitHub</span>
-              </button>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handlePostGitHubIssue}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-white text-black text-xs font-semibold transition cursor-pointer shadow-md"
+                  >
+                    <GithubIcon className="w-4 h-4" />
+                    <span>Publish to GitHub Issues &rarr;</span>
+                  </button>
 
-              <button
-                onClick={() => handleOpenUrl(GITHUB_DISCUSSIONS_URL)}
-                className="flex items-center gap-1 hover:text-white transition cursor-pointer"
-              >
-                <MessageSquare className="w-3 h-3" />
-                <span>Discussions</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSubmitted(false); onClose(); }}
+                    className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium transition cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 1-5 Star Rating */}
+                <div className="flex flex-col items-center gap-1.5 py-0.5">
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setStars(star)}
+                        onMouseEnter={() => setHoverStars(star)}
+                        onMouseLeave={() => setHoverStars(0)}
+                        className="p-1 rounded-md transition hover:scale-110 cursor-pointer focus:outline-none"
+                      >
+                        <Star
+                          className={`w-6 h-6 transition-colors ${
+                            star <= activeStarCount
+                              ? "text-amber-400 fill-amber-400"
+                              : "text-zinc-700 hover:text-zinc-500"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs font-mono text-zinc-400 h-4">
+                    {STAR_LABELS[activeStarCount]}
+                  </span>
+                </div>
 
-              <button
-                onClick={() => handleOpenUrl(GITHUB_CONTRIBUTING_URL)}
-                className="flex items-center gap-1 hover:text-white transition cursor-pointer"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Contributing Guide</span>
-              </button>
-            </div>
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 justify-center flex-wrap">
+                  {[
+                    { id: "rating", label: "Review" },
+                    { id: "feature", label: "Feature" },
+                    { id: "bug", label: "Bug" },
+                    { id: "contribute", label: "Contribute" },
+                  ].map((pill) => (
+                    <button
+                      key={pill.id}
+                      type="button"
+                      onClick={() => setType(pill.id as FeedbackType)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg transition font-medium border cursor-pointer ${
+                        type === pill.id
+                          ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                          : "bg-transparent text-zinc-400 hover:text-white border-transparent hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      {pill.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Feedback Textarea with Keydown Isolation */}
+                <textarea
+                  ref={textareaRef}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Prevent any keystrokes from leaking to parent search omnibar or triggering QuickLook
+                    e.stopPropagation();
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      onClose();
+                    }
+                  }}
+                  placeholder={
+                    type === "bug"
+                      ? "Describe what happened, error message, or steps to reproduce..."
+                      : type === "feature"
+                      ? "Describe your feature idea or command you'd love to see..."
+                      : type === "contribute"
+                      ? "Tell us what you'd like to help build (Rust, React, plugins, docs)..."
+                      : "What do you like? What could be faster or better?"
+                  }
+                  rows={3}
+                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 resize-none select-text"
+                />
+
+                {/* Optional contact input */}
+                <input
+                  type="text"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      onClose();
+                    }
+                  }}
+                  placeholder="Your GitHub username or contact handle (optional)"
+                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 select-text"
+                />
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleDirectSubmit}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium transition cursor-pointer border border-zinc-700 shadow-sm"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Save to History</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePostGitHubIssue}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-100 hover:bg-white text-black text-xs font-semibold transition cursor-pointer shadow-sm"
+                    title="Publish directly as a GitHub Issue in browser"
+                  >
+                    <GithubIcon className="w-3.5 h-3.5" />
+                    <span>Post on GitHub &rarr;</span>
+                  </button>
+                </div>
+
+                {/* Community Links */}
+                <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-zinc-400">
+                  <button
+                    onClick={() => handleOpenUrl(GITHUB_REPO_URL)}
+                    className="flex items-center gap-1 hover:text-white transition cursor-pointer"
+                  >
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span>Star on GitHub</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenUrl(GITHUB_DISCUSSIONS_URL)}
+                    className="flex items-center gap-1 hover:text-white transition cursor-pointer"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    <span>Discussions</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenUrl(GITHUB_CONTRIBUTING_URL)}
+                    className="flex items-center gap-1 hover:text-white transition cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Contributing Guide</span>
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

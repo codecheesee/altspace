@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { cn } from "../lib/utils";
+import { tauriInvoke } from "../lib/appStorage";
 import type { Mode, Item, PortItem, ActionItem } from "../types";
 
 interface ActionDrawerProps {
@@ -13,7 +15,7 @@ interface ActionDrawerProps {
   selectedPort: PortItem | null;
   actions: ActionItem[];
   actionSelectedIndex: number;
-  setActionSelectedIndex: (idx: number) => void;
+  setActionSelectedIndex: (idx: number | ((prev: number) => number)) => void;
 }
 
 export function ActionDrawer({
@@ -26,6 +28,50 @@ export function ActionDrawer({
   actionSelectedIndex,
   setActionSelectedIndex,
 }: ActionDrawerProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (tauriInvoke) {
+      tauriInvoke("focus_window").catch(() => {});
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        setActionSelectedIndex((prev: number) => (prev < actions.length - 1 ? prev + 1 : prev));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setActionSelectedIndex((prev: number) => (prev > 0 ? prev - 1 : 0));
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        actions[actionSelectedIndex]?.run();
+        return;
+      }
+      if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, onClose, actions, actionSelectedIndex, setActionSelectedIndex]);
+
   if (!isOpen) return null;
 
   const sections = Array.from(new Set(actions.map((a) => a.section)));
@@ -59,7 +105,13 @@ export function ActionDrawer({
                 : "Selected Clip"}
             </span>
           </div>
-          <kbd className="kbd-cap">Esc</kbd>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1 text-zinc-400 hover:text-white transition cursor-pointer"
+            title="Close menu (Esc)"
+          >
+            <kbd className="kbd-cap hover:border-zinc-500">Esc</kbd>
+          </button>
         </div>
 
         {/* Scrollable Actions List */}
