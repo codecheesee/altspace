@@ -558,6 +558,7 @@ export function useSearchEngine({
     selectedSpecial,
     terminalRunning,
     terminalResult,
+    plugins,
     handleExecuteTerminalCommand,
     handleLaunchTerminalWindow,
   };

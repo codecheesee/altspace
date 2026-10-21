@@ -13,6 +13,8 @@ import { LicenseModal } from "./components/LicenseModal";
 import { ShellConfirmationModal } from "./components/ShellConfirmationModal";
 import { ActionTimelineDrawer } from "./components/ActionTimelineDrawer";
 import { ActionApprovalModal } from "./components/ActionApprovalModal";
+import { DiagnosticsModal } from "./components/DiagnosticsModal";
+import { validateAltConfig, computeConfigDiff } from "./lib/configValidator";
 import type { ActionRequest, ActionEvaluation } from "./lib/actionBroker";
 import { BUILTIN_EXTENSIONS } from "./lib/registry";
 import { useThemeEngine } from "./hooks/useThemeEngine";
@@ -110,6 +112,7 @@ export default function App() {
     terminalResult,
     handleExecuteTerminalCommand,
     handleLaunchTerminalWindow,
+    plugins,
   } = useSearchEngine({
     currentMode,
     currentThemeId,
@@ -184,6 +187,8 @@ export default function App() {
 
   // Input Modal State (replaces prompt/alert)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
+  const [isSafeMode, setIsSafeMode] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
     title: string;
     description?: string;
@@ -219,7 +224,16 @@ export default function App() {
       .catch(() => {});
 
     refreshCurrencyRates();
-  }, []);
+
+    tauriInvoke<boolean>("get_safe_mode_status")
+      .then((safe) => {
+        if (safe) {
+          setIsSafeMode(true);
+          notify("🛡️ Safe Mode Active: Community extensions bypassed.");
+        }
+      })
+      .catch(() => {});
+  }, [notify]);
 
   // Poll ports & clipboard
   useEffect(() => {
@@ -495,30 +509,45 @@ export default function App() {
   const handleImportConfig = () => {
     setInputModalConfig({
       title: "Import AltSpace Config",
-      description: "Paste your .altconfig JSON bundle below",
-      placeholder: '{"theme_id": "raycast-dark", ...}',
+      description: "Paste your non-sensitive .altconfig JSON bundle below",
+      placeholder: '{"config_version": 2, "theme_id": "raycast-dark", ...}',
       onConfirm: (input) => {
         setInputModalConfig(null);
         if (!input?.trim()) return;
         try {
           const parsed = JSON.parse(input.trim());
-          if (parsed.theme_id) handleSelectTheme(parsed.theme_id);
-          if (typeof parsed.custom_accent === "string") handleSetCustomAccent(parsed.custom_accent);
-          if (typeof parsed.sidebar_visible === "boolean") {
-            setIsSidebarVisible(parsed.sidebar_visible);
-            saveStoredBoolean(SIDEBAR_PREFERENCE_KEY, parsed.sidebar_visible);
+          const validation = validateAltConfig(parsed);
+          if (!validation.valid || !validation.config) {
+            notify(validation.error || "Configuration validation failed");
+            return;
           }
-          if (typeof parsed.search_all_drives === "boolean") {
-            saveStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, parsed.search_all_drives);
-            tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: parsed.search_all_drives })
+          const validConfig = validation.config;
+          const currentConfig = {
+            theme_id: currentThemeId,
+            custom_accent: customAccent,
+            sidebar_visible: isSidebarVisible,
+            search_all_drives: driveStats?.search_all_drives ?? false,
+          };
+          const diff = computeConfigDiff(currentConfig, validConfig);
+          const changeCount = diff.filter((d) => d.status === "changed" || d.status === "added").length;
+
+          if (validConfig.theme_id) handleSelectTheme(validConfig.theme_id);
+          if (typeof validConfig.custom_accent === "string") handleSetCustomAccent(validConfig.custom_accent);
+          if (typeof validConfig.sidebar_visible === "boolean") {
+            setIsSidebarVisible(validConfig.sidebar_visible);
+            saveStoredBoolean(SIDEBAR_PREFERENCE_KEY, validConfig.sidebar_visible);
+          }
+          if (typeof validConfig.search_all_drives === "boolean") {
+            saveStoredBoolean(DRIVE_SEARCH_PREFERENCE_KEY, validConfig.search_all_drives);
+            tauriInvoke<DriveIndexStats>("set_search_all_drives", { enabled: validConfig.search_all_drives })
               .then((stats) => {
                 if (stats) setDriveStats(stats);
               })
               .catch(() => notify("Drive preference could not be applied"));
           }
-          notify("Config imported successfully!");
-        } catch {
-          notify("Invalid config JSON — import failed");
+          notify(`Config imported cleanly (${changeCount} preferences updated)!`);
+        } catch (err: any) {
+          notify(err?.message ? `Import failed: ${err.message}` : "Invalid config JSON — import failed");
         }
       },
     });
@@ -573,6 +602,7 @@ export default function App() {
     onOpenFeedback: () => setShowFeedbackModal(true),
     onOpenStore: () => { setActiveTab("store"); setQuery(""); },
     onOpenLicense: () => setShowLicenseModal(true),
+    onOpenDiagnostics: () => setShowDiagnosticsModal(true),
   });
 
   // Global Keyboard Navigation
@@ -584,7 +614,14 @@ export default function App() {
         return;
       }
     }
-        if (showTimelineDrawer) {
+    if (showDiagnosticsModal) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowDiagnosticsModal(false);
+        return;
+      }
+    }
+    if (showTimelineDrawer) {
       if (e.key === "Escape") {
         e.preventDefault();
         setShowTimelineDrawer(false);
@@ -630,6 +667,12 @@ export default function App() {
     if ((e.ctrlKey || e.metaKey) && (e.key?.toLowerCase() === "b" || e.code === "KeyB")) {
       e.preventDefault();
       toggleSidebar();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key?.toLowerCase() === "d" || e.code === "KeyD")) {
+      e.preventDefault();
+      setShowDiagnosticsModal((prev) => !prev);
       return;
     }
 
@@ -700,6 +743,24 @@ export default function App() {
       }}
       onKeyDown={handleKeyDown}
     >
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {copiedNotification || `${resolvedMode} mode, ${items.length} items`}
+      </div>
+
+      {isSafeMode && (
+        <div
+          role="alert"
+          className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1 text-center text-xs text-amber-300 flex items-center justify-center gap-2 select-none"
+        >
+          <span>🛡️ <strong>Safe Mode Active</strong>: Community and local extensions are quarantined. Built-in tools only.</span>
+        </div>
+      )}
+
       <HeaderBar
         currentMode={resolvedMode}
         query={query}
@@ -797,6 +858,7 @@ export default function App() {
         onOpenFeedback={() => setShowFeedbackModal(true)}
         onOpenLicense={() => setShowLicenseModal(true)}
         onOpenTimeline={() => setShowTimelineDrawer((prev) => !prev)}
+        onOpenDiagnostics={() => setShowDiagnosticsModal(true)}
         onOpenActions={() => {
           setShowActionsModal((prev) => !prev);
           setActionSelectedIndex(0);
@@ -854,6 +916,15 @@ export default function App() {
         onClose={() => setShowLicenseModal(false)}
         activeTheme={activeTheme}
         notify={notify}
+      />
+
+      <DiagnosticsModal
+        isOpen={showDiagnosticsModal}
+        onClose={() => setShowDiagnosticsModal(false)}
+        safeMode={isSafeMode}
+        totalPlugins={plugins.length}
+        driveIndexedCount={driveStats?.total_drives ?? 1}
+        currentThemeId={currentThemeId}
       />
 
       {inputModalConfig && (

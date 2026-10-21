@@ -223,6 +223,19 @@ export function StoreTab({
                             <span className="rounded-md border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
                               {plugin.keyword}
                             </span>
+                            {plugin.author === "AltSpace Core" ? (
+                              <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-1.5 py-0.5 text-[9px] font-medium text-sky-300">
+                                Built-in
+                              </span>
+                            ) : plugin.verified ? (
+                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-300">
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="rounded-full border border-zinc-500/20 bg-zinc-500/10 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400">
+                                Community
+                              </span>
+                            )}
                           </div>
                           <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-400">
                             {plugin.description}

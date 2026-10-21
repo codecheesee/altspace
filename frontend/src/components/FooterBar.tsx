@@ -1,4 +1,4 @@
-import { PanelRightClose, PanelRightOpen, History } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, History, Activity } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Mode } from "../types";
 
@@ -20,6 +20,7 @@ interface FooterBarProps {
   onOpenFeedback?: () => void;
   onOpenLicense?: () => void;
   onOpenTimeline?: () => void;
+  onOpenDiagnostics?: () => void;
 }
 
 export function FooterBar({
@@ -33,6 +34,7 @@ export function FooterBar({
   onToggleSidebar,
   onOpenActions,
   onOpenTimeline,
+  onOpenDiagnostics,
 }: FooterBarProps) {
   return (
     <footer
@@ -88,6 +90,18 @@ export function FooterBar({
           >
             <History className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden lg:inline">Timeline</span>
+          </button>
+        )}
+
+        {onOpenDiagnostics && (
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+            title="Privacy Diagnostics (Ctrl+Shift+D)"
+            aria-label="Privacy Diagnostics"
+          >
+            <Activity className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden xl:inline">Diagnostics</span>
           </button>
         )}
 

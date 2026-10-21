@@ -21,6 +21,7 @@ import {
   Star,
   ShoppingBag,
   Award,
+  Activity,
 } from "lucide-react";
 import { PRESET_THEMES } from "../lib/theme";
 import { tauriInvoke } from "../lib/appStorage";
@@ -66,6 +67,7 @@ interface UseContextualActionsProps {
   onOpenFeedback?: () => void;
   onOpenStore?: () => void;
   onOpenLicense?: () => void;
+  onOpenDiagnostics?: () => void;
 }
 
 export function useContextualActions({
@@ -100,6 +102,7 @@ export function useContextualActions({
   onOpenFeedback,
   onOpenStore,
   onOpenLicense,
+  onOpenDiagnostics,
 }: UseContextualActionsProps) {
   const getContextualActions = useCallback((): ActionItem[] => {
     const actions: ActionItem[] = [];
@@ -398,6 +401,20 @@ export function useContextualActions({
       },
     });
 
+    if (onOpenDiagnostics) {
+      actions.push({
+        id: "privacy-diagnostics",
+        title: "Privacy Diagnostics & Sanitized Telemetry...",
+        section: "CONFIG & BACKUP",
+        shortcut: "Ctrl+Shift+D",
+        icon: <Activity className="w-4 h-4 text-emerald-400" />,
+        run: () => {
+          onCloseActionsModal();
+          onOpenDiagnostics();
+        },
+      });
+    }
+
     // PREFERENCES
     actions.push({
       id: "pref-autostart",
@@ -536,6 +553,7 @@ export function useContextualActions({
     onOpenFeedback,
     onOpenStore,
     onOpenLicense,
+    onOpenDiagnostics,
   ]);
 
   return { getContextualActions };

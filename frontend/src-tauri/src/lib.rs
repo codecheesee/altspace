@@ -707,6 +707,21 @@ fn uninstall_plugin(plugin_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_plugin_health(plugin_id: String) -> plugins::PluginHealthStatus {
+    plugins::get_plugin_health(&plugin_id)
+}
+
+#[tauri::command]
+fn reset_plugin_health(plugin_id: String) {
+    plugins::reset_plugin_health(&plugin_id);
+}
+
+#[tauri::command]
+fn get_safe_mode_status() -> bool {
+    plugins::is_safe_mode()
+}
+
+#[tauri::command]
 fn check_app_update() -> Result<updater::UpdateInfo, String> {
     updater::check_for_update()
 }
@@ -845,6 +860,15 @@ fn vault_delete_secret(key: String) -> Result<bool, String> {
 }
 
 pub fn run() {
+    // Safe-Mode Flag Detection:
+    if std::env::args().any(|arg| arg == "--safe-mode")
+        || std::env::var("ALTSPACE_SAFE_MODE")
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false)
+    {
+        plugins::set_safe_mode(true);
+    }
+
     // Single-Instance Named Event Guard:
     // If AltSpace is already running in background, signal it to pop up and exit second instance in <10ms!
     unsafe {
@@ -949,7 +973,10 @@ pub fn run() {
             broker_get_ledger,
             vault_store_secret,
             vault_retrieve_secret,
-            vault_delete_secret
+            vault_delete_secret,
+            get_plugin_health,
+            reset_plugin_health,
+            get_safe_mode_status
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));
