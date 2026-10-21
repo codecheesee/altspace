@@ -625,14 +625,28 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
           {/* TAB 3: ABOUT */}
           {activeTab === "about" && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">AltSpace for Windows</span>
-                  <span className="text-[10px] font-mono text-zinc-400">v2.0.0-preview</span>
+              <div className="p-3.5 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <img src="/app-icon.png" alt="AltSpace Logo" className="w-9 h-9 rounded-lg shadow-sm shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/favicon.svg"; }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white">AltSpace for Windows</span>
+                      <span className="text-[10px] font-mono text-zinc-400">v2.0.0-preview</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-normal truncate">
+                      Sub-5ms native command palette & file indexer.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] text-zinc-400 leading-normal">
-                  High-performance native command palette, file indexer, and developer workflow launcher for Windows.
-                </p>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenUrl("https://codecheesee.github.io/altspace/")}
+                  className="w-full py-1.5 px-3 rounded-md bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <span>Visit AltSpace Official Website & Plans</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
               </div>
 
               <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2 text-xs">

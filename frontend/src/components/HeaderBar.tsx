@@ -25,6 +25,7 @@ interface HeaderBarProps {
   copiedNotification: string | null;
   setCopiedNotification: (msg: string | null) => void;
   onOpenMenu: () => void;
+  onOpenWebsite?: () => void;
   onDismiss: () => void;
 }
 
@@ -40,6 +41,7 @@ export function HeaderBar({
   copiedNotification,
   setCopiedNotification,
   onOpenMenu,
+  onOpenWebsite,
   onDismiss,
 }: HeaderBarProps) {
   return (
@@ -52,7 +54,25 @@ export function HeaderBar({
         data-tauri-drag-region
         className="flex items-center px-4 py-3 border-b border-white/[0.08] gap-3 cursor-move bg-[#131317] select-none shrink-0"
       >
-        <Search className="w-4 h-4 text-sky-400 shrink-0 stroke-[2]" />
+        {/* AltSpace Logo Button (Opens Website) */}
+        <button
+          type="button"
+          onClick={onOpenWebsite}
+          title="AltSpace Website & Pro Plans (Click to visit website)"
+          aria-label="Visit AltSpace Website"
+          className="flex items-center gap-1.5 p-0.5 -ml-1 rounded hover:bg-white/[0.08] transition shrink-0 cursor-pointer group"
+        >
+          <img
+            src="/app-icon.png"
+            alt="AltSpace Logo"
+            className="w-5 h-5 rounded-md shadow-sm transition group-hover:scale-105"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "/favicon.svg";
+            }}
+          />
+        </button>
+
+        <Search className="w-3.5 h-3.5 text-zinc-500 shrink-0 stroke-[2]" />
 
         {/* Mode Pill Badges */}
         {currentMode === "clipboard" && (

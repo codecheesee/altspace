@@ -21,6 +21,7 @@ interface FooterBarProps {
   onOpenLicense?: () => void;
   onOpenTimeline?: () => void;
   onOpenDiagnostics?: () => void;
+  onOpenWebsite?: () => void;
 }
 
 export function FooterBar({
@@ -35,6 +36,7 @@ export function FooterBar({
   onOpenActions,
   onOpenTimeline,
   onOpenDiagnostics,
+  onOpenWebsite,
 }: FooterBarProps) {
   return (
     <footer
@@ -45,7 +47,22 @@ export function FooterBar({
     >
       {/* Left: Product title, dynamic count, and active theme badge */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-[11.5px] text-zinc-400 min-w-0">
-        <span className="font-semibold text-zinc-200 tracking-tight">AltSpace</span>
+        <button
+          type="button"
+          onClick={onOpenWebsite}
+          title="Visit AltSpace Website"
+          className="flex items-center gap-1.5 font-semibold text-zinc-200 hover:text-white tracking-tight cursor-pointer transition group"
+        >
+          <img
+            src="/app-icon.png"
+            alt="AltSpace"
+            className="w-3.5 h-3.5 rounded group-hover:scale-110 transition"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "/favicon.svg";
+            }}
+          />
+          <span>AltSpace</span>
+        </button>
         <span className="text-zinc-600 hidden sm:inline">/</span>
         <span className="text-zinc-400 font-mono text-[11px] truncate max-w-[9rem] sm:max-w-none">
           {currentMode === "all"

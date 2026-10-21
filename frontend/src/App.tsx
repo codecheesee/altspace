@@ -877,6 +877,7 @@ export default function App() {
         copiedNotification={copiedNotification}
         setCopiedNotification={setCopiedNotification}
         onOpenMenu={() => setShowActionsModal(true)}
+        onOpenWebsite={() => handleOpenUrl("https://codecheesee.github.io/altspace/")}
         onDismiss={handleDismissWindow}
       />
 
@@ -962,6 +963,7 @@ export default function App() {
         onOpenLicense={() => setShowLicenseModal(true)}
         onOpenTimeline={() => setShowTimelineDrawer((prev) => !prev)}
         onOpenDiagnostics={() => setShowDiagnosticsModal(true)}
+        onOpenWebsite={() => handleOpenUrl("https://codecheesee.github.io/altspace/")}
         onOpenActions={() => {
           setShowActionsModal((prev) => !prev);
           setActionSelectedIndex(0);
