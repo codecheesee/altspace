@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Shield,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import {
   deactivateLicense,
@@ -347,15 +348,29 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
                 </p>
 
                 {!isProOrSupporter && (
-                  <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden mt-1">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        quotaUsedPct >= 80 ? "bg-amber-400" : "bg-emerald-400"
-                      )}
-                      style={{ width: `${quotaUsedPct}%` }}
-                    />
-                  </div>
+                  <>
+                    <div className="w-full bg-zinc-800 rounded-full h-1 overflow-hidden mt-1">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          quotaUsedPct >= 80 ? "bg-amber-400" : "bg-emerald-400"
+                        )}
+                        style={{ width: `${quotaUsedPct}%` }}
+                      />
+                    </div>
+                    <div className="pt-2 flex items-center justify-between border-t border-white/[0.06] mt-2">
+                      <span className="text-[10.5px] text-zinc-400">Want hosted AI & unlimited sync?</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenUrl("https://codecheesee.github.io/altspace/#pricing")}
+                        className="px-2.5 py-1 rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 text-[11px] font-medium flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3 text-purple-400" />
+                        <span>Upgrade to Pro</span>
+                        <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -600,9 +615,21 @@ export function LicenseModal({ isOpen, onClose, notify }: LicenseModalProps) {
               </div>
 
               <div className="p-3 rounded-lg border border-white/[0.08] bg-zinc-900/50 space-y-2">
-                <div className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Pro Services</span>
+                <div className="text-xs font-semibold text-white flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Pro Services</span>
+                  </div>
+                  {!isProOrSupporter && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenUrl("https://codecheesee.github.io/altspace/#pricing")}
+                      className="text-[10.5px] text-purple-300 hover:text-purple-200 underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Get Pro on Website</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </button>
+                  )}
                 </div>
                 <div className="space-y-1.5 text-[11px] text-zinc-400">
                   <div className="flex items-center gap-2">
