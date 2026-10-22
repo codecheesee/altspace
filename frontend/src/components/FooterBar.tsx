@@ -1,5 +1,3 @@
-import { PanelRightClose, PanelRightOpen, History, Activity, MessageSquare } from "lucide-react";
-import { cn } from "../lib/utils";
 import type { Mode } from "../types";
 
 interface FooterBarProps {
@@ -13,9 +11,9 @@ interface FooterBarProps {
     headerBg: string;
     borderColor: string;
   };
-  onCycleTheme: () => void;
-  isSidebarVisible: boolean;
-  onToggleSidebar: () => void;
+  onCycleTheme?: () => void;
+  isSidebarVisible?: boolean;
+  onToggleSidebar?: () => void;
   onOpenActions: () => void;
   onOpenFeedback?: () => void;
   onOpenLicense?: () => void;
@@ -30,138 +28,77 @@ export function FooterBar({
   clipsCount,
   portsCount,
   activeTheme,
-  onCycleTheme,
-  isSidebarVisible,
-  onToggleSidebar,
   onOpenActions,
-  onOpenTimeline,
-  onOpenDiagnostics,
-  onOpenFeedback,
   onOpenWebsite,
 }: FooterBarProps) {
+  const resultLabel =
+    currentMode === "all"
+      ? `${itemsCount} ${itemsCount === 1 ? "result" : "results"}`
+      : currentMode === "clipboard"
+      ? `${clipsCount} clips`
+      : currentMode === "ports"
+      ? `${portsCount} ports`
+      : "Extensions";
+
   return (
     <footer
       role="contentinfo"
-      aria-label="Application status and shortcut keys"
-      className="min-h-9 px-3 sm:px-4 py-1.5 bg-black/20 border-t flex items-center justify-between gap-2 text-xs text-zinc-400 font-medium shrink-0 select-none"
-      style={{ backgroundColor: activeTheme.headerBg, borderColor: activeTheme.borderColor }}
+      aria-label="Application status bar"
+      className="h-8 px-3 sm:px-4 bg-[#111115]/90 border-t flex items-center justify-between gap-3 text-xs text-zinc-400 font-medium shrink-0 select-none overflow-hidden"
+      style={{
+        backgroundColor: activeTheme.headerBg,
+        borderColor: activeTheme.borderColor,
+      }}
     >
-      {/* Left: Product title, dynamic count, and active theme badge */}
-      <div className="flex items-center gap-1.5 sm:gap-2 text-[11.5px] text-zinc-400 min-w-0">
+      {/* Left: Product title & dynamic count (no theme selector) */}
+      <div className="flex items-center gap-2 text-[11.5px] text-zinc-400 min-w-0 shrink-0">
         <button
           type="button"
           onClick={onOpenWebsite}
           title="Visit AltSpace Website"
-          className="flex items-center gap-1.5 font-semibold text-zinc-200 hover:text-white tracking-tight cursor-pointer transition group"
+          className="flex items-center gap-1.5 font-semibold text-zinc-300 hover:text-white tracking-tight cursor-pointer transition group"
         >
           <img
             src="/app-icon.png"
             alt="AltSpace"
-            className="w-3.5 h-3.5 rounded group-hover:scale-110 transition"
+            className="w-3.5 h-3.5 rounded group-hover:scale-110 transition shrink-0"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = "/favicon.svg";
             }}
           />
-          <span>AltSpace</span>
+          <span className="truncate">AltSpace</span>
         </button>
-        <span className="text-zinc-600 hidden sm:inline">/</span>
-        <span className="text-zinc-400 font-mono text-[11px] truncate max-w-[9rem] sm:max-w-none">
-          {currentMode === "all"
-            ? `${itemsCount} ${itemsCount === 1 ? "result" : "results"}`
-            : currentMode === "clipboard"
-            ? `${clipsCount} clips`
-            : currentMode === "ports"
-            ? `${portsCount} ports`
-            : "Extensions"}
+        <span className="text-zinc-600">/</span>
+        <span className="text-zinc-400 font-mono text-[11px] truncate">
+          {resultLabel}
         </span>
-        <span className="text-zinc-600 hidden sm:inline">/</span>
-        <button
-          onClick={onCycleTheme}
-          className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-          title="Cycle Theme (Ctrl+Shift+T)"
-        >
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: activeTheme.accentHex }}
-          />
-          <span className="text-[10.5px] font-sans hidden md:inline">{activeTheme.name}</span>
-        </button>
       </div>
 
-      {/* Right: Focused contextual keyboard actions */}
-      <div className="flex items-center gap-1 sm:gap-3 text-[11px] whitespace-nowrap shrink-0">
+      {/* Right: Minimalist, clean 2026 status line (no cluttered shortcut soup) */}
+      <div className="flex items-center gap-3 text-[11px] text-zinc-400 whitespace-nowrap shrink-0">
         <div className="hidden sm:flex items-center gap-1.5">
-          <span className="text-zinc-400">Open</span>
+          <span>Open</span>
           <kbd className="kbd-cap">↵</kbd>
         </div>
 
-        <div className="hidden md:flex items-center gap-1.5">
-          <span className="text-zinc-400">Preview</span>
-          <kbd className="kbd-cap">Space</kbd>
-        </div>
-
-                {onOpenTimeline && (
-          <button
-            onClick={onOpenTimeline}
-            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-            title="Execution Timeline (Alt+H)"
-          >
-            <History className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden lg:inline">Timeline</span>
-          </button>
-        )}
-
-        {onOpenDiagnostics && (
-          <button
-            onClick={onOpenDiagnostics}
-            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-            title="Privacy Diagnostics (Ctrl+Shift+D)"
-            aria-label="Privacy Diagnostics"
-          >
-            <Activity className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden xl:inline">Diagnostics</span>
-          </button>
-        )}
+        <span className="text-zinc-700 hidden sm:inline">•</span>
 
         <button
-          onClick={onOpenFeedback}
-          className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-          title="Share Beta Feedback or Request Features (Ctrl+Shift+F or :feedback)"
-          aria-label="Share Feedback"
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="hidden sm:inline">Feedback</span>
-          <kbd className="kbd-cap hidden md:inline">Ctrl Shift F</kbd>
-        </button>
-
-        <button
+          type="button"
           onClick={onOpenActions}
-          className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-          title="Contextual Actions (Ctrl+K)"
+          className="flex items-center gap-1.5 hover:text-zinc-200 transition cursor-pointer"
+          title="Open Menu & Shortcuts (Ctrl+K)"
         >
-          <span className="hidden sm:inline">Actions</span>
+          <span>Menu</span>
           <kbd className="kbd-cap">Ctrl K</kbd>
         </button>
 
-        <button
-          onClick={onToggleSidebar}
-          className={cn(
-            "flex items-center gap-1.5 px-1.5 py-0.5 rounded transition cursor-pointer text-xs",
-            isSidebarVisible
-              ? "bg-white/[0.08] text-zinc-200 border border-white/[0.12]"
-              : "hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 border border-transparent"
-          )}
-          title="Toggle Details Sidebar (Ctrl+B)"
-          aria-label="Toggle Details Sidebar"
-        >
-          {isSidebarVisible ? (
-            <PanelRightClose className="w-3.5 h-3.5 text-zinc-300" />
-          ) : (
-            <PanelRightOpen className="w-3.5 h-3.5 text-zinc-400" />
-          )}
-          <span className="hidden sm:inline">Details</span>
-          <kbd className="kbd-cap">Ctrl B</kbd>
-        </button>
+        <span className="text-zinc-700 hidden md:inline">•</span>
+
+        <div className="hidden md:flex items-center gap-1 text-zinc-500">
+          <span>Dismiss</span>
+          <kbd className="kbd-cap">Esc</kbd>
+        </div>
       </div>
     </footer>
   );

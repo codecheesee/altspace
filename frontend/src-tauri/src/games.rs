@@ -352,18 +352,34 @@ fn scan_common_game_directories(games: &mut Vec<GameItem>, seen: &mut HashSet<St
 }
 
 fn scan_start_menu_games(games: &mut Vec<GameItem>, seen: &mut HashSet<String>) {
-    let start_programs = PathBuf::from(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs");
-    if !start_programs.exists() {
-        return;
+    let mut search_roots = Vec::new();
+
+    let all_users_menu = PathBuf::from(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs");
+    if all_users_menu.exists() {
+        search_roots.push(all_users_menu);
     }
 
-    let known_game_keywords = ["call of duty", "modern warfare", "battlefield", "halo", "witcher", "cyberpunk"];
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let user_menu = PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs");
+        if user_menu.exists() {
+            search_roots.push(user_menu);
+        }
+    }
 
-    for entry in walkdir::WalkDir::new(start_programs)
-        .max_depth(3)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    let known_game_keywords = [
+        "grand theft auto", "gta", "rockstar", "valorant", "counter-strike", "cs2",
+        "minecraft", "cyberpunk", "witcher", "elden ring", "helldivers", "balatro",
+        "roblox", "apex legends", "league of legends", "fortnite", "call of duty",
+        "modern warfare", "battlefield", "halo", "overwatch", "dota", "ea sports",
+        "fifa", "forza", "palworld", "baldurs gate", "steam", "riot"
+    ];
+
+    for root in search_roots {
+        for entry in walkdir::WalkDir::new(root)
+            .max_depth(4)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("lnk") {
             let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
@@ -390,6 +406,7 @@ fn scan_start_menu_games(games: &mut Vec<GameItem>, seen: &mut HashSet<String>) 
                     break;
                 }
             }
+        }
         }
     }
 }

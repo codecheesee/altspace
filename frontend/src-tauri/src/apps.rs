@@ -95,23 +95,42 @@ impl AppIndex {
             }
             // Fast-path 2: Name starts with query prefix -> ultra fast & highly relevant
             if name_lower.starts_with(&q_lower) {
-                matches.push((app.clone(), 5000 + (100 - name_lower.len() as i64)));
+                matches.push((app.clone(), 5000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
             // Fast-path 3: Any word inside app name starts with query (e.g. "code" matches "Visual Studio Code")
             let word_match = name_lower.split_whitespace().any(|w| w.starts_with(&q_lower));
             if word_match {
-                matches.push((app.clone(), 3000 + (100 - name_lower.len() as i64)));
+                matches.push((app.clone(), 3000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
-            // Fallback: full fuzzy match
-            if let Some(score) = self.matcher.fuzzy_match(&app.name, query) {
-                matches.push((app.clone(), score));
+            // Fast-path 4: Acronym matching (e.g. "gta" -> "Grand Theft Auto", "vsc" -> "Visual Studio Code")
+            let acronym: String = name_lower
+                .split_whitespace()
+                .filter_map(|w| w.chars().next())
+                .collect();
+            if acronym == q_lower || acronym.starts_with(&q_lower) {
+                matches.push((app.clone(), 4500 + (100 - name_lower.len().min(100) as i64)));
+                continue;
+            }
+            // Fast-path 5: Substring containment
+            if name_lower.contains(&q_lower) {
+                matches.push((app.clone(), 2000 + (100 - name_lower.len().min(100) as i64)));
+                continue;
+            }
+            // Fallback: full fuzzy match ONLY if query length >= 4
+            // (Strictly avoid loose scattered matching on short queries like 'gta' matching 'Git Bash')
+            if q_lower.len() >= 4 {
+                if let Some(score) = self.matcher.fuzzy_match(&app.name, query) {
+                    if score > 75 {
+                        matches.push((app.clone(), score));
+                    }
+                }
             }
         }
 
         matches.sort_by_key(|a| std::cmp::Reverse(a.1));
-        matches.into_iter().take(12).collect()
+        matches.into_iter().take(15).collect()
     }
 }
 

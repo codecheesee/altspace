@@ -174,32 +174,36 @@ fn get_feature_flags() -> std::collections::HashMap<String, bool> {
 
 #[tauri::command]
 fn search(query: String) -> Vec<SearchItem> {
-    let mut results = Vec::new();
+    let mut scored_results: Vec<(SearchItem, i64)> = Vec::new();
     let query_trimmed = query.trim();
+    let q_lower = query_trimmed.to_lowercase();
 
     // 1. Search installed applications
     if let Ok(index) = APP_INDEX.lock() {
         let app_matches = index.search(query_trimmed);
-        for (app, _) in app_matches.into_iter().take(15) {
+        for (app, score) in app_matches {
             let path_str = app.path.to_string_lossy().to_string();
             let icon_data = icons::get_app_icon_base64(&path_str);
-            results.push(SearchItem {
-                id: format!("app-{}", app.name),
-                title: app.name,
-                subtitle: path_str.clone(),
-                category: "Application".into(),
-                icon_type: "app".into(),
-                icon_data,
-                path: path_str,
-                size: None,
-                updated: None,
-            });
+            scored_results.push((
+                SearchItem {
+                    id: format!("app-{}", app.name),
+                    title: app.name,
+                    subtitle: path_str.clone(),
+                    category: "Application".into(),
+                    icon_type: "app".into(),
+                    icon_data,
+                    path: path_str,
+                    size: None,
+                    updated: None,
+                },
+                score,
+            ));
         }
     }
 
     // 2. Search files via Everything IPC with fallback if query has >= 2 characters
     if query_trimmed.len() >= 2 {
-        if let Ok(files) = EVERYTHING_CLIENT.search(query_trimmed, 20) {
+        if let Ok(files) = EVERYTHING_CLIENT.search(query_trimmed, 30) {
             for file in files {
                 let full = if file.path.ends_with('\\') {
                     format!("{}{}", file.path, file.name)
@@ -216,22 +220,41 @@ fn search(query: String) -> Vec<SearchItem> {
                     None
                 };
 
-                results.push(SearchItem {
-                    id: format!("file-{}", full),
-                    title: file.name,
-                    subtitle: file.path,
-                    category,
-                    icon_type,
-                    icon_data,
-                    path: full,
-                    size: None,
-                    updated: None,
-                });
+                // Score files/folders dynamically against query
+                let name_lower = file.name.to_lowercase();
+                let file_score = if name_lower == q_lower {
+                    10000
+                } else if name_lower.starts_with(&q_lower) {
+                    5200 + (100 - name_lower.len().min(100) as i64)
+                } else if name_lower.split(|c: char| !c.is_alphanumeric()).any(|w| w.starts_with(&q_lower)) {
+                    3500 + (100 - name_lower.len().min(100) as i64)
+                } else if name_lower.contains(&q_lower) {
+                    2200 + (100 - name_lower.len().min(100) as i64)
+                } else {
+                    500
+                };
+
+                scored_results.push((
+                    SearchItem {
+                        id: format!("file-{}", full),
+                        title: file.name,
+                        subtitle: file.path,
+                        category,
+                        icon_type,
+                        icon_data,
+                        path: full,
+                        size: None,
+                        updated: None,
+                    },
+                    file_score,
+                ));
             }
         }
     }
 
-    results
+    // Sort all candidates globally by relevance score descending
+    scored_results.sort_by_key(|a| std::cmp::Reverse(a.1));
+    scored_results.into_iter().map(|(item, _)| item).take(25).collect()
 }
 
 #[tauri::command]
@@ -303,12 +326,7 @@ fn launch_item(window: tauri::WebviewWindow, path: String) -> Result<(), String>
 #[tauri::command]
 fn open_parent_folder(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
     let _ = window.hide();
-    Command::new("explorer")
-        .arg(format!("/select,{}", path))
-        .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    actions::open_folder_or_reveal(&path)
 }
 
 #[tauri::command]

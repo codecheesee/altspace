@@ -99,15 +99,28 @@ pub fn run_as_admin(target_path: &str) -> Result<(), String> {
 /// Reveals a file or directory in Windows File Explorer
 pub fn reveal_in_explorer(target_path: &str) -> Result<(), String> {
     let p = sanitize_path(target_path)?;
-    let path_str = p.to_string_lossy().to_string();
+    let clean_path = p.to_string_lossy().replace('/', "\\");
 
-    Command::new("explorer")
-        .arg(format!("/select,{}", path_str))
-        .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-        .map_err(|e| format!("Failed to open File Explorer: {}", e))?;
+    if p.is_dir() {
+        Command::new("explorer")
+            .arg(&clean_path)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder in File Explorer: {}", e))?;
+    } else {
+        Command::new("explorer")
+            .arg(format!("/select,\"{}\"", clean_path))
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to reveal file in File Explorer: {}", e))?;
+    }
 
     Ok(())
+}
+
+/// Opens a folder directly in Windows File Explorer, or reveals a file in its parent folder
+pub fn open_folder_or_reveal(target_path: &str) -> Result<(), String> {
+    reveal_in_explorer(target_path)
 }
 
 /// Opens the specified directory or file's parent in Windows Terminal (or clean PowerShell fallback)

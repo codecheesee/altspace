@@ -171,6 +171,7 @@ export interface FilePreview {
 export interface ActionItem {
   id: string;
   title: string;
+  subtitle?: string;
   section: string;
   icon: React.ReactNode;
   shortcut?: string;

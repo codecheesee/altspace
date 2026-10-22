@@ -1,7 +1,30 @@
-import { useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Zap,
+  Gamepad2,
+  Settings,
+  Palette,
+  Keyboard,
+  Shield,
+  Sparkles,
+  ChevronRight,
+  ArrowLeft,
+  Search,
+  ExternalLink,
+} from "lucide-react";
 import { cn } from "../lib/utils";
 import { tauriInvoke } from "../lib/appStorage";
 import type { Mode, Item, PortItem, ActionItem } from "../types";
+
+export type SubmenuCategory =
+  | "main"
+  | "quick-actions"
+  | "game-hub"
+  | "preferences"
+  | "aesthetics"
+  | "shortcuts"
+  | "security"
+  | "community";
 
 interface ActionDrawerProps {
   isOpen: boolean;
@@ -9,6 +32,7 @@ interface ActionDrawerProps {
   activeTheme: {
     cardBg: string;
     borderColor: string;
+    accentHex?: string;
   };
   currentMode: Mode;
   selectedItem: Item | null;
@@ -17,6 +41,122 @@ interface ActionDrawerProps {
   actionSelectedIndex: number;
   setActionSelectedIndex: (idx: number | ((prev: number) => number)) => void;
 }
+
+interface ShortcutDef {
+  id: string;
+  category: "General" | "Navigation" | "Dev Tools" | "Omnibar";
+  label: string;
+  keys: string[];
+  description: string;
+}
+
+const DEFAULT_SHORTCUTS: ShortcutDef[] = [
+  {
+    id: "summon",
+    category: "General",
+    label: "Summon AltSpace Launcher",
+    keys: ["Alt", "Space"],
+    description: "Instant cold invocation across all applications",
+  },
+  {
+    id: "dismiss",
+    category: "General",
+    label: "Dismiss / Hide Window",
+    keys: ["Esc"],
+    description: "Minimizes AltSpace to system tray",
+  },
+  {
+    id: "open",
+    category: "Navigation",
+    label: "Execute / Open Selected",
+    keys: ["↵"],
+    description: "Launch application, open folder, or run selected action",
+  },
+  {
+    id: "preview",
+    category: "Navigation",
+    label: "QuickLook File Preview",
+    keys: ["Space"],
+    description: "Inspect code, images, or metadata in instant preview card",
+  },
+  {
+    id: "actions",
+    category: "Navigation",
+    label: "Open Contextual Menu",
+    keys: ["Ctrl", "K"],
+    description: "Browse curated submenus and developer commands",
+  },
+  {
+    id: "sidebar",
+    category: "Navigation",
+    label: "Toggle Details Sidebar",
+    keys: ["Ctrl", "B"],
+    description: "Show or hide contextual preview sidebar",
+  },
+  {
+    id: "ports",
+    category: "Dev Tools",
+    label: "Dev Port Inspector",
+    keys: ["Alt", "P"],
+    description: "Inspect listening localhost TCP ports and process trees",
+  },
+  {
+    id: "clipboard",
+    category: "Dev Tools",
+    label: "In-Memory Clipboard History",
+    keys: ["Alt", "C"],
+    description: "Search and restore DPAPI-protected clipboard items",
+  },
+  {
+    id: "timeline",
+    category: "Dev Tools",
+    label: "Execution Timeline & 1-Click Undo",
+    keys: ["Alt", "H"],
+    description: "Review past actions and revert changes with single click",
+  },
+  {
+    id: "diagnostics",
+    category: "Dev Tools",
+    label: "Privacy Diagnostics Report",
+    keys: ["Ctrl", "Shift", "D"],
+    description: "Audit sanitized logs and verified DPAPI credentials",
+  },
+  {
+    id: "feedback",
+    category: "General",
+    label: "Beta Feedback & Bounties",
+    keys: ["Ctrl", "Shift", "F"],
+    description: "Send direct maintainer feedback and view feature bounties",
+  },
+  {
+    id: "cmd-fix",
+    category: "Omnibar",
+    label: "Self-Healing Scan",
+    keys: [":fix"],
+    description: "Scan and resolve dev port collisions, git locks, and zombies",
+  },
+  {
+    id: "cmd-port",
+    category: "Omnibar",
+    label: "Inspect Specific Port",
+    keys: [":<port>"],
+    description: "e.g. :3000 to inspect process holding port 3000",
+  },
+  {
+    id: "cmd-theme",
+    category: "Omnibar",
+    label: "Theme Switcher",
+    keys: [":theme"],
+    description: "Cycle or select custom accent colors and glass themes",
+  },
+  {
+    id: "cmd-games",
+    category: "Omnibar",
+    label: "Game Hub",
+    keys: [":games"],
+    description: "Search and launch games with fast mode or recording",
+  },
+];
 
 export function ActionDrawer({
   isOpen,
@@ -28,38 +168,252 @@ export function ActionDrawer({
   actionSelectedIndex,
   setActionSelectedIndex,
 }: ActionDrawerProps) {
+  const [currentCategory, setCurrentCategory] = useState<SubmenuCategory>("main");
+  const [subSelectedIndex, setSubSelectedIndex] = useState(0);
+  const [shortcutFilter, setShortcutFilter] = useState("");
+
+  // Reset to main view whenever opened
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentCategory("main");
+      setSubSelectedIndex(0);
+      setShortcutFilter("");
+      if (tauriInvoke) {
+        tauriInvoke("focus_window").catch(() => {});
+      }
+    }
+  }, [isOpen]);
+
+  // Group contextual actions by submenu category
+  const categorizedActions = useMemo(() => {
+    const quick: ActionItem[] = [];
+    const game: ActionItem[] = [];
+    const prefs: ActionItem[] = [];
+    const aesthetics: ActionItem[] = [];
+    const security: ActionItem[] = [];
+    const community: ActionItem[] = [];
+
+    for (const a of actions) {
+      const sec = a.section.toUpperCase();
+      if (sec.includes("PRIMARY") || sec.includes("STANDARD") || sec.includes("DEVELOPER")) {
+        quick.push(a);
+      } else if (sec.includes("DOCKER") || sec.includes("WSL") || sec.includes("DANGEROUS")) {
+        security.push(a);
+      } else if (sec.includes("PREFERENCES")) {
+        prefs.push(a);
+      } else if (sec.includes("THEME") || sec.includes("APPEARANCE")) {
+        aesthetics.push(a);
+      } else if (sec.includes("CONFIG") || sec.includes("SECURITY")) {
+        security.push(a);
+      } else if (sec.includes("COMMUNITY") || sec.includes("SUPPORT")) {
+        community.push(a);
+      } else {
+        quick.push(a);
+      }
+    }
+
+    return { quick, game, prefs, aesthetics, security, community };
+  }, [actions]);
+
+  // Main menu items (7 curated professional categories)
+  const mainCategories = useMemo(() => {
+    const isGame = selectedItem?.category === "Game";
+    return [
+      {
+        id: "quick-actions" as SubmenuCategory,
+        title: "Quick Actions",
+        desc: selectedItem ? `Context actions for ${selectedItem.title}` : "Item actions & launch options",
+        icon: <Zap className="w-4 h-4 text-emerald-400" />,
+        badge: `${categorizedActions.quick.length} actions`,
+      },
+      ...(isGame
+        ? [
+            {
+              id: "game-hub" as SubmenuCategory,
+              title: "Game Hub & Boost",
+              desc: "Fast launch, recording triggers, game directory",
+              icon: <Gamepad2 className="w-4 h-4 text-purple-400" />,
+              badge: "Gamer Mode",
+            },
+          ]
+        : []),
+      {
+        id: "preferences" as SubmenuCategory,
+        title: "Preferences & Engine",
+        desc: "Windows autostart, multi-drive index, rescan",
+        icon: <Settings className="w-4 h-4 text-sky-400" />,
+        badge: `${categorizedActions.prefs.length} items`,
+      },
+      {
+        id: "aesthetics" as SubmenuCategory,
+        title: "Aesthetics & Themes",
+        desc: "Dynamic themes, custom accent colors, glass effects",
+        icon: <Palette className="w-4 h-4 text-pink-400" />,
+        badge: `${categorizedActions.aesthetics.length} items`,
+      },
+      {
+        id: "shortcuts" as SubmenuCategory,
+        title: "Keyboard Shortcuts",
+        desc: "Catalog of global & local hotkeys and commands",
+        icon: <Keyboard className="w-4 h-4 text-amber-400" />,
+        badge: `${DEFAULT_SHORTCUTS.length} keys`,
+      },
+      {
+        id: "security" as SubmenuCategory,
+        title: "Aegis Security & Self-Healing",
+        desc: "Scan deadlocks, DPAPI secret vault, diagnostics",
+        icon: <Shield className="w-4 h-4 text-emerald-400" />,
+        badge: `${categorizedActions.security.length} tools`,
+      },
+      {
+        id: "community" as SubmenuCategory,
+        title: "Founder Pass & Community",
+        desc: "Lock in 6-month Founder Pass ($19 / ₹999), feedback, GitHub",
+        icon: <Sparkles className="w-4 h-4 text-indigo-400" />,
+        badge: "Early Adopter",
+      },
+    ];
+  }, [selectedItem, categorizedActions]);
+
+  // Current active list depending on whether we are on main view or in a submenu
+  const currentSubmenuActions = useMemo((): ActionItem[] => {
+    switch (currentCategory) {
+      case "quick-actions":
+        return categorizedActions.quick;
+      case "preferences":
+        return categorizedActions.prefs;
+      case "aesthetics":
+        return categorizedActions.aesthetics;
+      case "security":
+        return categorizedActions.security;
+      case "community":
+        return categorizedActions.community;
+      case "game-hub":
+        return [
+          {
+            id: "game-fast-launch",
+            title: "Launch in Fast Game Mode",
+            subtitle: "Boosts process to HIGH_PRIORITY_CLASS and optimizes RAM",
+            icon: <Zap className="w-3.5 h-3.5 text-amber-400" />,
+            badge: "Game Boost",
+            section: "GAMER OPTIONS",
+            shortcut: "↵",
+            run: () => {
+              if (selectedItem?.path) {
+                tauriInvoke("launch_game", { launchUri: selectedItem.path }).catch(() => {});
+              }
+              onClose();
+            },
+          },
+          {
+            id: "game-record-launch",
+            title: "Launch with Windows Game Bar",
+            subtitle: "Boots game and summons Xbox Game Bar recording (Win+G)",
+            icon: <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />,
+            badge: "Recording",
+            section: "GAMER OPTIONS",
+            shortcut: "Win G",
+            run: () => {
+              if (selectedItem?.path) {
+                tauriInvoke("launch_game", { launchUri: selectedItem.path }).catch(() => {});
+                tauriInvoke("execute_system_command", { command: "start ms-gamebar:" }).catch(() => {});
+              }
+              onClose();
+            },
+          },
+          {
+            id: "game-open-folder",
+            title: "Open Game Installation Folder",
+            subtitle: "Reveal game executable directory in File Explorer",
+            icon: <ExternalLink className="w-3.5 h-3.5 text-sky-400" />,
+            section: "GAMER OPTIONS",
+            run: () => {
+              if (selectedItem?.path) {
+                tauriInvoke("open_parent_folder", { path: selectedItem.path }).catch(() => {});
+              }
+              onClose();
+            },
+          },
+        ];
+      default:
+        return [];
+    }
+  }, [currentCategory, categorizedActions, selectedItem, onClose]);
+
+  // Keyboard navigation handler
   useEffect(() => {
     if (!isOpen) return;
 
-    if (tauriInvoke) {
-      tauriInvoke("focus_window").catch(() => {});
-    }
-
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape or Backspace to step back from a submenu
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
-        onClose();
+        if (currentCategory !== "main") {
+          setCurrentCategory("main");
+          setSubSelectedIndex(0);
+        } else {
+          onClose();
+        }
         return;
       }
+
+      if (e.key === "Backspace" && currentCategory !== "main" && currentCategory !== "shortcuts") {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentCategory("main");
+        setSubSelectedIndex(0);
+        return;
+      }
+
+      // Arrow Down
       if (e.key === "ArrowDown") {
         e.preventDefault();
         e.stopPropagation();
-        setActionSelectedIndex((prev: number) => (prev < actions.length - 1 ? prev + 1 : prev));
+        if (currentCategory === "main") {
+          setActionSelectedIndex((prev) => (prev < mainCategories.length - 1 ? prev + 1 : prev));
+        } else if (currentCategory === "shortcuts") {
+          // Handled inside shortcuts scroll
+        } else {
+          setSubSelectedIndex((prev) => (prev < currentSubmenuActions.length - 1 ? prev + 1 : prev));
+        }
         return;
       }
+
+      // Arrow Up
       if (e.key === "ArrowUp") {
         e.preventDefault();
         e.stopPropagation();
-        setActionSelectedIndex((prev: number) => (prev > 0 ? prev - 1 : 0));
+        if (currentCategory === "main") {
+          setActionSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        } else if (currentCategory === "shortcuts") {
+          // Handled inside shortcuts scroll
+        } else {
+          setSubSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        }
         return;
       }
+
+      // Enter
       if (e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
-        actions[actionSelectedIndex]?.run();
+        if (currentCategory === "main") {
+          const selected = mainCategories[actionSelectedIndex];
+          if (selected) {
+            setCurrentCategory(selected.id);
+            setSubSelectedIndex(0);
+          }
+        } else if (currentCategory === "shortcuts") {
+          // No action on shortcuts
+        } else {
+          const act = currentSubmenuActions[subSelectedIndex];
+          if (act) act.run();
+        }
         return;
       }
+
+      // Ctrl + K to toggle close
       if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         e.stopPropagation();
@@ -70,12 +424,18 @@ export function ActionDrawer({
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, onClose, actions, actionSelectedIndex, setActionSelectedIndex]);
+  }, [
+    isOpen,
+    onClose,
+    currentCategory,
+    mainCategories,
+    actionSelectedIndex,
+    setActionSelectedIndex,
+    currentSubmenuActions,
+    subSelectedIndex,
+  ]);
 
   if (!isOpen) return null;
-
-  const sections = Array.from(new Set(actions.map((a) => a.section)));
-  let runningIndex = 0;
 
   return (
     <div
@@ -83,113 +443,214 @@ export function ActionDrawer({
       onClick={onClose}
     >
       <div
-        className="w-[360px] max-h-[440px] border border-white/[0.08] bg-[#0c0c0e] rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-2.5 flex flex-col space-y-2 animate-in zoom-in-95 duration-100"
+        className="w-[400px] max-h-[480px] border border-white/[0.08] bg-[#0c0c0e] rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-3 flex flex-col space-y-2.5 animate-in zoom-in-95 duration-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header: Item Title & Esc hint */}
-        <div className="px-3 py-1.5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-          <div className="min-w-0 pr-2">
-            <span className="text-[12px] font-semibold text-white truncate block">
-              Actions for{" "}
-              {currentMode === "all"
-                ? selectedItem?.title || "Search"
-                : currentMode === "ports"
-                ? `Port :${selectedPort?.port}`
-                : "Clipboard"}
-            </span>
-            <span className="text-[10px] text-zinc-400 truncate block font-mono">
-              {currentMode === "all"
-                ? selectedItem?.category || "Query"
-                : currentMode === "ports"
-                ? `PID ${selectedPort?.pid}`
-                : "Selected Clip"}
-            </span>
+        {/* Header: Breadcrumbs & Navigation */}
+        <div className="px-2 py-1 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            {currentCategory !== "main" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentCategory("main");
+                  setSubSelectedIndex(0);
+                }}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition cursor-pointer group"
+                title="Back to Main Menu (Esc or Backspace)"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                <span>Menu</span>
+              </button>
+            ) : (
+              <span className="text-[12px] font-semibold text-white truncate block">
+                {currentMode === "all"
+                  ? selectedItem?.title ? `Menu · ${selectedItem.title}` : "AltSpace Menu"
+                  : currentMode === "ports"
+                  ? `Port :${selectedPort?.port}`
+                  : "Clipboard Actions"}
+              </span>
+            )}
+
+            {currentCategory !== "main" && (
+              <>
+                <span className="text-zinc-600 text-xs">/</span>
+                <span className="text-xs font-semibold text-white capitalize">
+                  {currentCategory.replace("-", " ")}
+                </span>
+              </>
+            )}
           </div>
+
           <button
+            type="button"
             onClick={onClose}
-            className="flex items-center gap-1 text-zinc-400 hover:text-white transition cursor-pointer"
-            title="Close menu (Esc)"
+            className="flex items-center gap-1 text-zinc-500 hover:text-white transition cursor-pointer"
+            title="Dismiss Menu (Esc)"
           >
             <kbd className="kbd-cap hover:border-zinc-500">Esc</kbd>
           </button>
         </div>
 
-        {/* Scrollable Actions List */}
-        <div className="overflow-y-auto space-y-2.5 px-1 py-1 max-h-[350px]">
-          {sections.map((sec) => {
-            const sectionActions = actions.filter((a) => a.section === sec);
+        {/* Level 0: Main Hierarchical Menu */}
+        {currentCategory === "main" && (
+          <div className="overflow-y-auto space-y-1 px-1 py-1 max-h-[380px] custom-scrollbar">
+            {mainCategories.map((cat, idx) => {
+              const isSelected = idx === actionSelectedIndex;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setCurrentCategory(cat.id);
+                    setSubSelectedIndex(0);
+                  }}
+                  onMouseEnter={() => setActionSelectedIndex(idx)}
+                  className={cn(
+                    "w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between text-xs transition cursor-pointer border",
+                    isSelected
+                      ? "bg-white/[0.08] text-white border-white/[0.12] shadow-sm"
+                      : "text-zinc-400 border-transparent hover:bg-white/[0.04] hover:text-zinc-200"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <span className="shrink-0 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                      {cat.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <span className="font-semibold text-white block truncate">
+                        {cat.title}
+                      </span>
+                      <span className="text-[10.5px] text-zinc-400 block truncate">
+                        {cat.desc}
+                      </span>
+                    </div>
+                  </div>
 
-            return (
-              <div key={sec} className="space-y-1">
-                <div className="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
-                  {sec}
-                </div>
-                <div className="space-y-0.5">
-                  {sectionActions.map((action) => {
-                    const currentGlobalIdx = runningIndex++;
-                    const isSelected = currentGlobalIdx === actionSelectedIndex;
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {cat.badge && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/[0.04] border border-white/[0.06] text-zinc-400">
+                        {cat.badge}
+                      </span>
+                    )}
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-                    return (
-                      <div
-                        key={action.id}
-                        onClick={() => {
-                          action.run();
-                        }}
-                        onMouseEnter={() => setActionSelectedIndex(currentGlobalIdx)}
-                        className={cn(
-                          "flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs transition duration-75 relative",
-                          isSelected
-                            ? "bg-white/[0.06] text-white font-medium border border-white/[0.08] shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2.5px] before:rounded-r before:bg-white"
-                            : "text-zinc-300 hover:bg-white/[0.03] hover:text-white border border-transparent"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <span className="shrink-0 text-zinc-400">{action.icon}</span>
-                          <span className="truncate">{action.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {action.badge && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.08] text-zinc-300 font-mono border border-white/[0.05]">
-                              {action.badge}
-                            </span>
-                          )}
-                          {action.isToggle ? (
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={cn(
-                                  "text-[9px] font-bold tracking-wider font-mono uppercase px-1.5 py-0.5 rounded",
-                                  action.toggleValue
-                                    ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30"
-                                    : "text-zinc-500 bg-zinc-800/80 border border-zinc-700/60"
-                                )}
-                              >
-                                {action.toggleValue ? "ON" : "OFF"}
-                              </span>
-                              <div
-                                className={cn(
-                                  "relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors",
-                                  action.toggleValue ? "bg-emerald-500" : "bg-zinc-700"
-                                )}
-                              >
-                                <span
-                                  className={cn(
-                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform shadow-sm",
-                                    action.toggleValue ? "translate-x-3.5" : "translate-x-0.5"
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          ) : action.shortcut ? (
-                            <kbd className="kbd-cap">{action.shortcut}</kbd>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+        {/* Level 1: Submenu Action Items */}
+        {currentCategory !== "main" && currentCategory !== "shortcuts" && (
+          <div className="overflow-y-auto space-y-1 px-1 py-1 max-h-[380px] custom-scrollbar">
+            {currentSubmenuActions.length === 0 ? (
+              <div className="py-8 text-center text-zinc-500 text-xs">
+                No active actions available in this section.
               </div>
-            );
-          })}
+            ) : (
+              currentSubmenuActions.map((action, idx) => {
+                const isSelected = idx === subSelectedIndex;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => action.run()}
+                    onMouseEnter={() => setSubSelectedIndex(idx)}
+                    className={cn(
+                      "w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between text-xs transition cursor-pointer border",
+                      isSelected
+                        ? "bg-white/[0.08] text-white border-white/[0.12] shadow-sm"
+                        : "text-zinc-400 border-transparent hover:bg-white/[0.04] hover:text-zinc-200"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                      <span className="shrink-0 text-zinc-400">{action.icon}</span>
+                      <div className="min-w-0">
+                        <span className="font-medium text-white block truncate">
+                          {action.title}
+                        </span>
+                        {action.subtitle && (
+                          <span className="text-[10px] text-zinc-400 block truncate font-mono">
+                            {action.subtitle}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {action.badge && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/[0.05] border border-white/[0.08] text-zinc-300">
+                          {action.badge}
+                        </span>
+                      )}
+                      {action.shortcut && (
+                        <kbd className="kbd-cap">{action.shortcut}</kbd>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Level 1: Dedicated Keyboard Shortcuts Manager Submenu */}
+        {currentCategory === "shortcuts" && (
+          <div className="flex flex-col space-y-2 overflow-hidden flex-1">
+            {/* Search filter for shortcuts */}
+            <div className="relative shrink-0 px-1">
+              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={shortcutFilter}
+                onChange={(e) => setShortcutFilter(e.target.value)}
+                placeholder="Search shortcuts (e.g. port, preview, fix)..."
+                className="w-full pl-8 pr-3 py-1.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2]"
+                autoFocus
+              />
+            </div>
+
+            <div className="overflow-y-auto space-y-1.5 px-1 py-1 max-h-[320px] custom-scrollbar">
+              {DEFAULT_SHORTCUTS.filter(
+                (s) =>
+                  !shortcutFilter ||
+                  s.label.toLowerCase().includes(shortcutFilter.toLowerCase()) ||
+                  s.description.toLowerCase().includes(shortcutFilter.toLowerCase()) ||
+                  s.keys.some((k) => k.toLowerCase().includes(shortcutFilter.toLowerCase()))
+              ).map((sc) => (
+                <div
+                  key={sc.id}
+                  className="px-2.5 py-1.5 rounded-xl border border-white/[0.04] bg-white/[0.02] flex items-center justify-between text-xs hover:border-white/[0.1] transition"
+                >
+                  <div className="min-w-0 pr-2">
+                    <span className="font-medium text-zinc-200 block truncate">
+                      {sc.label}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 block truncate">
+                      {sc.description}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {sc.keys.map((k) => (
+                      <kbd key={k} className="kbd-cap font-mono text-[10.5px]">
+                        {k}
+                      </kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Submenu Hint */}
+        <div className="px-2 pt-1 border-t border-white/[0.06] flex items-center justify-between text-[10.5px] text-zinc-500 shrink-0">
+          <span>
+            {currentCategory === "main" ? "↑↓ Navigate · ↵ Select Submenu" : "↑↓ Navigate · ↵ Run · ⎋ Back"}
+          </span>
+          <span className="font-mono text-zinc-600">AltSpace v2.4</span>
         </div>
       </div>
     </div>
