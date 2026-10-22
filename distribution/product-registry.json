@@ -7,7 +7,7 @@
       "name": "AltSpace",
       "tagline": "Native Windows developer control plane",
       "description": "Fast file search, TCP port inspection & process recovery, Docker Compose and WSL2 utilities, Windows DPAPI-backed local secrets, and local Ollama-based AI copilot.",
-      "currentVersion": "2.0.0",
+      "currentVersion": "2.2.0",
       "websiteUrl": "https://altspace.dev",
       "docsUrl": "https://docs.altspace.dev",
       "downloadUrl": "https://github.com/codecheesee/altspace/releases/latest",

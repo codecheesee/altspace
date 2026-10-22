@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test src/lib/*.test.mjs ../scripts/verify_launch_kit.test.mjs"
+    "test": "node --test src/lib/*.test.mjs ../scripts/*.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",

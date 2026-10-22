@@ -150,7 +150,7 @@ Technical Design:
 
 Code: https://github.com/codecheesee/altspace
 Website / Download: https://codecheesee.github.io/altspace/
-Direct Installer: https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe
+Direct Installer: https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe
 
 We welcome discussion regarding our plugin security architecture and system integration choices.
 ```

@@ -12,7 +12,6 @@ mod updater;
 mod windows_mgmt;
 pub mod crypto_vault;
 pub mod broker;
-pub mod named_pipe;
 pub mod license_verifier;
 pub mod github_auth;
 pub mod docker_wsl;

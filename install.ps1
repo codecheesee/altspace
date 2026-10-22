@@ -4,13 +4,15 @@
 param(
     [switch]$LocalOnly,
     [string]$Tag = '',
-    [string]$TargetDir = "$env:LOCALAPPDATA\Programs\AltSpace"
+    [string]$TargetDir = "$env:LOCALAPPDATA\Programs\AltSpace",
+    [string]$ExpectedPublisher = 'Codecheesee',
+    [switch]$AllowUnsigned = $false
 )
 
 $ErrorActionPreference = 'Stop'
 $TargetDir = $TargetDir.Trim()
 $Repo = 'codecheesee/altspace'
-$FallbackTag = 'v2.0.0'
+$FallbackTag = 'v2.2.0'
 $BinaryPath = Join-Path $TargetDir 'altspace.exe'
 $DllPath = Join-Path $TargetDir 'Everything64.dll'
 $TempRoot = Join-Path ([IO.Path]::GetTempPath()) ("AltSpaceInstaller-" + [Guid]::NewGuid().ToString('N'))
@@ -43,6 +45,34 @@ function Assert-Sha256([string]$FilePath, [string]$ChecksumPath, [string]$AssetN
     if ($actual -ne $expected) {
         throw "SHA-256 verification failed for '$AssetName'. Expected $expected but received $actual."
     }
+}
+
+function Assert-Authenticode([string]$FilePath, [string]$Publisher = '', [switch]$AllowUnsigned) {
+    if (-not (Test-Path $FilePath -PathType Leaf)) {
+        throw "Binary not found for Authenticode verification: $FilePath"
+    }
+
+    $sig = Get-AuthenticodeSignature -FilePath $FilePath
+    if ($sig.Status -eq 'Valid') {
+        if ($Publisher) {
+            $subject = $sig.SignerCertificate.Subject
+            if ($subject -notmatch [regex]::Escape($Publisher)) {
+                throw "Authenticode publisher mismatch for '$(Split-Path $FilePath -Leaf)'. Expected publisher matching '$Publisher' but found '$subject'. Installation aborted for security."
+            }
+        }
+        Write-Host "[+] Authenticode signature verified for $(Split-Path $FilePath -Leaf) (Publisher: $($sig.SignerCertificate.Subject))" -ForegroundColor Green
+        return
+    }
+
+    if ($sig.Status -in 'NotSigned', 'UnknownError') {
+        if ($AllowUnsigned) {
+            Write-Host "[-] WARNING: Binary '$(Split-Path $FilePath -Leaf)' is unsigned (Status: $($sig.Status)). Proceeding because -AllowUnsigned was explicitly supplied." -ForegroundColor Yellow
+            return
+        }
+        throw "Authenticode verification failed: '$(Split-Path $FilePath -Leaf)' is unsigned or lacks a valid signature block (Status: $($sig.Status)). Production releases mandate a valid Authenticode signature. Installation aborted."
+    }
+
+    throw "Authenticode signature validation failed for '$(Split-Path $FilePath -Leaf)'. Status: $($sig.Status), Message: $($sig.StatusMessage). Installation aborted for security."
 }
 
 function Safe-CopyFile([string]$Source, [string]$Destination) {
@@ -127,6 +157,7 @@ try {
             }
         }
         Write-Host "[*] Installing local binary from: $localBin" -ForegroundColor Green
+        Assert-Authenticode -FilePath $localBin -Publisher $ExpectedPublisher -AllowUnsigned:$AllowUnsigned
         Safe-CopyFile -Source $localBin -Destination $BinaryPath
         if (Test-Path $localDll) { Safe-CopyFile -Source $localDll -Destination $DllPath }
     } else {
@@ -168,13 +199,16 @@ try {
         }
 
         Expand-Archive -Path $portableZip -DestinationPath $TempRoot -Force
+        $selectedExe = $null
         if (Test-Path $portableExe) {
-            Safe-CopyFile -Source $portableExe -Destination $BinaryPath
+            $selectedExe = $portableExe
         } elseif (Test-Path $legacyExe) {
-            Safe-CopyFile -Source $legacyExe -Destination $BinaryPath
+            $selectedExe = $legacyExe
         } else {
             throw 'Verified portable archive did not contain AltSpace-Portable.exe or altspace.exe.'
         }
+        Assert-Authenticode -FilePath $selectedExe -Publisher $ExpectedPublisher -AllowUnsigned:$AllowUnsigned
+        Safe-CopyFile -Source $selectedExe -Destination $BinaryPath
         $extractedDll = Join-Path $TempRoot 'Everything64.dll'
         if (-not (Test-Path $extractedDll)) { throw 'Verified portable archive did not contain Everything64.dll.' }
         Safe-CopyFile -Source $extractedDll -Destination $DllPath

@@ -130,13 +130,13 @@ We built **AltSpace** to fix this. It is a 100% free and open-source desktop com
 1. **Insanely Fast & Lightweight**: Idles at ~18MB RAM with sub-5ms cold invocation. No 400MB Electron wrapper.
 2. **Instant Dev Port Killer**: Just type `:3000` to inspect listening sockets, identify zombie Node/Vite/Python processes, and kill them with Enter.
 3. **Local-First & Private**: Powered by SQLite frecency search and local AI via Ollama (Llama 3.2) with Model Context Protocol (MCP). Zero telemetry, zero cloud tracking.
-4. **Hardware-Backed Secret Vault**: Uses Windows DPAPI (`CryptProtectData`) to encrypt API keys with your Windows login credentials—never stored in plaintext.
-5. **Capability Security Broker**: All system commands run through a 3-tier execution broker with interactive dry-run previews for destructive actions.
+4. **Windows DPAPI Secret Vault**: Uses Windows DPAPI (`CryptProtectData`) to encrypt API keys with your Windows login credentials—never returned across IPC or stored in plaintext.
+5. **Capability Security Broker**: All privileged operations run through single-use parameter-bound approval challenge tokens.
 6. **20% Contributor Bounty Treasury**: We set aside 20% of all optional supporter revenue directly into a public GitHub bounty pool to pay developers who build community extensions.
 
 ### How to get it:
 - 🌐 **Web Installer / Landing Page**: https://codecheesee.github.io/altspace/
-- 💻 **Direct Setup Download**: https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe
+- 💻 **Direct Setup Download**: https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe
 - 📦 **PowerShell One-Liner**:
   `irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex`
 - 🛠️ **GitHub Source**: https://github.com/codecheesee/altspace (Apache 2.0)
@@ -162,13 +162,13 @@ We built **AltSpace** as an offline-first, privacy-respecting alternative for Wi
 
 - **100% Local AI**: Connects directly to your local Ollama instance (`http://localhost:11434`) using the Model Context Protocol (MCP). Your queries, clipboard, and file paths never leave your workstation.
 - **In-Memory Clipboard History**: Searchable clipboard history with automatic secret masking (API keys, tokens, SSH keys) kept strictly in volatile RAM.
-- **Windows DPAPI Vault**: Sensitive credentials are encrypted with Windows Data Protection API using machine-bound AES keys.
+- **Windows DPAPI Vault**: Sensitive credentials are encrypted with Windows Data Protection API using user-login-bound DPAPI keys.
 - **Zero Telemetry**: No tracking, no background analytics. You can inspect local diagnostics anytime with `Ctrl + Shift + D`.
 - **Open-Core Apache 2.0**: Inspect the Rust codebase, build from source, or download pre-compiled releases.
 
 - GitHub: https://github.com/codecheesee/altspace
 - Live Landing Page: https://codecheesee.github.io/altspace/
-- Direct Download: https://github.com/codecheesee/altspace/releases/download/v2.0.0-preview/AltSpace-Setup-x64.exe
+- Direct Download: https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe
 
 Happy to answer any architecture or privacy questions!
 ```

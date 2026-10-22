@@ -145,7 +145,7 @@ export function generateDiagnosticSnapshot(
     timestamp: new Date().toISOString(),
     app: {
       name: 'AltSpace',
-      version: overrides?.app?.version ?? '2.0.0',
+      version: overrides?.app?.version ?? '2.2.0',
       safeMode: overrides?.app?.safeMode ?? false,
     },
     system: {
