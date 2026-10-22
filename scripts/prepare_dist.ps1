@@ -3,8 +3,17 @@ $dist = Join-Path $PSScriptRoot '..\dist_artifacts'
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
 $releaseBinary = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe'
+if (-not (Test-Path $releaseBinary)) {
+    $releaseBinary = Join-Path $PSScriptRoot '..\target\release\raycast-windows.exe'
+}
 $nsisDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis'
+if (-not (Test-Path $nsisDir)) {
+    $nsisDir = Join-Path $PSScriptRoot '..\target\release\bundle\nsis'
+}
 $msiDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi'
+if (-not (Test-Path $msiDir)) {
+    $msiDir = Join-Path $PSScriptRoot '..\target\release\bundle\msi'
+}
 $dll = Join-Path $PSScriptRoot '..\bin\Everything64.dll'
 $installerScript = Join-Path $PSScriptRoot '..\install.ps1'
 
