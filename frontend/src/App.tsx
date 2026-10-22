@@ -426,10 +426,11 @@ export default function App() {
     if (tauriInvoke) {
       try {
         await tauriInvoke("open_parent_folder", { path });
+        handleDismissWindow();
         return;
       } catch (_) {}
     }
-  }, []);
+  }, [handleDismissWindow]);
 
   const handleOpenUrl = useCallback(async (url: string) => {
     if (tauriInvoke) {
@@ -497,6 +498,7 @@ export default function App() {
         .then((msg) => {
           notify(msg);
           setQuery("");
+          handleDismissWindow();
         })
         .catch((err: any) => {
           notify(`Launch error: ${err.message || err}`);
@@ -527,6 +529,7 @@ export default function App() {
         .then((msg) => {
           notify(msg);
           setQuery("");
+          handleDismissWindow();
         })
         .catch((err: any) => notify(`WSL error: ${err.message || err}`));
       return;
@@ -550,6 +553,7 @@ export default function App() {
         .then((msg) => {
           notify(msg);
           setQuery("");
+          handleDismissWindow();
         })
         .catch((err: any) => notify(`Docker shell error: ${err.message || err}`));
       return;

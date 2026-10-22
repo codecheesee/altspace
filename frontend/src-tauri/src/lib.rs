@@ -278,7 +278,8 @@ fn get_suggested_projects() -> Vec<SearchItem> {
 }
 
 #[tauri::command]
-fn launch_item(path: String) -> Result<(), String> {
+fn launch_item(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     let wide_path: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let res = ShellExecuteW(
@@ -300,7 +301,8 @@ fn launch_item(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_parent_folder(path: String) -> Result<(), String> {
+fn open_parent_folder(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     Command::new("explorer")
         .arg(format!("/select,{}", path))
         .creation_flags(CREATE_NO_WINDOW)
@@ -310,22 +312,26 @@ fn open_parent_folder(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn run_as_admin(path: String) -> Result<(), String> {
+fn run_as_admin(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     actions::run_as_admin(&path)
 }
 
 #[tauri::command]
-fn reveal_in_explorer(path: String) -> Result<(), String> {
+fn reveal_in_explorer(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     actions::reveal_in_explorer(&path)
 }
 
 #[tauri::command]
-fn open_in_terminal(path: String) -> Result<(), String> {
+fn open_in_terminal(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     actions::open_in_terminal(&path)
 }
 
 #[tauri::command]
-fn open_in_vscode(path: String) -> Result<(), String> {
+fn open_in_vscode(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let _ = window.hide();
     actions::open_in_vscode(&path)
 }
 
@@ -761,9 +767,8 @@ pub fn validate_settings_uri_for_opening(raw_uri: &str) -> Result<String, String
     Ok(trimmed.to_string())
 }
 
-#[tauri::command]
-fn open_url(url: String) -> Result<(), String> {
-    let parsed = validate_url_for_opening(&url)?;
+fn open_url_internal(url: &str) -> Result<(), String> {
+    let parsed = validate_url_for_opening(url)?;
     let wide_url: Vec<u16> = parsed.as_str().encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let res = ShellExecuteW(
@@ -782,7 +787,14 @@ fn open_url(url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_settings_uri(uri: String) -> Result<(), String> {
+fn open_url(window: tauri::WebviewWindow, url: String) -> Result<(), String> {
+    let _ = window.hide();
+    open_url_internal(&url)
+}
+
+#[tauri::command]
+fn open_settings_uri(window: tauri::WebviewWindow, uri: String) -> Result<(), String> {
+    let _ = window.hide();
     let safe_uri = validate_settings_uri_for_opening(&uri)?;
     let wide_uri: Vec<u16> = safe_uri.encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
@@ -807,7 +819,8 @@ fn get_installed_games() -> Vec<games::GameItem> {
 }
 
 #[tauri::command]
-fn launch_game(launch_uri: String) -> Result<(), String> {
+fn launch_game(window: tauri::WebviewWindow, launch_uri: String) -> Result<(), String> {
+    let _ = window.hide();
     games::launch_game(&launch_uri)
 }
 
@@ -1612,7 +1625,7 @@ pub fn run() {
                         }
                     }
                     "github" => {
-                        let _ = open_url("https://github.com/codecheesee/altspace".to_string());
+                        let _ = open_url_internal("https://github.com/codecheesee/altspace");
                     }
                     "quit" => {
                         app.state::<ExitState>().0.store(true, Ordering::SeqCst);
@@ -1659,9 +1672,17 @@ pub fn run() {
 
                 let w_clone = window.clone();
                 window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = w_clone.hide();
+                    match event {
+                        tauri::WindowEvent::CloseRequested { api, .. } => {
+                            api.prevent_close();
+                            let _ = w_clone.hide();
+                        }
+                        tauri::WindowEvent::Focused(focused) => {
+                            if !*focused {
+                                let _ = w_clone.hide();
+                            }
+                        }
+                        _ => {}
                     }
                 });
 
