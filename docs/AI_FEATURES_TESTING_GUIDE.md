@@ -128,14 +128,15 @@ The Action Planner bypasses LLM latency for standard developer environment recov
 
 AltSpace tracks shell command failures in volatile memory (never written to disk).
 
-### Test 4.1: Triggering a Shell Failure
-- **Action**: Execute a failing command in the Omnibar shell runner:
+### Test 4.1: Shell Command Runner Disabled Safety Check
+- **Action**: In the Omnibar, type:
   ```
-  > powershell -c "Write-Error 'Database connection timed out on port 5432'; exit 1"
+  > powershell -c "exit 1"
   ```
 - **Expected Behavior**:
-  - The terminal card shows exit code 1 with the red error output.
-  - The error is captured into the Rust `FAILURE_RING_BUFFER`.
+  - AltSpace immediately rejects raw shell execution with a security notice indicating that unbrokered shell execution is permanently disabled.
+  - No subprocess is spawned, preserving workstation safety.
+  - The failure ring buffer continues tracking system diagnostic and CLI exit events in volatile memory.
 
 ### Test 4.2: Auto-Recovery Diagnosis Invocation
 - **Action**: Clear the Omnibar, then type just:
@@ -149,7 +150,7 @@ AltSpace tracks shell command failures in volatile memory (never written to disk
 
 ---
 
-## Test Suite 5: BYOK Hardware DPAPI Vault (Lane B &mdash; Pro)
+## Test Suite 5: BYOK Windows DPAPI Vault (Lane B &mdash; Pro)
 
 ### Test 5.1: Storing Cloud API Keys
 - **Action**:
@@ -157,7 +158,7 @@ AltSpace tracks shell command failures in volatile memory (never written to disk
   2. Navigate to **Local Copilot & Action Broker**.
   3. Under *Inference Lane*, select **BYOK Cloud (Anthropic / OpenAI / DeepSeek)**.
   4. Select a provider (e.g., Anthropic Claude or OpenAI).
-  5. Enter a key (or test string `sk-ant-api03-test-1234567890`) and click **Save to Hardware Vault**.
+  5. Enter a key (or test string `sk-ant-api03-test-1234567890`) and click **Save to Windows DPAPI Vault**.
 - **Expected Behavior**:
   - Key is encrypted via Windows DPAPI (`CryptProtectData`) and saved.
   - The key shows as masked (`••••••••`).

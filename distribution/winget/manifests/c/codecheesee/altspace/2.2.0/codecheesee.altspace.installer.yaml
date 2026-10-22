@@ -8,7 +8,7 @@ InstallModes:
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe
-    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    InstallerSha256: c4b500726c9e0d0109391ee49ac90c25025ac2ae8070ed573355a2f39894124c
     Scope: user
     UpgradeBehavior: install
 ManifestType: installer

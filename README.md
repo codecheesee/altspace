@@ -37,8 +37,13 @@ AltSpace is distributed as a native Windows application with several installatio
 - **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe) (v2.2.0, 4.1 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
 - **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-MSI-x64.msi) (v2.2.0, 6.5 MB) for enterprise WiX Group Policy deployments.
 - **Windows Package Manager (Winget):**
+  *(Catalog submission to official Microsoft `winget-pkgs` is in validation review. To install via local manifest or once merged:)*
   ```powershell
+  # Global install (once Microsoft review completes):
   winget install codecheesee.altspace
+
+  # Or install directly from repository manifest:
+  winget install --manifest distribution/winget/manifests/c/codecheesee/altspace/2.2.0/
   ```
 - **PowerShell (Instant One-Liner):** Run the verified installer script directly in PowerShell:
   ```powershell
@@ -256,10 +261,10 @@ npm install
 npm run tauri dev
 ```
 
-### Automated Test Suite (166 Tests)
+### Automated Test Suite (165 Tests)
 
 ```bash
-# Run 88 frontend unit, red-team security, governance, installer trust, and launch kit tests
+# Run 87 frontend unit, red-team security, governance, installer trust, and launch kit tests
 npm test --prefix frontend
 
 # Run frontend production build & type checks

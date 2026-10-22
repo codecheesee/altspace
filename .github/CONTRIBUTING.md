@@ -11,12 +11,13 @@ All contributions to this repository are licensed under the **Apache License 2.0
 1. **Issue Selection**: Review existing issues or open a new discussion detailing the feature request or bug report.
 2. **Fork and Branch**: Create a feature branch off `main` using descriptive naming (e.g. `feat/virtual-desktop-api`, `fix/mft-query-escape`).
 3. **Automated Verification**:
-   - Ensure the TypeScript frontend compiles cleanly:
+   - Ensure the TypeScript frontend compiles cleanly and passes all 87 tests:
      ```bash
      cd frontend
+     npm test
      npm run build
      ```
-   - Ensure all Rust unit and integration tests pass:
+   - Ensure all 78 native Rust unit and integration tests pass:
      ```bash
      cd frontend/src-tauri
      cargo test
@@ -25,9 +26,9 @@ All contributions to this repository are licensed under the **Apache License 2.0
 
 ---
 
-## 2. Extension Architecture and Sandboxing
+## 2. Extension Architecture & Phase 3 Roadmap
 
-AltSpace supports language-agnostic extension development. Extensions execute as isolated child processes managed by the Rust backend.
+AltSpace supports language-agnostic extension discovery. In v2.2.0, external script execution (.ps1, .bat, .cmd, .py, .js) is temporarily paused with BlockedForMigration status while we finalize the Phase 3 Signed Extension platform with cryptographic manifest verification.
 
 ### Extension Directory Structure
 
@@ -58,8 +59,8 @@ Each extension resides within an isolated subdirectory in `%LOCALAPPDATA%\AltSpa
 ### Security and Runtime Invariants
 
 1. **Path Confinement**: All extension scripts must reside strictly within their designated directory. Path traversal attempts (e.g. `../`) are rejected by the Rust loader.
-2. **Execution Timeout**: Any script executing for longer than 15 seconds is forcibly terminated via OS job object controls.
-3. **Allowed Script Types**: Extensions must use `.ps1`, `.bat`, `.cmd`, `.py`, or `.js`. Standalone binary executables (`.exe`) are rejected by security policy.
+2. **Containment Safeguards**: External script and binary executions are blocked in the Rust backend to prevent workstation privilege escalation until the sandboxed, cryptographically signed extension engine arrives in Milestone 2.3.0.
+3. **Preserved Manifests**: Existing plugins remain fully preserved and inspectable in safe read-only mode.
 4. **Creator Attribution**: Authors may include their `sponsorUrl` in `manifest.json`. The in-app store renders direct sponsorship links with 0% platform fee.
 
 ---

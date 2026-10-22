@@ -12,7 +12,7 @@ body:
     attributes:
       label: "AltSpace Version"
       description: "Which version of AltSpace are you running? (Check Settings or commit hash)"
-      placeholder: "e.g. 1.0.0 or main"
+      placeholder: "e.g. 2.2.0 or main"
     validations:
       required: true
   - type: dropdown

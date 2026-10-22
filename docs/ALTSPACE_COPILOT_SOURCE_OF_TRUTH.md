@@ -303,7 +303,7 @@ Central gatekeeper for all actions with parameter-bound challenge verification:
 ### 7.2 Trial & Quota Policy (`quotaManager.ts`)
 - **Allowance:** 100 premium actions per rolling 30-day window.
 - **Warning Threshold:** Warning banner at 80 consumed actions.
-- **Premium Actions:** Cloud LLM queries, shell command runner (`>`), deep multi-drive search across non-C: drives.
+- **Premium Actions:** Cloud LLM queries, deep multi-drive search across non-C: drives (raw shell runner `>` is permanently disabled).
 - **Zero-Quota Actions:** Keystrokes, empty queries, debounces, local app launches, port inspection, calculator, local Ollama queries, and failed/cancelled requests.
 - **Unmetered Roles:** `Maintainer` (`codecheesee`), `Pro`, `Supporter`, `Contributor`.
 
@@ -337,7 +337,7 @@ Central gatekeeper for all actions with parameter-bound challenge verification:
    winget install codecheesee.altspace
    ```
 
-### 8.2 In-App Self-Updater (`updater.rs`, `UpdateModal.tsx`)
+### 8.2 In-App Update Verification (`updater.rs`, `UpdateModal.tsx`)
 - Type `:update` in the omnibar or click "Check for Updates" in Settings.
 - Fetches `distribution/latest-release.json` with GitHub API fallback.
 - Compares semantic versioning (`is_newer_version`).
@@ -428,7 +428,7 @@ c:\Users\rohan\.gemini\antigravity\scratch\altspace
 │   │   │   ├── LicenseModal.tsx       # Account, Capability Matrix & About tabs
 │   │   │   ├── PortsTab.tsx           # Process ancestry & TCP port forensics
 │   │   │   ├── StoreTab.tsx           # Community extension marketplace
-│   │   │   └── UpdateModal.tsx        # In-app updater & 1-click self-installer
+│   │   │   └── UpdateModal.tsx        # In-app updater & release notification modal
 │   │   ├── hooks/
 │   │   │   ├── useClipboardHistory.ts # Clipboard state hook
 │   │   │   ├── useContextualActions.tsx # Dynamic Ctrl+K actions hook

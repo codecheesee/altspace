@@ -118,13 +118,13 @@ Follow this checklist to interactively test each subsystem in either development
   - Click **"Rollback Plan"** &rarr; verify action rollback is triggered via the Action Capability Broker.
 - [ ] **WSL Memory Plan**:
   - Type `? reclaim memory` &rarr; verify step structure targeting `wsl.exe --shutdown`.
-- [ ] **Shell Failure Auto-Recovery**:
-  - In Omnibar, execute a failing command (e.g., `> powershell -c "exit 42"`).
+- [ ] **Shell Runner Containment Verification**:
+  - In Omnibar, type `> powershell -c "exit 42"` &rarr; verify unbrokered shell execution fails closed with security rejection notice.
   - Open Omnibar and type `?` &rarr; verify that the diagnosis engine pulls the failure context from the volatile ring buffer.
 - [ ] **BYOK Key Management**:
   - Open Settings (<kbd>Ctrl</kbd>+<kbd>,</kbd>).
   - Under **Local Copilot & Action Broker**, switch provider to **Anthropic Claude** or **OpenAI**.
-  - Enter a test key and click **Save to Hardware Vault** &rarr; verify it saves to DPAPI.
+  - Enter a test key and click **Save to Windows DPAPI Vault** &rarr; verify it saves to DPAPI.
 
 ---
 
