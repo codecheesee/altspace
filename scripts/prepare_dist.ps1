@@ -2,18 +2,21 @@ $ErrorActionPreference = 'Stop'
 $dist = Join-Path $PSScriptRoot '..\dist_artifacts'
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
-$releaseBinary = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe'
-if (-not (Test-Path $releaseBinary)) {
-    $releaseBinary = Join-Path $PSScriptRoot '..\target\release\raycast-windows.exe'
-}
-$nsisDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis'
-if (-not (Test-Path $nsisDir)) {
-    $nsisDir = Join-Path $PSScriptRoot '..\target\release\bundle\nsis'
-}
-$msiDir = Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi'
-if (-not (Test-Path $msiDir)) {
-    $msiDir = Join-Path $PSScriptRoot '..\target\release\bundle\msi'
-}
+$candidateBinaries = @(
+    (Join-Path $PSScriptRoot '..\target\release\raycast-windows.exe'),
+    (Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe')
+) | Where-Object { Test-Path $_ } | Sort-Object { (Get-Item $_).LastWriteTime }
+$releaseBinary = $candidateBinaries | Select-Object -Last 1
+
+$candidateNsisDirs = @(
+    (Join-Path $PSScriptRoot '..\target\release\bundle\nsis'),
+    (Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\nsis')
+) | Where-Object { Test-Path $_ }
+
+$candidateMsiDirs = @(
+    (Join-Path $PSScriptRoot '..\target\release\bundle\msi'),
+    (Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\bundle\msi')
+) | Where-Object { Test-Path $_ }
 $dll = Join-Path $PSScriptRoot '..\bin\Everything64.dll'
 $installerScript = Join-Path $PSScriptRoot '..\install.ps1'
 
@@ -21,13 +24,17 @@ if (-not (Test-Path $releaseBinary)) {
     throw "Release binary not found at $releaseBinary"
 }
 
-$nsisSetupItem = Get-ChildItem -Path $nsisDir -Filter '*_x64-setup.exe' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+$nsisSetupItem = $candidateNsisDirs | ForEach-Object {
+    Get-ChildItem -Path $_ -Filter '*_x64-setup.exe' -ErrorAction SilentlyContinue
+} | Sort-Object LastWriteTime | Select-Object -Last 1
 if (-not $nsisSetupItem) {
-    throw "NSIS setup not found in $nsisDir"
+    throw "NSIS setup not found in candidate bundle dirs: $($candidateNsisDirs -join ', ')"
 }
 $nsisSetup = $nsisSetupItem.FullName
 
-$msiSetupItem = Get-ChildItem -Path $msiDir -Filter '*_x64_en-US.msi' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+$msiSetupItem = $candidateMsiDirs | ForEach-Object {
+    Get-ChildItem -Path $_ -Filter '*_x64_en-US.msi' -ErrorAction SilentlyContinue
+} | Sort-Object LastWriteTime | Select-Object -Last 1
 $msiSetup = if ($msiSetupItem) { $msiSetupItem.FullName } else { $null }
 
 Copy-Item $releaseBinary (Join-Path $dist 'altspace.exe') -Force

@@ -2,7 +2,7 @@
 name = "raycast-windows"
 version = "2.2.0"
 description = "AltSpace — High-performance desktop command palette and launcher for Windows"
-authors = ["Narayan Gorai <66432945+codecheesee@users.noreply.github.com>"]
+authors = ["AltSpace Core Team <maintainers@altspace.dev>"]
 edition = "2021"
 license = "Apache-2.0"
 

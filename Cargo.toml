@@ -13,7 +13,7 @@ members = [
 version = "2.3.0-dev"
 edition = "2021"
 license = "Apache-2.0"
-authors = ["Narayan Gorai <66432945+codecheesee@users.noreply.github.com>"]
+authors = ["AltSpace Core Team <maintainers@altspace.dev>"]
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
