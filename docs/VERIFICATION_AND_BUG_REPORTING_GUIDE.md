@@ -1,4 +1,4 @@
-# AltSpace 2.0: Verification, Testing & Bug Reporting Guide
+# AltSpace 2.2.0: Verification, Testing & Bug Reporting Guide
 
 This guide provides developers, QA testers, and contributors with a step-by-step procedure to inspect all features of AltSpace, verify production binaries, run test suites, update documentation, and report bugs.
 
@@ -6,16 +6,16 @@ This guide provides developers, QA testers, and contributors with a step-by-step
 
 ## Part 1: Automated Verification & Test Suites
 
-AltSpace maintains a 100% passing automated test suite consisting of **128 tests** across the Rust backend, TypeScript frontend, and distribution validation scripts.
+AltSpace maintains a 100% passing automated test suite consisting of **166 tests** across the Rust backend, TypeScript frontend, and distribution validation scripts.
 
 ### 1.1 Run Full Verification in One Command
 Open PowerShell from the repository root:
 
 ```powershell
-# 1. Run all 77 frontend, security, and launch kit tests
+# 1. Run all 88 frontend, security, and launch kit tests
 npm test --prefix frontend
 
-# 2. Run all 51 native Rust unit and integration tests
+# 2. Run all 78 native Rust unit and integration tests
 cargo test --manifest-path frontend/src-tauri/Cargo.toml
 
 # 3. Verify compiled release distribution artifacts
@@ -165,7 +165,7 @@ If you encounter an issue during testing, copy this template to document the bug
 **Subsystem**: [e.g. Intelligent Ports / Docker WSL / DPAPI Vault / Action Planner / Hybrid Toggles]
 **Environment**:
 - Windows OS Version: [e.g. Windows 11 Pro 23H2 / 24H2]
-- AltSpace Version: [e.g. 2.0.0-preview (Git commit hash or installer)]
+- AltSpace Version: [e.g. 2.2.0 (Git commit hash or installer)]
 - Model Lane: [e.g. Local Ollama / Anthropic BYOK / OpenAI BYOK / Deterministic Fast Path]
 
 **Steps to Reproduce**:

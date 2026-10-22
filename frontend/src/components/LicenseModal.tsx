@@ -1053,7 +1053,7 @@ export function LicenseModal({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-white">AltSpace for Windows</span>
-                      <span className="text-[10px] font-mono text-zinc-400">v2.1.0</span>
+                      <span className="text-[10px] font-mono text-zinc-400">v2.2.0</span>
                     </div>
                     <p className="text-[11px] text-zinc-400 leading-normal truncate">
                       Sub-5ms native command palette & file indexer.

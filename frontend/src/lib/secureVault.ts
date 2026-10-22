@@ -38,11 +38,16 @@ export async function storeSecret(key: string, value: string): Promise<boolean> 
 }
 
 export async function retrieveSecret(key: string): Promise<string | null> {
+  // Prohibited by security policy: plaintext secrets remain in DPAPI and never cross IPC
+  console.warn(`[Vault] Direct plaintext retrieval of '${key}' across IPC is prohibited by security policy.`);
+  return null;
+}
+
+export async function hasSecret(key: string): Promise<boolean> {
   try {
-    return await tauriInvoke<string | null>("vault_retrieve_secret", { key });
-  } catch (err) {
-    console.warn(`[Vault] Failed to decrypt secret for key ${key} via DPAPI:`, err);
-    return null;
+    return (await tauriInvoke<boolean>("vault_has_secret", { key })) === true;
+  } catch {
+    return false;
   }
 }
 

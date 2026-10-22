@@ -82,8 +82,10 @@ pub fn decode_process_output(raw_bytes: &[u8]) -> String {
             0
         };
         let u16_slice: Vec<u16> = raw_bytes[offset..]
-            .chunks_exact(2)
-            .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&[b0, b1]| u16::from_le_bytes([b0, b1]))
             .collect();
         String::from_utf16_lossy(&u16_slice)
             .replace('\0', "")

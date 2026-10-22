@@ -34,8 +34,8 @@ AltSpace is a high-performance, keyboard-driven desktop command palette and spot
 AltSpace is distributed as a native Windows application with several installation paths:
 
 - **Official Web Landing Page:** Visit [**https://codecheesee.github.io/altspace/**](https://codecheesee.github.io/altspace/) to explore features, download installers, and view live contributor bounties.
-- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Setup-x64.exe) (v2.0.0, 4.1 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
-- **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-MSI-x64.msi) (v2.0.0, 6.5 MB) for enterprise WiX Group Policy deployments.
+- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe) (v2.2.0, 4.1 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
+- **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-MSI-x64.msi) (v2.2.0, 6.5 MB) for enterprise WiX Group Policy deployments.
 - **Windows Package Manager (Winget):**
   ```powershell
   winget install codecheesee.altspace
@@ -44,8 +44,8 @@ AltSpace is distributed as a native Windows application with several installatio
   ```powershell
   irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
   ```
-  The script resolves the latest GitHub release, downloads `AltSpace-Portable-x64.zip`, verifies the archive with SHA-256 against `SHA256SUMS.txt`, creates desktop shortcuts, and launches AltSpace.
-- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.0.0/AltSpace-Portable-x64.zip) (5.3 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
+  The script resolves the latest GitHub release, downloads `AltSpace-Portable-x64.zip`, verifies the archive with SHA-256 against `SHA256SUMS.txt`, validates the Authenticode signature against publisher Codecheesee, creates desktop shortcuts, and launches AltSpace.
+- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Portable-x64.zip) (5.3 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
 
 > [!TIP]
 > **Windows SmartScreen Note**: AltSpace is an independent, community-driven open-source project. If Windows SmartScreen displays *"Windows protected your PC"*, click **More info** &rarr; **Run anyway**. All binaries are built openly and checksum-verified on GitHub Actions.
@@ -55,7 +55,7 @@ AltSpace is distributed as a native Windows application with several installatio
 AltSpace includes automated release synchronization. When a new version is published to GitHub:
 1. Summon AltSpace with `Alt + Space`.
 2. Type `:update` in the omnibar and press <kbd>Enter</kbd>.
-3. AltSpace will direct you to the verified GitHub release package.
+3. AltSpace queries GitHub release metadata read-only and directs you to the verified release package in your default browser. In-app background binary execution is disabled for security hardening.
 
 ---
 
@@ -80,12 +80,12 @@ AltSpace connects to local Ollama endpoints (`localhost:11434`) to execute natur
 - Type `? summarize selection` to query local LLMs using clipboard context.
 - **Setup Guide**: If you don't have Ollama installed yet, see our step-by-step [Ollama Setup & Optimization Guide](docs/OLLAMA_SETUP_GUIDE.md) to get running in under 2 minutes.
 
-### 4. User-Level Extension Runtime (`:store`)
-The AltSpace extension engine runs community scripts as child processes:
-- **Supported Languages**: PowerShell (`.ps1`), Batch (`.bat`/`.cmd`), Node.js (`.js`), Python (`.py`).
-- **Security Notice**: Extensions run as privileged user-level code, **not** inside an OS sandbox or container. Always review script code before execution.
-- **Execution Safeguards**: Hard 15-second execution timeout enforced via OS job objects; script path canonicalization restricted to `%LOCALAPPDATA%\AltSpace\plugins\`.
-- **Direct Creator Sponsorship**: Extension manifests support author attribution and sponsorship endpoints with 0% platform take rates.
+### 4. User-Level Extension Containment (`:store`)
+The AltSpace extension engine enforces strict containment on community scripts:
+- **Containment Notice**: To protect workstations against arbitrary code execution, execution of external script files (`.ps1`, `.bat`, `.cmd`, `.py`, `.js`) is blocked with `BlockedForMigration` status pending the arrival of a cryptographic signing framework.
+- **Manifest Preservation**: Installed plugin manifests and local directories remain preserved and visible in `:store` with clear security migration badges.
+- **Execution Safeguards**: Arbitrary script execution is disabled in the Rust backend; plugins run in safe mode without spawning unsandboxed shell processes.
+- **Direct Creator Sponsorship**: Extension manifests continue supporting author attribution and sponsorship endpoints with 0% platform take rates.
 
 ### 5. Multi-Drive Search via Everything SDK
 Deep search across physical drives (C:, D:, E:, etc.) connects to the Everything SDK / native indexed search with an in-memory fallback scanner, yielding instant results across indexed files without CPU-heavy background indexing daemons.
@@ -102,15 +102,19 @@ Search and restore clipboard history with automated credential masking:
 - Clipboard, listening ports, installed games, and drive data are exposed only in their explicit modes or after a meaningful query.
 - No starter plugin or hardcoded workspace path is created on installation.
 
-### 8. Capability-Based Execution Broker & 3-Tier Policy
-Every native operation, AI-suggested intent, plugin request, shell command, and filesystem change passes through a centralized execution broker:
+### 8. Capability-Based Execution Broker & Challenge Gate
+Every native operation, AI-suggested intent, and filesystem modification passes through the authoritative Rust execution broker:
+- **Parameter-Bound Challenge Tokens**: Level 2 and Level 3 actions require single-use, 60-second expiring challenge tokens generated by Rust and bound to the exact payload SHA-256 hash, preventing replay and parameter mutation attacks.
 - **Level 1 (ReadOnlyAuto)**: Read-only searches, metadata inspection, and offline calculation run automatically without prompt friction.
-- **Level 2 (PreviewThenApprove)**: File writes, renames, configuration changes, and network calls require dry-run preview and user consent (with optional session-remembering).
-- **Level 3 (AlwaysApprove)**: File deletions, arbitrary executable launches, PowerShell execution, and port process termination strictly mandate explicit confirmation every time.
-- **Timeline Ledger & One-Click Undo**: The in-memory action ledger records all operations with timestamps, targets, and reversal callbacks. Summon with `Alt + H`.
+- **Level 2 (PreviewThenApprove)**: File writes, renames, configuration changes, and memory reclamation require parameter-bound challenge approval.
+- **Level 3 (AlwaysApprove)**: Destructive file deletions and port process terminations strictly mandate explicit confirmation every time. Unbrokered shell execution (`RunPowerShell`) and raw HTTP endpoints (`CallHttpEndpoint`) are permanently disabled.
+- **Timeline Ledger & One-Click Undo**: The in-memory action ledger records operations with timestamps, targets, and reversal callbacks. Credential values in ledger events are automatically redacted. Summon with `Alt + H`.
 
 ### 9. Windows DPAPI Credential Vault
-User tokens, GitHub OAuth sessions, and commercial entitlement leases are encrypted using Windows DPAPI (`CryptProtectData`) tied to the active Windows user login. No plaintext secrets or tokens are stored in `localStorage` or configuration files.
+User tokens, GitHub OAuth credentials, and provider API keys are encrypted at rest using Windows DPAPI (`CryptProtectData`) tied to the active Windows user login:
+- **Zero Secrets Across IPC**: Plaintext secrets and API keys are never returned across the Tauri IPC boundary to the Chromium WebView.
+- **Zero Tokens in Web Storage**: OAuth access tokens are stored directly in DPAPI by Rust; `localStorage` contains zero access tokens or secrets.
+- **Piped Stdin AI Execution**: Native BYOK chat completions (`byok.rs`) pipe credentials via `curl.exe --config -` standard input, ensuring API keys never appear in process argument lists or Windows Event 4688 logs.
 
 ### 10. Privacy-Preserving Observability & Diagnostics
 Inspect and export telemetry safely without leaking credentials, private keys, or personal filesystem paths:
@@ -188,7 +192,7 @@ Every developer feature can be toggled via two non-intrusive paths:
 | `Ctrl + Shift + D` | Open Privacy Diagnostics & Sanitized Report Modal | **Free Forever** |
 | `Ctrl + B` | Toggle contextual Details Sidebar | **Free Forever** |
 | `Ctrl + K` | Open contextual Action Drawer for selected item | **Free Forever** |
-| `><cmd>` *(or `cmd:`)* | Execute native terminal shell command | Trial Quota (100 actions / 30 days) |
+| `><cmd>` | *Disabled for security hardening* (unbrokered shell execution blocked) | N/A |
 
 ---
 
@@ -252,19 +256,19 @@ npm install
 npm run tauri dev
 ```
 
-### Automated Test Suite (128 Tests)
+### Automated Test Suite (166 Tests)
 
 ```bash
-# Run 77 frontend unit, red-team security, governance, and launch kit tests
-node --test src/lib/*.test.mjs ../scripts/*.test.mjs
+# Run 88 frontend unit, red-team security, governance, installer trust, and launch kit tests
+npm test --prefix frontend
 
 # Run frontend production build & type checks
-npm run build
+npm run build --prefix frontend
 
 # Run frontend linter
-npm run lint
+npm run lint --prefix frontend
 
-# Run 51 native Rust unit and integration tests (including DPAPI vault, ports, and action broker)
+# Run 78 native Rust unit and integration tests (including DPAPI vault, ports, and action broker)
 cargo test --manifest-path src-tauri/Cargo.toml
 
 # Run Rust Clippy strict linting

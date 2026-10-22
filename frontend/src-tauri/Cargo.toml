@@ -1,6 +1,6 @@
 [package]
 name = "raycast-windows"
-version = "2.1.0"
+version = "2.2.0"
 description = "AltSpace — High-performance desktop command palette and launcher for Windows"
 authors = ["Narayan Gorai <66432945+codecheesee@users.noreply.github.com>"]
 edition = "2021"
@@ -26,6 +26,8 @@ chrono = "0.4"
 rusqlite = { version = "0.31", features = ["bundled"] }
 ed25519-dalek = { version = "2.1", default-features = false }
 base64 = "0.22"
+url = "2.5"
+sha2 = "0.10"
 
 [dependencies.windows]
 version = "0.58"

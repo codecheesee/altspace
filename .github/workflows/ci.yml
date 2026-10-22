@@ -42,9 +42,12 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Run Node Unit Tests
-        run: node --test frontend/src/lib/checkout.test.mjs frontend/src/lib/quota.test.mjs frontend/src/lib/bountySync.test.mjs scripts/verify_launch_kit.test.mjs
+      - name: Run Full Test Suite
+        run: npm test --prefix frontend
 
       - name: Run Rust Backend Tests
         working-directory: frontend/src-tauri
         run: cargo test --verbose
+
+      - name: Strict Clippy Verification
+        run: cargo clippy --manifest-path frontend/src-tauri/Cargo.toml --all-targets --all-features -- -D warnings

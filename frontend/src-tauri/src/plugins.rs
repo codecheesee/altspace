@@ -1,16 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{mpsc, LazyLock, Mutex};
-use std::time::Duration;
+use std::sync::{LazyLock, Mutex};
 
-const CREATE_NO_WINDOW: u32 = 0x08000000;
-const PLUGIN_EXECUTION_TIMEOUT_SECS: u64 = 15;
+#[allow(dead_code)]
 const MAX_CONSECUTIVE_FAILURES: u32 = 3;
+#[allow(dead_code)]
 const MAX_CONSECUTIVE_TIMEOUTS: u32 = 2;
 
 static SAFE_MODE: AtomicBool = AtomicBool::new(false);
@@ -31,6 +28,16 @@ pub enum TrustTier {
     #[default]
     Community,
     LocalDev,
+    Revoked,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PluginStatus {
+    Active,
+    #[default]
+    BlockedMigrationRequired,
+    Quarantined,
     Revoked,
 }
 
@@ -76,6 +83,10 @@ pub struct PluginItem {
     pub permissions: PluginPermissions,
     #[serde(default)]
     pub is_quarantined: bool,
+    #[serde(default)]
+    pub status: PluginStatus,
+    #[serde(default)]
+    pub status_message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,6 +112,7 @@ impl HealthTracker {
         })
     }
 
+    #[allow(dead_code)]
     pub fn record_success(&mut self, id: &str) {
         if let Some(entry) = self.records.get_mut(id) {
             entry.consecutive_failures = 0;
@@ -108,6 +120,7 @@ impl HealthTracker {
         }
     }
 
+    #[allow(dead_code)]
     pub fn record_failure(&mut self, id: &str, is_timeout: bool, err_msg: &str) {
         let entry = self.records.entry(id.to_string()).or_insert_with(|| PluginHealthStatus {
             consecutive_failures: 0,
@@ -160,10 +173,12 @@ pub fn reset_plugin_health(id: &str) {
     HEALTH_TRACKER.lock().unwrap().reset(id);
 }
 
+#[allow(dead_code)]
 pub fn record_plugin_success(id: &str) {
     HEALTH_TRACKER.lock().unwrap().record_success(id);
 }
 
+#[allow(dead_code)]
 pub fn record_plugin_failure(id: &str, is_timeout: bool, err_msg: &str) {
     HEALTH_TRACKER.lock().unwrap().record_failure(id, is_timeout, err_msg);
 }
@@ -182,13 +197,13 @@ pub fn get_plugins_dir() -> PathBuf {
     PathBuf::from("plugins")
 }
 
-pub fn scan_plugins() -> Vec<PluginItem> {
-    let plugins_dir = get_plugins_dir();
+/// Scans the specified directory for installed plugins, preserving all manifests and metadata.
+/// Script extensions are classified with `PluginStatus::BlockedMigrationRequired` to prevent unbrokered execution.
+pub fn scan_plugins_in_dir(plugins_dir: &Path) -> Vec<PluginItem> {
     let safe_mode = is_safe_mode();
-
     let mut plugins = Vec::new();
 
-    if let Ok(entries) = fs::read_dir(&plugins_dir) {
+    if let Ok(entries) = fs::read_dir(plugins_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
@@ -198,10 +213,9 @@ pub fn scan_plugins() -> Vec<PluginItem> {
                         if let Ok(manifest) = serde_json::from_str::<PluginManifest>(&content) {
                             if validate_script_filename(&manifest.script).is_ok() {
                                 let script_path = path.join(&manifest.script);
-                                let tier = if is_plugin_revoked(&manifest.id) {
+                                let is_revoked = is_plugin_revoked(&manifest.id);
+                                let tier = if is_revoked {
                                     TrustTier::Revoked
-                                } else if manifest.id == "dns-flusher" || manifest.id == "git-clean" {
-                                    TrustTier::BuiltIn
                                 } else {
                                     manifest.tier.unwrap_or(TrustTier::Community)
                                 };
@@ -211,8 +225,25 @@ pub fn scan_plugins() -> Vec<PluginItem> {
                                     continue;
                                 }
 
-                                let is_quarantined = tier == TrustTier::Revoked
-                                    || get_plugin_health(&manifest.id).is_quarantined;
+                                let health = get_plugin_health(&manifest.id);
+                                let is_quarantined = is_revoked || health.is_quarantined;
+
+                                let (status, status_message) = if is_revoked {
+                                    (
+                                        PluginStatus::Revoked,
+                                        Some("Extension is revoked on security grounds.".to_string()),
+                                    )
+                                } else if health.is_quarantined {
+                                    (
+                                        PluginStatus::Quarantined,
+                                        health.quarantine_reason.clone(),
+                                    )
+                                } else {
+                                    (
+                                        PluginStatus::BlockedMigrationRequired,
+                                        Some("Execution of script-based extensions is disabled for security hardening (migration required).".to_string()),
+                                    )
+                                };
 
                                 plugins.push(PluginItem {
                                     id: manifest.id,
@@ -224,6 +255,8 @@ pub fn scan_plugins() -> Vec<PluginItem> {
                                     tier,
                                     permissions: manifest.permissions.unwrap_or_default(),
                                     is_quarantined,
+                                    status,
+                                    status_message,
                                 });
                             }
                         }
@@ -234,6 +267,10 @@ pub fn scan_plugins() -> Vec<PluginItem> {
     }
 
     plugins
+}
+
+pub fn scan_plugins() -> Vec<PluginItem> {
+    scan_plugins_in_dir(&get_plugins_dir())
 }
 
 /// Validates that an ID is safe against path traversal and special characters
@@ -276,22 +313,27 @@ pub fn validate_script_filename(filename: &str) -> Result<(), String> {
     }
 }
 
-/// Runs a plugin script as a user-level process inside the plugins directory with path validation and a 15-second execution timeout.
-/// NOTE: The execution model is privileged user-level code, not an OS-isolated container or sandbox.
-pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String> {
+/// Evaluates a plugin script execution request against security boundaries.
+///
+/// NOTE: In this release, arbitrary script execution (.ps1, .bat, .cmd, .py, .js) is strictly blocked
+/// for security hardening (migration required). Files, manifests, and plugin directories are preserved.
+pub fn run_plugin_script_in_dir(
+    script_path: &str,
+    _args: &str,
+    base_plugins_dir: &Path,
+) -> Result<String, String> {
     let path = PathBuf::from(script_path);
     if !path.exists() {
         return Err(format!("Plugin script not found: {}", script_path));
     }
 
-    // Security Check: Verify that the script resides inside the AltSpace plugins directory
-    let plugins_dir = get_plugins_dir();
+    // Security Check: Verify that the script resides inside the approved plugins directory
     let canon_script = fs::canonicalize(&path)
         .map_err(|e| format!("Unable to resolve plugin script safely: {}", e))?;
-    let canon_dir = fs::canonicalize(&plugins_dir)
+    let canon_dir = fs::canonicalize(base_plugins_dir)
         .map_err(|e| format!("Unable to resolve plugin directory safely: {}", e))?;
     if !canon_script.starts_with(&canon_dir) {
-        return Err("Security Violation: Script resides outside the AltSpace plugins directory. Extensions run as user-level privileged processes and must reside in the approved plugins directory.".into());
+        return Err("Security Violation: Script resides outside the AltSpace plugins directory.".into());
     }
 
     let plugin_id = path
@@ -311,15 +353,15 @@ pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String
     let health = get_plugin_health(&plugin_id);
     if health.is_quarantined {
         return Err(format!(
-            "Security Guard: Plugin '{}' is quarantined due to: {}. Please reset health in settings or reinstall to proceed.",
+            "Security Guard: Plugin '{}' is quarantined due to: {}.",
             plugin_id,
             health.quarantine_reason.as_deref().unwrap_or("repeated failures")
         ));
     }
 
-    if is_safe_mode() && plugin_id != "dns-flusher" && plugin_id != "git-clean" {
+    if is_safe_mode() {
         return Err(format!(
-            "Safe Mode is active: Community/local extension '{}' is blocked from running.",
+            "Safe Mode is active: Extension '{}' is blocked from running.",
             plugin_id
         ));
     }
@@ -330,95 +372,29 @@ pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String
         .unwrap_or("")
         .to_lowercase();
 
-    let mut command = match extension.as_str() {
-        "ps1" => {
-            let mut cmd = Command::new("powershell.exe");
-            cmd.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script_path]);
-            cmd.args(args.split_whitespace());
-            cmd
-        }
-        "bat" | "cmd" => {
-            let mut cmd = Command::new("cmd.exe");
-            cmd.args(["/C", script_path]);
-            cmd.args(args.split_whitespace());
-            cmd
-        }
-        "py" => {
-            let mut cmd = Command::new("python.exe");
-            cmd.arg(script_path);
-            cmd.args(args.split_whitespace());
-            cmd
-        }
-        "js" => {
-            let mut cmd = Command::new("node.exe");
-            cmd.arg(script_path);
-            cmd.args(args.split_whitespace());
-            cmd
-        }
-        _ => return Err(format!("Unsupported script type: .{}", extension)),
-    };
-
-    command
-        .creation_flags(CREATE_NO_WINDOW)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-
-    // Spawn and enforce strict execution timeout
-    let child = command.spawn().map_err(|e| format!("Failed to spawn plugin: {}", e))?;
-    let child_pid = child.id();
-
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let res = child.wait_with_output();
-        let _ = tx.send(res);
-    });
-
-    match rx.recv_timeout(Duration::from_secs(PLUGIN_EXECUTION_TIMEOUT_SECS)) {
-        Ok(Ok(out)) => {
-            let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-            let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-            if out.status.success() {
-                record_plugin_success(&plugin_id);
-                Ok(stdout)
-            } else if !stderr.is_empty() {
-                record_plugin_failure(&plugin_id, false, &stderr);
-                Err(stderr)
-            } else {
-                let msg = format!("Plugin exited with code: {:?}", out.status.code());
-                record_plugin_failure(&plugin_id, false, &msg);
-                Err(msg)
-            }
-        }
-        Ok(Err(e)) => {
-            let msg = format!("Execution failed: {}", e);
-            record_plugin_failure(&plugin_id, false, &msg);
-            Err(msg)
-        }
-        Err(mpsc::RecvTimeoutError::Timeout) => {
-            // Force terminate runaway process tree
-            let _ = Command::new("taskkill")
-                .args(["/F", "/T", "/PID", &child_pid.to_string()])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output();
-            let msg = format!(
-                "Plugin execution timed out (exceeded {}s limit)",
-                PLUGIN_EXECUTION_TIMEOUT_SECS
-            );
-            record_plugin_failure(&plugin_id, true, &msg);
-            Err(msg)
-        }
-        Err(e) => {
-            let msg = format!("Execution thread error: {}", e);
-            record_plugin_failure(&plugin_id, false, &msg);
-            Err(msg)
-        }
+    // Security Containment: Block execution of all script-based extensions (.ps1, .bat, .cmd, .py, .js)
+    // Child processes (powershell, cmd, python, node) are never spawned. Files and manifests are preserved.
+    match extension.as_str() {
+        "ps1" | "bat" | "cmd" | "py" | "js" => Err(format!(
+            "Execution of script extension '{}' (type: .{}) is blocked for security hardening (migration required). Arbitrary script execution is disabled pending the signed extension framework.",
+            plugin_id, extension
+        )),
+        _ => Err(format!("Unsupported script type: .{}", extension)),
     }
 }
 
+pub fn run_plugin_script(script_path: &str, args: &str) -> Result<String, String> {
+    run_plugin_script_in_dir(script_path, args, &get_plugins_dir())
+}
+
+/// Installs a plugin package.
+///
+/// NOTE: Installation of executable script extensions is disabled for security hardening.
+/// Manifest validation runs, but no script files are written to disk.
 pub fn install_plugin(
     plugin_id: &str,
     manifest_json: &str,
-    script_content: &str,
+    _script_content: &str,
     script_filename: &str,
 ) -> Result<(), String> {
     validate_plugin_id(plugin_id)?;
@@ -431,37 +407,28 @@ pub fn install_plugin(
     if manifest.id != plugin_id {
         return Err("Manifest ID mismatch with plugin ID".into());
     }
-    if manifest.script != script_filename {
-        return Err("Manifest script filename does not match submitted script filename".into());
-    }
 
-    let plugins_dir = get_plugins_dir();
-    let target_dir = plugins_dir.join(plugin_id);
-    fs::create_dir_all(&target_dir).map_err(|e| format!("Failed to create plugin dir: {}", e))?;
-
-    fs::write(target_dir.join("manifest.json"), manifest_json)
-        .map_err(|e| format!("Failed to write manifest.json: {}", e))?;
-
-    fs::write(target_dir.join(script_filename), script_content)
-        .map_err(|e| format!("Failed to write {}: {}", script_filename, e))?;
-
-    Ok(())
+    // Security Containment: Block remote script/executable plugin installation
+    Err("Installation of script-based extensions (.ps1, .bat, .cmd, .py, .js) is disabled for security hardening. Extension installation will be re-enabled when the signed extension framework is released.".into())
 }
 
-pub fn uninstall_plugin(plugin_id: &str) -> Result<(), String> {
+/// Uninstalls an installed plugin by removing its directory within the approved plugins location.
+pub fn uninstall_plugin_in_dir(plugin_id: &str, base_plugins_dir: &Path) -> Result<(), String> {
     validate_plugin_id(plugin_id)?;
 
-    let plugins_dir = get_plugins_dir();
-    let target_dir = plugins_dir.join(plugin_id);
+    let target_dir = base_plugins_dir.join(plugin_id);
 
-    // Verify boundary before removing
-    if let (Ok(canon_target), Ok(canon_plugins)) = (fs::canonicalize(&target_dir), fs::canonicalize(&plugins_dir)) {
+    if let (Ok(canon_target), Ok(canon_plugins)) = (fs::canonicalize(&target_dir), fs::canonicalize(base_plugins_dir)) {
         if canon_target.starts_with(&canon_plugins) && canon_target != canon_plugins {
             fs::remove_dir_all(&canon_target)
                 .map_err(|e| format!("Failed to remove plugin dir: {}", e))?;
         }
     }
     Ok(())
+}
+
+pub fn uninstall_plugin(plugin_id: &str) -> Result<(), String> {
+    uninstall_plugin_in_dir(plugin_id, &get_plugins_dir())
 }
 
 #[cfg(test)]
@@ -529,11 +496,131 @@ mod tests {
         assert!(!get_plugin_health(test_id).is_quarantined);
     }
 
+    static SAFE_MODE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_safe_mode_toggle() {
+        let _guard = SAFE_MODE_TEST_LOCK.lock().unwrap();
         set_safe_mode(true);
         assert!(is_safe_mode());
         set_safe_mode(false);
         assert!(!is_safe_mode());
+    }
+
+    #[test]
+    fn test_plugin_preservation_and_migration_status() {
+        let _guard = SAFE_MODE_TEST_LOCK.lock().unwrap();
+        let temp_dir = std::env::temp_dir().join(format!("altspace_test_preservation_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&temp_dir);
+        let sample_plugin_dir = temp_dir.join("sample_tool");
+        fs::create_dir_all(&sample_plugin_dir).unwrap();
+
+        let manifest = r#"{
+            "id": "sample_tool",
+            "name": "Sample Developer Tool",
+            "description": "A sample local developer automation tool",
+            "keyword": ":sample",
+            "script": "run.ps1"
+        }"#;
+        let script = "Write-Output 'Hello from sample tool'";
+
+        fs::write(sample_plugin_dir.join("manifest.json"), manifest).unwrap();
+        fs::write(sample_plugin_dir.join("run.ps1"), script).unwrap();
+
+        // Ensure safe mode is off
+        set_safe_mode(false);
+
+        // 1. Verify scan discovers the plugin and preserves its metadata
+        let plugins = scan_plugins_in_dir(&temp_dir);
+        assert_eq!(plugins.len(), 1);
+        let item = &plugins[0];
+        assert_eq!(item.id, "sample_tool");
+        assert_eq!(item.name, "Sample Developer Tool");
+        assert_eq!(item.keyword, ":sample");
+        assert_eq!(item.status, PluginStatus::BlockedMigrationRequired);
+        assert!(item.status_message.as_ref().unwrap().contains("migration required"));
+
+        // 2. Verify files are completely preserved on disk
+        assert!(sample_plugin_dir.join("manifest.json").exists());
+        assert!(sample_plugin_dir.join("run.ps1").exists());
+        assert_eq!(fs::read_to_string(sample_plugin_dir.join("run.ps1")).unwrap(), script);
+
+        // 3. Verify running the script is blocked and does NOT delete the files
+        let run_res = run_plugin_script_in_dir(&item.script_path, "", &temp_dir);
+        assert!(run_res.is_err());
+        let err_msg = run_res.unwrap_err();
+        assert!(err_msg.contains("migration required"));
+        assert!(err_msg.contains("blocked for security hardening"));
+
+        // 4. Verify files still exist after execution attempt
+        assert!(sample_plugin_dir.join("manifest.json").exists());
+        assert!(sample_plugin_dir.join("run.ps1").exists());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_safe_mode_interaction_with_blocked_status() {
+        let _guard = SAFE_MODE_TEST_LOCK.lock().unwrap();
+        let temp_dir = std::env::temp_dir().join(format!("altspace_test_safemode_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&temp_dir);
+        let sample_plugin_dir = temp_dir.join("sample_tool");
+        fs::create_dir_all(&sample_plugin_dir).unwrap();
+
+        let manifest = r#"{
+            "id": "sample_tool",
+            "name": "Sample Developer Tool",
+            "description": "A sample local developer automation tool",
+            "keyword": ":sample",
+            "script": "run.ps1"
+        }"#;
+        fs::write(sample_plugin_dir.join("manifest.json"), manifest).unwrap();
+        fs::write(sample_plugin_dir.join("run.ps1"), "Write-Output 123").unwrap();
+
+        let script_path = sample_plugin_dir.join("run.ps1").to_string_lossy().to_string();
+
+        // When Safe Mode is active:
+        set_safe_mode(true);
+        let plugins_safe = scan_plugins_in_dir(&temp_dir);
+        // Safe mode filters out community plugins
+        assert_eq!(plugins_safe.len(), 0);
+
+        let run_safe = run_plugin_script_in_dir(&script_path, "", &temp_dir);
+        assert!(run_safe.is_err());
+        assert!(run_safe.unwrap_err().contains("Safe Mode is active"));
+
+        // When Safe Mode is toggled off:
+        set_safe_mode(false);
+        let plugins_normal = scan_plugins_in_dir(&temp_dir);
+        assert_eq!(plugins_normal.len(), 1);
+        assert_eq!(plugins_normal[0].status, PluginStatus::BlockedMigrationRequired);
+
+        // Execution is STILL blocked even when safe mode is off
+        let run_normal = run_plugin_script_in_dir(&script_path, "", &temp_dir);
+        assert!(run_normal.is_err());
+        assert!(run_normal.unwrap_err().contains("migration required"));
+
+        set_safe_mode(false);
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_install_plugin_fails_closed_without_writing_files() {
+        let temp_dir = std::env::temp_dir().join(format!("altspace_test_install_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        let manifest = r#"{
+            "id": "new_tool",
+            "name": "New Tool",
+            "description": "Tool",
+            "keyword": ":new",
+            "script": "run.ps1"
+        }"#;
+
+        let res = install_plugin("new_tool", manifest, "Write-Output 'Bad'", "run.ps1");
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("disabled for security hardening"));
+
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }

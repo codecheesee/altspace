@@ -6,7 +6,7 @@
 > **Studio Umbrella:** Codecheesee Builds  
 > **App Identifier:** `com.altspace.launcher`  
 > **Target OS:** Windows 10 & Windows 11 (x64, arm64)  
-> **Current Version:** `2.1.0` (Production Core) / `2.0.0` (Distribution Release)  
+> **Current Version:** `2.2.0` (Canonical Security Hardening Release)  
 > **License:** Apache License 2.0 (Core Engine) with Trademark Reservations  
 > **Primary Discord Community:** [Codecheesee Builds Discord Server](https://discord.gg/EtVCN9m7JV) (Guild ID: `1562508214061236364`)
 
@@ -43,9 +43,9 @@ This document serves as the **uncompromising single source of truth** for human 
 | **Internal Cargo Package** | `raycast-windows` | `frontend/src-tauri/Cargo.toml:2` |
 | **Frontend Package** | `frontend` | `frontend/package.json:2` |
 | **Bundle Identifier** | `com.altspace.launcher` | `frontend/src-tauri/tauri.conf.json:5` |
-| **Current Frontend Version** | `2.1.0` | `frontend/package.json:4` |
-| **Current Tauri / Cargo Version** | `2.1.0` | `frontend/src-tauri/Cargo.toml:3` |
-| **Current Distribution Version**| `2.0.0` (Release Milestone) | `distribution/latest-release.json:2` |
+| **Current Frontend Version** | `2.2.0` | `frontend/package.json:4` |
+| **Current Tauri / Cargo Version** | `2.2.0` | `frontend/src-tauri/Cargo.toml:3` |
+| **Current Distribution Version**| `2.2.0` (Release Milestone) | `distribution/latest-release.json:2` |
 | **Creator & Lead Maintainer** | Narayan Gorai / Rohan (`@codecheesee`) | `frontend/src-tauri/Cargo.toml:5`, `docs/DISCORD_COMMUNITY_SYSTEM.md:4` |
 | **GitHub Maintainer Account** | `codecheesee` (User ID `66432945`) | `entitlements.json:12-13` |
 | **GitHub Repository URL** | `https://github.com/codecheesee/altspace` | `README.md:3`, `frontend/src/feedbackConfig.ts:16` |
@@ -55,7 +55,7 @@ This document serves as the **uncompromising single source of truth** for human 
 | **Discord Server (Guild) ID** | `1562508214061236364` | `README.md:4` |
 | **Official Discord Invite** | `https://discord.gg/EtVCN9m7JV` | `frontend/src/feedbackConfig.ts:11`, `README.md:4` |
 | **Discord Releases Channel ID**| `1562515749162065963` | `distribution/release-webhook.json:3` |
-| **Release Discord Webhook** | `https://discord.com/api/webhooks/1562534871874936882/...` | `distribution/release-webhook.json:2` |
+| **Release Discord Webhook** | `https://discord.com/api/webhooks/DISCORD_WEBHOOK_ID_PLACEHOLDER/DISCORD_WEBHOOK_TOKEN_PLACEHOLDER` | `distribution/release-webhook.json` (untracked local template) |
 | **Core License** | Apache License, Version 2.0 | `LICENSE`, `frontend/src-tauri/Cargo.toml:7` |
 | **Trademark Rights** | Protected under `TRADEMARK.md` (no fork branding as AltSpace) | `TRADEMARK.md:1-49` |
 | **Extension Registry Repo** | `https://github.com/codecheesee/altspace-extensions` | `frontend/src/lib/registry.ts:29-30` |
@@ -80,14 +80,14 @@ This document serves as the **uncompromising single source of truth** for human 
 ├─────────────────────────────────────────────────────────────────────────┤
 │  • Win32 Message Loop: Raw RegisterHotKey (Alt+Space), SetWindowPos    │
 │  • Memory Working Set: ~18MB idle / ~32MB active search (zero Electron)│
-│  • Capability Broker & 3-Tier Policy Engine (broker.rs)                 │
-│  • Windows DPAPI Vault: CryptProtectData hardware encryption            │
+│  • Capability Broker & Challenge Gate: Parameter-bound single-use tokens│
+│  • Windows DPAPI Vault: CryptProtectData user-bound encryption (zero IPC)│
 │  • Process Forensics: Toolhelp32 snapshotting & TCP table polling       │
 │  • Filesystem Engine: Everything64.dll FFI + recursive scanner fallback│
 │  • Ranking Engine: SQLite WAL mode with logarithmic frecency decay     │
 │  • Virtualization Cockpit: Docker daemon sockets & WSL2 vmmem reclaim   │
-│  • Extension Engine: User-level execution (15s job object timeout)      │
-│  • Named Pipe Server: \\.\pipe\AltSpace.Broker (replay-safe IPC)        │
+│  • Extension Confinement: Script execution blocked (migration status)   │
+│  • Native BYOK Engine: Stdin piped configuration (zero CLI arguments)   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -214,10 +214,10 @@ AltSpace contains 18 distinct developer subsystems, each designed with strict me
 - Fast-path deterministic action synthesis (< 1ms) evaluates standard developer fixes (`? fix 5173`, `? reclaim memory`, `? clean docker`) without LLM latency.
 - Full model setup instructions in [`docs/OLLAMA_SETUP_GUIDE.md`](docs/OLLAMA_SETUP_GUIDE.md).
 
-### Subsystem 4: Privileged User-Level Extension Engine (`:store`, `plugins.rs`)
-- Executes community extensions in PowerShell (`.ps1`), Batch (`.bat`), Node.js (`.js`), and Python (`.py`).
-- Security constraint: Scripts run as standard user-level processes (not sandboxed). Enforces path canonicalization inside `%LOCALAPPDATA%\AltSpace\plugins\` and a 15-second OS job object execution timeout.
-- Auto-quarantine disables any extension with 3 consecutive failures or 2 timeouts. Safe mode (`--safe-mode`) disables all extensions.
+### Subsystem 4: Extension Confinement & Migration State (`:store`, `plugins.rs`)
+- Enforces containment on community scripts: execution of external scripts (`.ps1`, `.bat`, `.cmd`, `.py`, `.js`) is blocked with `BlockedForMigration` status pending signed manifest architecture.
+- Installed extensions remain visible in `:store` with full metadata and preserved files, but cannot execute child processes.
+- Installation of new untrusted scripts fails closed without writing executable files to disk.
 
 ### Subsystem 5: Multi-Drive Search via Everything SDK (`everything.rs`)
 - Direct FFI bindings to `Everything64.dll` (`Everything_SetSearchW`, `Everything_QueryW`).
@@ -234,16 +234,19 @@ AltSpace contains 18 distinct developer subsystems, each designed with strict me
 - Multi-drive search is disabled by default; user must opt in.
 - Clipboard and ports are strictly mode-isolated and never seeded with dummy data.
 
-### Subsystem 8: Capability-Based Execution Broker (`broker.rs`, `actionBroker.ts`)
-Central gatekeeper for all actions with 3-tier risk evaluation:
-- **Level 1 (`ReadOnlyAuto`)**: Read-only searches and metadata queries run instantly.
-- **Level 2 (`PreviewThenApprove`)**: File modifications and environment injections require dry-run preview and user consent.
-- **Level 3 (`AlwaysApprove`)**: File deletions, arbitrary script execution, and port termination strictly require modal confirmation every time.
-- Action Ledger records all operations with timestamps and provides 1-click rollback (`Alt + H`).
+### Subsystem 8: Capability-Based Execution Broker & Challenge Gate (`broker.rs`, `actionBroker.ts`)
+Central gatekeeper for all actions with parameter-bound challenge verification:
+- **Challenge Architecture**: Level 2 and Level 3 actions require single-use, 60s-expiring challenge tokens generated by Rust and cryptographically bound to the SHA-256 hash of the exact parameters. Replay attempts and parameter mutations fail closed.
+- **Level 1 (`ReadOnlyAuto`)**: Read-only searches, system status, and metadata queries run instantly.
+- **Level 2 (`PreviewThenApprove`)**: File modifications and memory reclamation require challenge approval.
+- **Level 3 (`AlwaysApprove`)**: File deletions and port termination strictly require modal confirmation every time. Unbrokered shell execution (`RunPowerShell`) and raw HTTP calls (`CallHttpEndpoint`) are permanently disabled.
+- Action Ledger records operations with timestamps and provides 1-click rollback (`Alt + H`), with all sensitive credentials automatically redacted.
 
-### Subsystem 9: Windows DPAPI Secret Vault (`crypto_vault.rs`, `secureVault.ts`)
-- Hardware-bound encryption via Win32 DPAPI (`CryptProtectData`, `CryptUnprotectData`).
-- Keys are tied to the active Windows user login and never written in plaintext to disk or localStorage.
+### Subsystem 9: Windows DPAPI Secret Vault (`crypto_vault.rs`, `secureVault.ts`, `byok.rs`)
+- User-login-bound encryption via Win32 DPAPI (`CryptProtectData`, `CryptUnprotectData`).
+- Zero plaintext secrets across IPC: `vault_retrieve_secret` and `vault_retrieve_byok_key` fail closed over IPC; `vault_get_profile` returns masked values (`****`) to the WebView.
+- Zero OAuth tokens in `localStorage`: GitHub access tokens are stored strictly in DPAPI by Rust.
+- Native BYOK AI Engine (`byok.rs`) executes completions in Rust, piping API keys to `curl.exe --config -` via stdin to prevent command-line snooping (Event 4688).
 - Environment switcher injects decrypted keys directly into child process environment blocks (`CreateProcessW` `lpEnvironment`).
 
 ### Subsystem 10: Privacy-Preserving Diagnostics (`Ctrl + Shift + D`, `diagnostics.ts`)
@@ -338,21 +341,21 @@ Central gatekeeper for all actions with 3-tier risk evaluation:
 - Type `:update` in the omnibar or click "Check for Updates" in Settings.
 - Fetches `distribution/latest-release.json` with GitHub API fallback.
 - Compares semantic versioning (`is_newer_version`).
-- Features 1-click self-installation: downloads temporary setup package, verifies SHA-256, executes installer silently, and relaunches.
+- Provides read-only release notification and opens verified GitHub release packages in default browser. In-app background binary download and silent auto-installation are disabled for security hardening.
 
 ---
 
-## 9. Automated Verification & 128-Test Test Suite
+## 9. Automated Verification & 166-Test Test Suite
 
-AltSpace maintains **128 automated passing tests** across frontend TypeScript and backend Rust:
+AltSpace maintains **166 automated passing tests** across frontend TypeScript and backend Rust:
 
 ### 9.1 Test Execution Commands
 ```powershell
-# 1. Run all 77 frontend, security, and launch kit tests
+# 1. Run all 88 frontend, security, and launch kit tests
 npm test --prefix frontend
 # (Executes: node --test src/lib/*.test.mjs ../scripts/*.test.mjs)
 
-# 2. Run all 51 native Rust unit and integration tests
+# 2. Run all 78 native Rust unit and integration tests
 cargo test --manifest-path frontend/src-tauri/Cargo.toml
 
 # 3. Verify compiled distribution artifacts and checksums
@@ -365,16 +368,18 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_release_artifacts.ps1
 | **Quota & Trial Policy** | `frontend/src/lib/quota.test.mjs` | 12 | 100/80 limits, 30-day window, zero-cost queries |
 | **Entitlements & Webhooks** | `frontend/src/lib/entitlement.test.mjs` | 10 | HMAC-SHA256 signatures, state machine transitions |
 | **First-Run Privacy** | `frontend/src/lib/firstRunPrivacy.test.mjs` | 8 | Sidebar hidden by default, multi-drive disabled |
-| **Action Broker & Policy** | `frontend/src/lib/actionBroker.test.mjs` | 6 | 3-tier risk evaluation, session memory, undo |
+| **Action Broker & Challenges** | `frontend/src/lib/actionBroker.test.mjs` | 9 | Parameter-bound single-use challenge tokens, replay rejection |
 | **Red-Team Security** | `frontend/src/lib/redTeamSecurity.test.mjs` | 7 | Path traversal blocking, token masking, UNC blocks |
 | **Privacy Diagnostics** | `frontend/src/lib/diagnostics.test.mjs` | 5 | Regex token redaction, username path scrubbing |
 | **Config Validator** | `frontend/src/lib/configValidator.test.mjs` | 5 | Diff calculation, prototype pollution defense |
 | **Bounty & Treasury** | `frontend/src/lib/bountySync.test.mjs` | 4 | Contributor isolation, 70/20/10 math |
 | **Regional Checkout** | `frontend/src/lib/checkout.test.mjs` | 5 | PPP calculations (INR vs USD) |
 | **Launch Kit & Release** | `scripts/verify_launch_kit.test.mjs` | 8 | Artifact presence, SHA256 integrity |
+| **Installer Trust** | `scripts/install_trust.test.mjs` | 4 | Authenticode verification, unsigned fail-closed rejection |
 | **Action Planner Tests** | `frontend/src/lib/actionPlanner.test.mjs` | 4 | Port fix plans, memory reclamation plans |
 | **Docker & WSL Tests** | `frontend/src/lib/dockerWsl.test.mjs` | 3 | Container status parsing, vmmem memory check |
-| **Rust Native Tests** | `frontend/src-tauri/src/*.rs` | 51 | DPAPI vault, TCP table, Toolhelp32, named pipes |
+| **Auth & Token Scrubbing** | `frontend/src/lib/authProvider.test.mjs` | 3 | Zero tokens in localStorage, DPAPI migration |
+| **Rust Native Tests** | `frontend/src-tauri/src/*.rs` | 78 | DPAPI vault, byok stdin config, ports, broker challenges |
 
 ---
 
@@ -453,17 +458,17 @@ c:\Users\rohan\.gemini\antigravity\scratch\altspace
 │   │   └── types.ts                   # Core TypeScript type definitions
 │   ├── src-tauri/
 │   │   ├── src/
-│   │   │   ├── broker.rs              # 3-tier action execution policy engine
+│   │   │   ├── broker.rs              # Parameter-bound challenge execution broker
+│   │   │   ├── byok.rs                # Native AI completion engine (stdin pipe)
 │   │   │   ├── crypto_vault.rs        # DPAPI CryptProtectData & process injection
 │   │   │   ├── docker_wsl.rs          # WSL2 vmmem detection & memory reclaim
 │   │   │   ├── everything.rs          # Everything64.dll FFI client & fallback
 │   │   │   ├── frecency.rs            # SQLite frecency scoring with temporal decay
-│   │   │   ├── named_pipe.rs          # Replay-protected broker named pipe
-│   │   │   ├── plugins.rs             # Extension child process runner (15s timeout)
+│   │   │   ├── plugins.rs             # Extension containment & migration status
 │   │   │   ├── ports.rs               # GetExtendedTcpTable & Toolhelp32 forensics
-│   │   │   ├── updater.rs             # Self-installer & release synchronizer
+│   │   │   ├── updater.rs             # Read-only release synchronizer
 │   │   │   ├── windows_mgmt.rs        # Win32 RegisterHotKey & window positioning
-│   │   │   └── lib.rs                 # 58 Tauri command registrations & setup
+│   │   │   └── lib.rs                 # 60 Tauri command registrations & setup
 │   │   ├── Cargo.toml                 # Rust dependencies & Windows features
 │   │   └── tauri.conf.json            # Window dimensions, CSP & bundle rules
 │   └── package.json                   # React 19, Tailwind v4, Vite 8 scripts
@@ -496,18 +501,15 @@ Your mission is to maintain, develop, and expand AltSpace strictly according to 
 ### Non-Negotiable Architectural Rules:
 1. Native Speed & Zero Electron: AltSpace must remain under 18MB RAM idle and < 32MB active search. All heavy workloads (process forensics, file indexing, encryption) execute in the native Rust core (Tauri v2 + Tokio), never in the WebView.
 2. Invisibility Rule: When a developer capability is toggled OFF (in Settings or via '> toggle <id>'), it must completely vanish from search results, autocomplete, tab headers, and global shortcuts. Rust IPC handlers must fail closed in < 1µs.
-3. 3-Tier Security Broker: All native actions must pass through the Execution Broker:
-   - Level 1 (ReadOnlyAuto): Read-only operations execute automatically.
-   - Level 2 (PreviewThenApprove): File writes, configuration imports, and network calls require dry-run preview and user consent.
-   - Level 3 (AlwaysApprove): File deletions, arbitrary script runs, and port kills strictly require modal confirmation every time.
+3. Authoritative Security Broker: All native actions must pass through the Execution Broker using single-use, parameter-bound 60s challenge tokens. Unbrokered shell execution is permanently disabled.
 4. Privacy & Zero Telemetry:
-   - Credentials, private keys, and environment variables are encrypted at rest using Windows DPAPI (CryptProtectData). Zero plaintext tokens in localStorage.
+   - Credentials, private keys, and environment variables are encrypted at rest using Windows DPAPI (CryptProtectData). Zero plaintext tokens in localStorage and zero secrets crossing IPC.
    - Clipboard history resides solely in volatile memory and is never written to disk.
    - Support diagnostics must pass through redactSensitiveDiagnostics to strip all tokens, keys, and personal paths (C:\Users\<user>\ -> ~\).
 5. Open Core & Quota Invariants:
    - Local app launches, ordinary search, calculator, dev ports, clipboard history, themes, and local Ollama inference are 100% FREE FOREVER in the Apache 2.0 core.
-   - Premium actions (cloud AI, shell runner, deep multi-drive search) follow a standardized 100-action / 30-day rolling window (warning at 80).
+   - Premium actions follow a standardized 100-action / 30-day rolling window (warning at 80).
    - Contributors with >= 2 merged PRs receive unmetered access via entitlements.json, isolated from paying sponsors.
 6. Zero Discord Client Secrets: The desktop app never stores Discord bot tokens or webhooks. All community interactions route via verified public web links.
-7. Verification Standard: Any modification must maintain 100% passing tests across the 128-test suite (npm test --prefix frontend and cargo test). Clippy must pass with -D warnings.
+7. Verification Standard: Any modification must maintain 100% passing tests across the 166-test suite (npm test --prefix frontend and cargo test). Clippy must pass with -D warnings.
 ```

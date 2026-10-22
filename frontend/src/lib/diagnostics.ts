@@ -55,7 +55,7 @@ export interface DiagnosticSnapshot {
 }
 
 /**
- * Strips API keys, GitHub tokens, private keys, and user home directories from logs and diagnostics.
+ * Strips API keys, GitHub tokens, private keys, bearer credentials, and user home directories from logs and diagnostics.
  */
 export function redactSensitiveDiagnostics(text: string): { sanitized: string; count: number } {
   if (typeof text !== 'string') return { sanitized: '', count: 0 };
@@ -63,25 +63,37 @@ export function redactSensitiveDiagnostics(text: string): { sanitized: string; c
   let count = 0;
   let sanitized = text;
 
-  // 1. OpenAI / generic AI keys: sk-proj-..., sk-...
-  sanitized = sanitized.replace(/\b(sk-(?:proj-)?[a-zA-Z0-9_-]{20,})\b/g, () => {
-    count++;
-    return '[REDACTED_API_KEY]';
-  });
-
-  // 2. GitHub Personal Access Tokens: ghp_..., gho_..., ghu_..., ghs_...
-  sanitized = sanitized.replace(/\b(gh[pous]_[a-zA-Z0-9]{36})\b/g, () => {
-    count++;
-    return '[REDACTED_GITHUB_TOKEN]';
-  });
-
-  // 3. Anthropic keys: sk-ant-...
-  sanitized = sanitized.replace(/\b(sk-ant-[a-zA-Z0-9_-]{20,})\b/g, () => {
+  // 1. Anthropic keys: sk-ant-... (must be evaluated before generic sk-)
+  sanitized = sanitized.replace(/\b(sk-ant-[a-zA-Z0-9_-]{15,})\b/g, () => {
     count++;
     return '[REDACTED_ANTHROPIC_KEY]';
   });
 
-  // 4. Private keys (RSA, EC, OPENSSH)
+  // 2. OpenAI / generic AI keys: sk-proj-..., sk-...
+  sanitized = sanitized.replace(/\b(sk-(?:proj-)?[a-zA-Z0-9_-]{15,})\b/g, () => {
+    count++;
+    return '[REDACTED_API_KEY]';
+  });
+
+  // 3. GitHub Personal Access Tokens & OAuth tokens: ghp_..., gho_..., ghu_..., ghs_..., ghr_...
+  sanitized = sanitized.replace(/\b(gh[pousr]_[a-zA-Z0-9]{20,})\b/g, () => {
+    count++;
+    return '[REDACTED_GITHUB_TOKEN]';
+  });
+
+  // 4. DeepSeek keys: sk-[a-f0-9]{32}
+  sanitized = sanitized.replace(/\b(sk-[a-f0-9]{32})\b/gi, () => {
+    count++;
+    return '[REDACTED_DEEPSEEK_KEY]';
+  });
+
+  // 5. Bearer authorization tokens
+  sanitized = sanitized.replace(/\bbearer\s+([a-zA-Z0-9_\-.~+/]+=*)/gi, () => {
+    count++;
+    return 'Bearer [REDACTED_TOKEN]';
+  });
+
+  // 6. Private keys (RSA, EC, OPENSSH)
   sanitized = sanitized.replace(
     /-----BEGIN[A-Z\s]+PRIVATE KEY-----[\s\S]+?-----END[A-Z\s]+PRIVATE KEY-----/g,
     () => {
@@ -90,7 +102,13 @@ export function redactSensitiveDiagnostics(text: string): { sanitized: string; c
     }
   );
 
-  // 5. Windows user home directories (C:\Users\<username>\ -> ~\)
+  // 7. Embedded URL credentials
+  sanitized = sanitized.replace(/(https?:\/\/)([^:\s]+):([^@\s]+)@/gi, (_m, proto, user) => {
+    count++;
+    return `${proto}${user}:[REDACTED_CREDENTIAL]@`;
+  });
+
+  // 8. Windows user home directories (C:\Users\<username>\ -> ~\)
   sanitized = sanitized.replace(/[A-Z]:\\Users\\[^\\]+\\/gi, () => {
     count++;
     return '~\\';
@@ -127,7 +145,7 @@ export function generateDiagnosticSnapshot(
     timestamp: new Date().toISOString(),
     app: {
       name: 'AltSpace',
-      version: overrides?.app?.version ?? '2.0.0',
+      version: overrides?.app?.version ?? '2.2.0',
       safeMode: overrides?.app?.safeMode ?? false,
     },
     system: {

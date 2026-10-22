@@ -1,11 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::os::windows::process::CommandExt;
-use std::process::{Command, Stdio};
-use std::sync::mpsc;
-use std::time::{Duration, Instant};
-
-const CREATE_NO_WINDOW: u32 = 0x08000000;
-const SHELL_EXECUTION_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShellExecutionResult {
@@ -16,91 +9,29 @@ pub struct ShellExecutionResult {
     pub elapsed_ms: u64,
 }
 
-/// Executes a shell command silently in PowerShell and captures stdout/stderr
+/// Executes a shell command silently in PowerShell and captures stdout/stderr.
+///
+/// NOTE: Direct arbitrary shell execution is disabled for security hardening.
+/// Use explicit developer console windows or native brokered operations instead.
 pub fn execute_shell_command(cmd: &str) -> Result<ShellExecutionResult, String> {
     let trimmed = cmd.trim();
     if trimmed.is_empty() {
         return Err("Command cannot be empty".into());
     }
 
-    let start = Instant::now();
-
-    // Run in powershell.exe with hidden window and output capture
-    let child = Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            trimmed,
-        ])
-        .creation_flags(CREATE_NO_WINDOW)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to execute command: {}", e))?;
-    let child_pid = child.id();
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let result = child.wait_with_output();
-        let _ = tx.send(result);
-    });
-
-    let output = match rx.recv_timeout(Duration::from_secs(SHELL_EXECUTION_TIMEOUT_SECS)) {
-        Ok(result) => result.map_err(|e| format!("Failed to collect command output: {}", e))?,
-        Err(mpsc::RecvTimeoutError::Timeout) => {
-            let _ = Command::new("taskkill")
-                .args(["/F", "/T", "/PID", &child_pid.to_string()])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output();
-            return Err(format!(
-                "Command timed out after {} seconds",
-                SHELL_EXECUTION_TIMEOUT_SECS
-            ));
-        }
-        Err(error) => return Err(format!("Command execution thread failed: {}", error)),
-    };
-
-    let elapsed_ms = start.elapsed().as_millis() as u64;
-    let exit_code = output.status.code().unwrap_or(-1);
-    let success = output.status.success();
-
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-
-    Ok(ShellExecutionResult {
-        success,
-        exit_code,
-        stdout,
-        stderr,
-        elapsed_ms,
-    })
+    Err("Direct shell execution is disabled for security hardening. Use an external development console.".into())
 }
 
-/// Launches a command interactively in a visible Windows Terminal (wt.exe) or PowerShell window
+/// Launches a command interactively in a visible Windows Terminal (wt.exe) or PowerShell window.
+///
+/// NOTE: Arbitrary shell string execution in interactive windows is disabled for security hardening.
 pub fn launch_in_terminal_window(cmd: &str) -> Result<(), String> {
     let trimmed = cmd.trim();
     if trimmed.is_empty() {
         return Err("Command cannot be empty".into());
     }
 
-    // Try Windows Terminal (wt.exe) first
-    let wt_spawn = Command::new("wt")
-        .args(["powershell", "-NoExit", "-Command", trimmed])
-        .spawn();
-
-    if wt_spawn.is_ok() {
-        return Ok(());
-    }
-
-    // Fallback to native PowerShell
-    Command::new("powershell")
-        .args(["-NoExit", "-Command", trimmed])
-        .spawn()
-        .map_err(|e| format!("Failed to spawn PowerShell: {}", e))?;
-
-    Ok(())
+    Err("Interactive terminal execution with arbitrary command arguments is disabled for security hardening.".into())
 }
 
 #[cfg(test)]
@@ -114,20 +45,16 @@ mod tests {
     }
 
     #[test]
-    fn test_echo_command_execution() {
+    fn test_execute_shell_command_fails_closed() {
         let res = execute_shell_command("Write-Output 'Hello AltSpace 2026'");
-        assert!(res.is_ok());
-        let out = res.unwrap();
-        assert!(out.success);
-        assert_eq!(out.exit_code, 0);
-        assert!(out.stdout.contains("Hello AltSpace 2026"));
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("disabled for security hardening"));
     }
 
     #[test]
-    fn test_error_command_execution() {
-        let res = execute_shell_command("throw 'Sample error'");
-        assert!(res.is_ok());
-        let out = res.unwrap();
-        assert!(!out.success || !out.stderr.is_empty());
+    fn test_launch_in_terminal_window_fails_closed() {
+        let res = launch_in_terminal_window("Write-Output 'Hello AltSpace 2026'");
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("disabled for security hardening"));
     }
 }

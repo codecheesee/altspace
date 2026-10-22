@@ -26,17 +26,17 @@ A modified fork can remove local client checks in its own build, but it **cannot
 | **Port Inspector & Killer (`:port`)** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 3 (terminate) | No | Yes |
 | **Deep Process Forensics & Port Verification** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 3 (verified release) | No | Yes |
 | **Offline Developer Transforms (JWT, JSON, Regex, UUID)** | Layer A (Control Plane) | Yes | No | **Free Forever** | No | Level 1 (offline pure) | No | Yes |
-| **DPAPI Secret & Environment Switcher** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 2 (env injection) | DPAPI Hardware Bound | Yes |
+| **DPAPI Secret & Environment Switcher** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 2 (env injection) | Windows DPAPI User-Bound | Yes |
 | **Docker & WSL2 Cockpit & RAM Reclaim** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 2 / 3 (reclaim/restart)| No | Yes |
-| **Action Planner & Auto-Recovery (`?`)** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 2 / 3 (stepper approval)| Volatile RAM buffer | Yes |
+| **Action Planner & Auto-Recovery (`?`)** | Layer A (Control Plane) | Yes | No | **Pro / Trial** | No | Level 2 / 3 (challenge gate)| Volatile RAM buffer | Yes |
 | **In-Memory Clipboard Manager** | Layer A (Core) | Yes | No | **Free Forever** | No | No | Masked in RAM | Yes |
 | **Dynamic Themes & Accent Colors** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
-| **Local `.altconfig` Import/Export** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 2 (import) | No | Yes |
+| **Local `.altconfig` Import/Export** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 2 (challenge) | No | Yes |
 | **Local Ollama AI (`localhost:11434`)**| Layer A (Core) | Yes | No | **Free Forever** | No | Level 1 (prompt) | No | Yes |
-| **BYOK Cloud LLMs (Claude 3.7 / GPT-4o / DeepSeek)**| Layer A (BYOK) | Direct Client | Direct Provider | **Pro / BYOK** | Provider API Key | Level 2 (dispatch) | DPAPI Vault | No |
-| **Community Plugin Runner** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 2 (install/run) | Confinement | Yes |
+| **BYOK Cloud LLMs (Claude 3.7 / GPT-4o / DeepSeek)**| Layer A (BYOK) | Native Rust Engine | Direct Provider | **Pro / BYOK** | Provider API Key | Level 2 (dispatch) | DPAPI Vault | No |
+| **Community Plugin Runner** | Layer A (Core) | Contained | No | **Free Forever** | No | BlockedForMigration | Preserved on Disk | Yes |
 | **Multi-Drive File Search** | Layer A (Core) | Yes | No | Trial / Pro | No | Level 1 | No | Yes |
-| **Native Shell Command Runner (`>`)** | Layer A (Core) | Yes | No | Trial / Pro | No | Level 3 (confirm) | No | Yes |
+| **Native Shell Command Runner (`>`)** | Layer A (Core) | Disabled | No | N/A | No | Disabled for Security | No | N/A |
 | **Hosted / Remote AI Models** | Layer B (Cloud)| No | Yes | **Paid (Pro)** | Yes (Device Flow) | Level 2 | In-Transit | No |
 | **Multi-Device Cloud Sync** | Layer B (Cloud)| Hybrid | Yes | **Paid (Pro)** | Yes | Level 2 | Encrypted | Grace Period |
 | **Team Command Palette & Snippets**| Layer B (Cloud)| Hybrid | Yes | **Paid (Pro/Team)** | Yes (SSO/OAuth) | Level 2 | Encrypted | Grace Period |

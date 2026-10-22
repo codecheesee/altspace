@@ -38,16 +38,9 @@ struct RawManifest {
     version: Option<String>,
     name: Option<String>,
     release_url: Option<String>,
-    download_url: Option<String>,
     published_at: Option<String>,
     features: Option<Vec<String>>,
     fixes: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-struct GhReleaseAsset {
-    name: Option<String>,
-    browser_download_url: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -57,7 +50,6 @@ struct GhRelease {
     html_url: Option<String>,
     body: Option<String>,
     published_at: Option<String>,
-    assets: Option<Vec<GhReleaseAsset>>,
 }
 
 fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
@@ -95,16 +87,16 @@ fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
             if !features.contains(&text) && features.len() < 10 {
                 features.push(text);
             }
-        } else if lower.contains("fix")
+        } else if (lower.contains("fix")
             || lower.contains("patch")
             || lower.contains("clean")
             || lower.contains("resolve")
             || lower.contains("mitigat")
-            || lower.contains("secur")
+            || lower.contains("secur"))
+            && !fixes.contains(&text)
+            && fixes.len() < 10
         {
-            if !fixes.contains(&text) && fixes.len() < 10 {
-                fixes.push(text);
-            }
+            fixes.push(text);
         }
     }
 
@@ -113,60 +105,6 @@ fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
 
 pub fn check_for_update() -> Result<UpdateInfo, String> {
     let current_version = env!("CARGO_PKG_VERSION").to_string();
-
-    let ps_script = r#"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-$headers = @{'User-Agent'='AltSpace-Updater'};
-$res = $null;
-
-# 1. Check raw manifest first (zero rate limits, instant)
-try {
-    $raw = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json' -Headers $headers -TimeoutSec 4;
-    if ($raw -and $raw.version) {
-        $res = @{
-            source = 'manifest';
-            tag_name = $raw.version;
-            name = $raw.name;
-            html_url = $raw.release_url;
-            body = ($raw.features -join "`n") + "`n" + ($raw.fixes -join "`n");
-            features = $raw.features;
-            fixes = $raw.fixes;
-            download_url = $raw.download_url;
-            published_at = $raw.published_at;
-        };
-    }
-} catch {}
-
-# 2. Check GitHub API if manifest wasn't reachable
-if (-not $res) {
-    try {
-        $gh = Invoke-RestMethod -Uri 'https://api.github.com/repos/codecheesee/altspace/releases/latest' -Headers $headers -TimeoutSec 4;
-        if ($gh -and $gh.tag_name) {
-            $dl = ($gh.assets | Where-Object { $_.name -like '*setup*.exe' -or $_.name -like '*.exe' } | Select-Object -First 1).browser_download_url;
-            $res = @{
-                source = 'github';
-                tag_name = $gh.tag_name;
-                name = $gh.name;
-                html_url = $gh.html_url;
-                body = $gh.body;
-                download_url = $dl;
-                published_at = $gh.published_at;
-            };
-        }
-    } catch {}
-}
-
-if ($res) {
-    ConvertTo-Json -InputObject $res -Compress
-} else {
-    "{}"
-}
-"#;
-
-    let output = Command::new("powershell.exe")
-        .args(["-NoProfile", "-Command", ps_script])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-        .map_err(|e| format!("Update check failed: {}", e))?;
 
     let default_info = UpdateInfo {
         has_update: false,
@@ -181,108 +119,90 @@ if ($res) {
         published_at: None,
     };
 
-    if !output.status.success() {
-        return Ok(default_info);
-    }
+    // 1. Check raw manifest first via direct curl.exe (read-only, no PowerShell subshell)
+    let manifest_output = Command::new("curl.exe")
+        .args([
+            "-s",
+            "-f",
+            "-m", "5",
+            "-H", "User-Agent: AltSpace-Updater",
+            "https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json",
+        ])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
 
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if stdout.is_empty() || stdout == "{}" {
-        return Ok(default_info);
-    }
+    if let Ok(out) = manifest_output {
+        if out.status.success() {
+            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if let Ok(manifest) = serde_json::from_str::<RawManifest>(&stdout) {
+                if let Some(tag) = manifest.version {
+                    let clean_latest = tag.trim_start_matches('v').trim().to_string();
+                    let clean_current = current_version.trim_start_matches('v').trim().to_string();
+                    let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
 
-    // Try parsing as raw manifest
-    if let Ok(manifest) = serde_json::from_str::<RawManifest>(&stdout) {
-        if let Some(tag) = manifest.version {
-            let clean_latest = tag.trim_start_matches('v').trim().to_string();
-            let clean_current = current_version.trim_start_matches('v').trim().to_string();
-            let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
-
-            return Ok(UpdateInfo {
-                has_update,
-                current_version,
-                latest_version: clean_latest,
-                release_name: manifest.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
-                release_url: manifest.release_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
-                release_notes: format!("AltSpace update v{} is ready to install.", tag),
-                features: manifest.features.unwrap_or_default(),
-                fixes: manifest.fixes.unwrap_or_default(),
-                download_url: manifest.download_url,
-                published_at: manifest.published_at,
-            });
+                    return Ok(UpdateInfo {
+                        has_update,
+                        current_version,
+                        latest_version: clean_latest,
+                        release_name: manifest.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
+                        release_url: manifest.release_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
+                        release_notes: format!("AltSpace update v{} is available.", tag),
+                        features: manifest.features.unwrap_or_default(),
+                        fixes: manifest.fixes.unwrap_or_default(),
+                        download_url: None,
+                        published_at: manifest.published_at,
+                    });
+                }
+            }
         }
     }
 
-    // Try parsing as GitHub release response
-    if let Ok(gh) = serde_json::from_str::<GhRelease>(&stdout) {
-        if let Some(tag) = gh.tag_name {
-            let clean_latest = tag.trim_start_matches('v').trim().to_string();
-            let clean_current = current_version.trim_start_matches('v').trim().to_string();
-            let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
-            let body = gh.body.unwrap_or_default();
-            let (features, fixes) = parse_changelog_lines(&body);
-            let dl_url = gh.assets.and_then(|a| {
-                a.into_iter()
-                    .find(|asset| {
-                        asset.name.as_deref().map_or(false, |n| {
-                            n.ends_with(".exe") || n.contains("Setup")
-                        })
-                    })
-                    .and_then(|asset| asset.browser_download_url)
-            });
+    // 2. Check GitHub API if manifest wasn't reached
+    let gh_output = Command::new("curl.exe")
+        .args([
+            "-s",
+            "-f",
+            "-m", "5",
+            "-H", "User-Agent: AltSpace-Updater",
+            "-H", "Accept: application/json",
+            "https://api.github.com/repos/codecheesee/altspace/releases/latest",
+        ])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
 
-            return Ok(UpdateInfo {
-                has_update,
-                current_version,
-                latest_version: clean_latest,
-                release_name: gh.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
-                release_url: gh.html_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
-                release_notes: body,
-                features,
-                fixes,
-                download_url: dl_url,
-                published_at: gh.published_at,
-            });
+    if let Ok(out) = gh_output {
+        if out.status.success() {
+            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if let Ok(gh) = serde_json::from_str::<GhRelease>(&stdout) {
+                if let Some(tag) = gh.tag_name {
+                    let clean_latest = tag.trim_start_matches('v').trim().to_string();
+                    let clean_current = current_version.trim_start_matches('v').trim().to_string();
+                    let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
+                    let body = gh.body.unwrap_or_default();
+                    let (features, fixes) = parse_changelog_lines(&body);
+
+                    return Ok(UpdateInfo {
+                        has_update,
+                        current_version,
+                        latest_version: clean_latest,
+                        release_name: gh.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
+                        release_url: gh.html_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
+                        release_notes: body,
+                        features,
+                        fixes,
+                        download_url: None,
+                        published_at: gh.published_at,
+                    });
+                }
+            }
         }
     }
 
     Ok(default_info)
 }
 
-pub fn install_update(download_url: Option<String>) -> Result<String, String> {
-    let url = download_url.unwrap_or_else(|| {
-        "https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1".to_string()
-    });
-
-    let ps_script = format!(
-        r#"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-$targetUrl = '{url}';
-$tempDir = Join-Path $env:TEMP 'AltSpace-Update';
-if (-not (Test-Path $tempDir)) {{ New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }}
-
-if ($targetUrl -like '*.ps1') {{
-    $scriptPath = Join-Path $tempDir 'install.ps1';
-    Invoke-WebRequest -Uri $targetUrl -OutFile $scriptPath -UseBasicParsing;
-    Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"' + $scriptPath + '\"' -WindowStyle Normal;
-}} else {{
-    $exePath = Join-Path $tempDir 'AltSpace-Setup-x64.exe';
-    Invoke-WebRequest -Uri $targetUrl -OutFile $exePath -UseBasicParsing;
-    Start-Process -FilePath $exePath -WindowStyle Normal;
-}}
-"#
-    );
-
-    let output = Command::new("powershell.exe")
-        .args(["-NoProfile", "-Command", &ps_script])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-        .map_err(|e| format!("Failed to initiate installer: {}", e))?;
-
-    if !output.status.success() {
-        let err = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Installer launch failed: {}", err));
-    }
-
-    Ok("Update installer downloaded and launched successfully. AltSpace will close to complete the upgrade.".to_string())
+pub fn install_update(_download_url: Option<String>) -> Result<String, String> {
+    Err("In-app update installation is temporarily disabled for security hardening. Please visit https://github.com/codecheesee/altspace/releases to download verified releases.".to_string())
 }
 
 #[allow(dead_code)]
@@ -308,5 +228,12 @@ mod tests {
         let (features, fixes) = parse_changelog_lines(body);
         assert_eq!(features.len(), 2);
         assert_eq!(fixes.len(), 2);
+    }
+
+    #[test]
+    fn test_install_update_fails_closed() {
+        let res = install_update(Some("https://example.com/bad.exe".into()));
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("disabled for security hardening"));
     }
 }

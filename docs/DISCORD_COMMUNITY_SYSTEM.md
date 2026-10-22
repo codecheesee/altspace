@@ -115,7 +115,7 @@ CATEGORY: STAFF & MODERATION (Role-gated: Admin & Moderator only)
 - **Post Guidelines & Template**:
 ```markdown
 ## Environment
-- AltSpace Version: (e.g. 2.0.0)
+- AltSpace Version: (e.g. 2.2.0)
 - Windows Build: (Run `winver`, e.g. Windows 11 23H2 Build 22631)
 - Architecture: (x64 / arm64)
 - Subsystems involved: [ ] Docker  [ ] WSL2  [ ] Ollama  [ ] None
@@ -412,7 +412,7 @@ To ensure future applications can be added without modifying the core bot or red
       "name": "AltSpace",
       "tagline": "Native Windows developer control plane",
       "description": "Fast file search, port inspection, Docker/WSL utilities, DPAPI vault, and local Ollama AI.",
-      "currentVersion": "2.0.0",
+      "currentVersion": "2.2.0",
       "websiteUrl": "https://altspace.dev",
       "docsUrl": "https://docs.altspace.dev",
       "downloadUrl": "https://github.com/codecheesee/altspace/releases/latest",

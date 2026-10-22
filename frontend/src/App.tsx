@@ -648,7 +648,7 @@ export default function App() {
     const config = {
       app: "AltSpace",
       config_version: 2,
-      version: "2.0.0",
+      version: "2.2.0",
       exported_at: new Date().toISOString(),
       theme_id: currentThemeId,
       custom_accent: customAccent,

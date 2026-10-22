@@ -45,7 +45,7 @@ jobs:
             const comment = (payload.comment || "").trim();
             const contact = payload.contact || "Anonymous AltSpace User";
             const platform = payload.platform || "Windows (AltSpace Desktop)";
-            const appVersion = payload.appVersion || "2.1.0";
+            const appVersion = payload.appVersion || "2.2.0";
 
             let titlePrefix = "[Feedback]: ";
             const labels = ["user-feedback"];

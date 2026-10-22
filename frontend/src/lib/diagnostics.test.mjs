@@ -83,3 +83,18 @@ test('5. Formats sanitized diagnostics with export header banner', () => {
   const parsed = JSON.parse(jsonPart);
   assert.equal(parsed.app.name, 'AltSpace');
 });
+
+test('6. Redacts fine-grained GitHub tokens, Bearer headers, DeepSeek keys, and URL credentials', () => {
+  const raw = 'Auth: Bearer mySecretJwtToken123456 and ghr_123456789012345678901234567890123456 and sk-ant-live12345678901234567890 and https://admin:superSecretPass@api.internal/v1';
+  const { sanitized, count } = redactSensitiveDiagnostics(raw);
+
+  assert.equal(sanitized.includes('mySecretJwtToken'), false);
+  assert.equal(sanitized.includes('Bearer [REDACTED_TOKEN]'), true);
+  assert.equal(sanitized.includes('ghr_'), false);
+  assert.equal(sanitized.includes('[REDACTED_GITHUB_TOKEN]'), true);
+  assert.equal(sanitized.includes('sk-ant-live'), false);
+  assert.equal(sanitized.includes('[REDACTED_ANTHROPIC_KEY]'), true);
+  assert.equal(sanitized.includes('superSecretPass'), false);
+  assert.equal(sanitized.includes('[REDACTED_CREDENTIAL]'), true);
+  assert.equal(count >= 4, true);
+});
