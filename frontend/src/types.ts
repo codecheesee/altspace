@@ -211,5 +211,7 @@ export interface UpdateInfo {
   features: string[];
   fixes: string[];
   download_url?: string | null;
+  portable_url?: string | null;
+  sha256_portable?: string | null;
   published_at?: string | null;
 }

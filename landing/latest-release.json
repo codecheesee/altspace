@@ -1,0 +1,22 @@
+{
+  "version": "2.3.0",
+  "name": "AltSpace v2.3.0 — Smart Game Hub, Noise Filter & Modern Monochrome Control Plane",
+  "published_at": "2026-10-22T20:42:04Z",
+  "download_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe",
+  "portable_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Portable-x64.zip",
+  "sha256_portable": "c6904edaf97177d7ceaaeb1d80e1e44fa452ae7c9aad769572505fef90fc936a",
+  "sha256_setup": "5384cd132c4f683418be416c600775c833539eff07e6b553c146f96b69474f3f",
+  "release_url": "https://github.com/codecheesee/altspace/releases/tag/v2.3.0",
+  "features": [
+    "Smart Game Hub: Auto-discovery and 1-stroke launcher for Steam, Epic, Xbox Game Pass, and standalone titles",
+    "Intelligent Noise Filter: Excludes internal caches, logs, temp files, and extensions (.ink, .log, .tmp, etc.)",
+    "Developer Port Inspector: Terminate blocking developer ports (:3000, :8080) with a single keystroke",
+    "Everything SDK / MFT Integration: Sub-millisecond whole-drive indexing and search across all drives",
+    "Offline Developer Tools: Base64, UUID v4, SHA-256, JSON/YAML converter, and JWT debugger"
+  ],
+  "fixes": [
+    "Pro Trial banner simplified to trending 'Pro'/'Try Pro' indicator, hidden for licensed users and maintainers",
+    "Eliminated obsolete and clutter file extensions by default with granular settings toggles",
+    "Detached sidecar auto-updater engine eliminating file-lock stalls and API rate limits"
+  ]
+}

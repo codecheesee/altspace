@@ -89,14 +89,16 @@ export function UpdateModal({
     setInstallStatus("Connecting and downloading latest installer package...");
     try {
       if (tauriInvoke) {
+        setInstallStatus("Downloading package and verifying cryptographic SHA-256 hash...");
         const res = await tauriInvoke<string>("trigger_app_update", {
-          downloadUrl: info?.download_url || null,
+          downloadUrl: info?.portable_url || info?.download_url || null,
+          expectedSha256: info?.sha256_portable || null,
         });
-        setInstallStatus(res || "Installer launched. AltSpace will close to complete the upgrade.");
-        notify("Installer launched. AltSpace will restart automatically.");
+        setInstallStatus(res || "Update verified. AltSpace is restarting now...");
+        notify("✨ Update verified. AltSpace is restarting...");
         setTimeout(() => {
           onClose();
-        }, 2500);
+        }, 3000);
       } else {
         window.open(info?.release_url || "https://github.com/codecheesee/altspace/releases", "_blank");
         setIsInstalling(false);

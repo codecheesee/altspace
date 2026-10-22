@@ -1097,8 +1097,21 @@ fn check_app_update() -> Result<updater::UpdateInfo, String> {
 }
 
 #[tauri::command]
-fn trigger_app_update(download_url: Option<String>) -> Result<String, String> {
-    updater::install_update(download_url)
+fn trigger_app_update(
+    app: tauri::AppHandle,
+    download_url: Option<String>,
+    expected_sha256: Option<String>,
+) -> Result<String, String> {
+    let res = updater::install_update(download_url, expected_sha256)?;
+    let exe = std::env::current_exe().unwrap_or_default();
+    let exe_str = exe.to_string_lossy();
+    if !exe_str.contains("\\target\\") {
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(800));
+            app.exit(0);
+        });
+    }
+    Ok(res)
 }
 
 #[tauri::command]

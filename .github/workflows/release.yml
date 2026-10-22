@@ -33,10 +33,19 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
+      - name: Setup sccache
+        uses: mozilla/sccache-action@v0.0.9
+
+      - name: Configure sccache
+        shell: pwsh
+        run: |
+          "RUSTC_WRAPPER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: frontend/src-tauri
+          workspaces: .
 
       - name: Install Frontend Dependencies
         working-directory: frontend
@@ -50,13 +59,9 @@ jobs:
         working-directory: frontend/src-tauri
         run: cargo test --verbose
 
-      - name: Install Tauri CLI
-        shell: pwsh
-        run: cargo install tauri-cli --version '^2' --locked
-
       - name: Build NSIS and MSI bundles
-        working-directory: frontend/src-tauri
-        run: cargo tauri build --bundles nsis,msi
+        working-directory: frontend
+        run: npx tauri build --bundles nsis,msi
 
       - name: Prepare release artifacts
         shell: pwsh
@@ -78,6 +83,9 @@ jobs:
           Copy-Item $msi.FullName 'dist_artifacts/AltSpace-MSI-x64.msi'
           Copy-Item 'bin/Everything64.dll' 'dist_artifacts/Everything64.dll'
           Copy-Item 'install.ps1' 'dist_artifacts/install.ps1'
+          if (Test-Path 'distribution/latest-release.json') {
+            Copy-Item 'distribution/latest-release.json' 'dist_artifacts/latest-release.json'
+          }
           Compress-Archive -Path 'dist_artifacts/AltSpace-Portable.exe','dist_artifacts/Everything64.dll' -DestinationPath 'dist_artifacts/AltSpace-Portable-x64.zip' -Force
 
       - name: Sign Windows artifacts
@@ -125,6 +133,7 @@ jobs:
             dist_artifacts/Everything64.dll
             dist_artifacts/install.ps1
             dist_artifacts/SHA256SUMS.txt
+            dist_artifacts/latest-release.json
           name: AltSpace Release ${{ github.ref_name }}
           draft: false
           prerelease: false

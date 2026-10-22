@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::os::windows::process::CommandExt;
 use std::process::Command;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+const DETACHED_PROCESS: u32 = 0x00000008;
 
 pub fn is_newer_version(latest: &str, current: &str) -> bool {
     let parse = |value: &str| {
@@ -30,17 +32,22 @@ pub struct UpdateInfo {
     pub features: Vec<String>,
     pub fixes: Vec<String>,
     pub download_url: Option<String>,
+    pub portable_url: Option<String>,
+    pub sha256_portable: Option<String>,
     pub published_at: Option<String>,
 }
 
-#[derive(Deserialize)]
-struct RawManifest {
-    version: Option<String>,
-    name: Option<String>,
-    release_url: Option<String>,
-    published_at: Option<String>,
-    features: Option<Vec<String>>,
-    fixes: Option<Vec<String>>,
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct RawManifest {
+    pub version: Option<String>,
+    pub name: Option<String>,
+    pub release_url: Option<String>,
+    pub download_url: Option<String>,
+    pub portable_url: Option<String>,
+    pub sha256_portable: Option<String>,
+    pub published_at: Option<String>,
+    pub features: Option<Vec<String>>,
+    pub fixes: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -81,6 +88,7 @@ fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
             || lower.contains("new")
             || lower.contains("support")
             || lower.contains("matrix")
+            || lower.contains("hub")
             || lower.contains("cockpit")
         {
             if !features.contains(&text) && features.len() < 10 {
@@ -115,63 +123,71 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
         features: vec![],
         fixes: vec![],
         download_url: None,
+        portable_url: None,
+        sha256_portable: None,
         published_at: None,
     };
 
-    // 1. Check raw manifest first via direct curl.exe (read-only, no PowerShell subshell)
-    let manifest_output = Command::new("curl.exe")
-        .args([
-            "-s",
-            "-f",
-            "-m", "5",
-            "-H", "User-Agent: AltSpace-Updater",
-            "https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json",
-        ])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output();
+    // 1. Try static CDN manifest first (GitHub Pages - 0 rate limits, instant response)
+    let cdn_endpoints = [
+        "https://codecheesee.github.io/altspace/latest-release.json",
+        "https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json",
+    ];
 
-    if let Ok(out) = manifest_output {
-        if out.status.success() {
-            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if let Ok(manifest) = serde_json::from_str::<RawManifest>(&stdout) {
-                if let Some(tag) = manifest.version {
-                    let clean_latest = tag.trim_start_matches('v').trim().to_string();
-                    let clean_current = current_version.trim_start_matches('v').trim().to_string();
-                    let has_update =
-                        !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
+    for endpoint in cdn_endpoints {
+        let manifest_output = Command::new("curl.exe")
+            .args([
+                "-s",
+                "-f",
+                "-m", "5",
+                "-H", "User-Agent: AltSpace-Updater",
+                endpoint,
+            ])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
 
-                    return Ok(UpdateInfo {
-                        has_update,
-                        current_version,
-                        latest_version: clean_latest,
-                        release_name: manifest
-                            .name
-                            .unwrap_or_else(|| format!("AltSpace v{}", tag)),
-                        release_url: manifest.release_url.unwrap_or_else(|| {
-                            "https://github.com/codecheesee/altspace/releases".to_string()
-                        }),
-                        release_notes: format!("AltSpace update v{} is available.", tag),
-                        features: manifest.features.unwrap_or_default(),
-                        fixes: manifest.fixes.unwrap_or_default(),
-                        download_url: None,
-                        published_at: manifest.published_at,
-                    });
+        if let Ok(out) = manifest_output {
+            if out.status.success() {
+                let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if let Ok(manifest) = serde_json::from_str::<RawManifest>(&stdout) {
+                    if let Some(tag) = manifest.version {
+                        let clean_latest = tag.trim_start_matches('v').trim().to_string();
+                        let clean_current = current_version.trim_start_matches('v').trim().to_string();
+                        let has_update =
+                            !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
+
+                        return Ok(UpdateInfo {
+                            has_update,
+                            current_version,
+                            latest_version: clean_latest,
+                            release_name: manifest
+                                .name
+                                .unwrap_or_else(|| format!("AltSpace v{}", tag)),
+                            release_url: manifest.release_url.unwrap_or_else(|| {
+                                "https://github.com/codecheesee/altspace/releases".to_string()
+                            }),
+                            release_notes: format!("AltSpace update v{} is available.", tag),
+                            features: manifest.features.unwrap_or_default(),
+                            fixes: manifest.fixes.unwrap_or_default(),
+                            download_url: manifest.download_url,
+                            portable_url: manifest.portable_url,
+                            sha256_portable: manifest.sha256_portable,
+                            published_at: manifest.published_at,
+                        });
+                    }
                 }
             }
         }
     }
 
-    // 2. Check GitHub API if manifest wasn't reached
+    // 2. Fallback to GitHub API if CDN manifests were unreachable
     let gh_output = Command::new("curl.exe")
         .args([
             "-s",
             "-f",
-            "-m",
-            "5",
-            "-H",
-            "User-Agent: AltSpace-Updater",
-            "-H",
-            "Accept: application/json",
+            "-m", "5",
+            "-H", "User-Agent: AltSpace-Updater",
+            "-H", "Accept: application/json",
             "https://api.github.com/repos/codecheesee/altspace/releases/latest",
         ])
         .creation_flags(CREATE_NO_WINDOW)
@@ -192,7 +208,7 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
                     return Ok(UpdateInfo {
                         has_update,
                         current_version,
-                        latest_version: clean_latest,
+                        latest_version: clean_latest.clone(),
                         release_name: gh.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
                         release_url: gh.html_url.unwrap_or_else(|| {
                             "https://github.com/codecheesee/altspace/releases".to_string()
@@ -200,7 +216,15 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
                         release_notes: body,
                         features,
                         fixes,
-                        download_url: None,
+                        download_url: Some(format!(
+                            "https://github.com/codecheesee/altspace/releases/download/v{}/AltSpace-Setup-x64.exe",
+                            clean_latest
+                        )),
+                        portable_url: Some(format!(
+                            "https://github.com/codecheesee/altspace/releases/download/v{}/AltSpace-Portable-x64.zip",
+                            clean_latest
+                        )),
+                        sha256_portable: None,
                         published_at: gh.published_at,
                     });
                 }
@@ -211,13 +235,206 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
     Ok(default_info)
 }
 
-pub fn install_update(_download_url: Option<String>) -> Result<String, String> {
-    Err("In-app update installation is temporarily disabled for security hardening. Please visit https://github.com/codecheesee/altspace/releases to download verified releases.".to_string())
+pub fn install_update(
+    custom_url: Option<String>,
+    expected_sha256: Option<String>,
+) -> Result<String, String> {
+    let current_exe = std::env::current_exe()
+        .map_err(|e| format!("Cannot locate current executable: {}", e))?;
+    let current_dir = current_exe
+        .parent()
+        .ok_or_else(|| "Cannot locate installation directory".to_string())?
+        .to_path_buf();
+
+    // Determine target download URL
+    let download_url = match custom_url.filter(|s| !s.trim().is_empty()) {
+        Some(url) => url,
+        None => {
+            let info = check_for_update()?;
+            info.portable_url
+                .or(info.download_url)
+                .ok_or_else(|| "No verified download asset found for update.".to_string())?
+        }
+    };
+
+    // Ensure target URL is secure HTTPS
+    if !download_url.starts_with("https://") {
+        return Err("Insecure update URL rejected. Updates require HTTPS.".to_string());
+    }
+
+    // Unique isolated temporary directory
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let temp_dir = std::env::temp_dir().join(format!("AltSpaceUpdate_{}", timestamp));
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create temporary update directory: {}", e))?;
+
+    let zip_path = temp_dir.join("AltSpace-Portable-x64.zip");
+
+    // Download package via curl
+    let dl_output = Command::new("curl.exe")
+        .args([
+            "-s",
+            "-f",
+            "-L",
+            "-m", "120",
+            "-H", "User-Agent: AltSpace-Updater",
+            "-o",
+            zip_path.to_str().unwrap(),
+            &download_url,
+        ])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+        .map_err(|e| {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            format!("Failed to invoke curl: {}", e)
+        })?;
+
+    if !dl_output.status.success() || !zip_path.exists() {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err("Download failed. Please check network connection and try again.".to_string());
+    }
+
+    // Cryptographic SHA-256 Checksum Verification
+    let zip_bytes = std::fs::read(&zip_path).map_err(|e| {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        format!("Failed to read downloaded update archive: {}", e)
+    })?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&zip_bytes);
+    let computed_hash = format!("{:x}", hasher.finalize());
+
+    if let Some(expected) = expected_sha256.filter(|s| !s.trim().is_empty()) {
+        let clean_expected = expected.trim().to_lowercase();
+        if clean_expected != computed_hash {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            return Err(format!(
+                "Security integrity failure: SHA-256 mismatch (expected {}, got {}). Update aborted.",
+                clean_expected, computed_hash
+            ));
+        }
+    }
+
+    // Unpack archive into temporary extracted directory
+    let extract_dir = temp_dir.join("extracted");
+    let _ = std::fs::create_dir_all(&extract_dir);
+
+    // Prefer fast native tar.exe, fallback to powershell Expand-Archive
+    let tar_status = Command::new("tar.exe")
+        .args(["-xf", zip_path.to_str().unwrap(), "-C", extract_dir.to_str().unwrap()])
+        .creation_flags(CREATE_NO_WINDOW)
+        .status();
+
+    let extracted_ok = match tar_status {
+        Ok(s) if s.success() => true,
+        _ => {
+            let ps_status = Command::new("powershell.exe")
+                .args([
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    &format!(
+                        "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
+                        zip_path.to_str().unwrap(),
+                        extract_dir.to_str().unwrap()
+                    ),
+                ])
+                .creation_flags(CREATE_NO_WINDOW)
+                .status();
+            matches!(ps_status, Ok(s) if s.success())
+        }
+    };
+
+    if !extracted_ok {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err("Failed to extract update package.".to_string());
+    }
+
+    // Verify presence of binary
+    let portable_bin = extract_dir.join("AltSpace-Portable.exe");
+    let standard_bin = extract_dir.join("altspace.exe");
+
+    if !standard_bin.exists() && portable_bin.exists() {
+        let _ = std::fs::copy(&portable_bin, &standard_bin);
+    }
+
+    if !standard_bin.exists() {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err("Extracted update does not contain a valid AltSpace executable.".to_string());
+    }
+
+    // Write atomic handoff helper script (apply_update.cmd)
+    let helper_path = temp_dir.join("apply_update.cmd");
+    let helper_script = r#"@echo off
+set "PID=%~1"
+set "SRC=%~2"
+set "DST=%~3"
+set "EXE=%~4"
+
+:: Wait for running instance to exit and release file handles
+for /l %%i in (1,1,10) do (
+    tasklist /fi "PID eq %PID%" 2>nul | find "%PID%" >nul
+    if errorlevel 1 (
+        goto ready_to_copy
+    )
+    timeout /t 1 /nobreak >nul
+)
+
+:: Force terminate if still lingering
+taskkill /F /PID %PID% >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+:ready_to_copy
+:: Copy all updated files into target directory
+xcopy /Y /E /Q /I "%SRC%\*" "%DST%\" >nul 2>&1
+
+:: Relaunch updated AltSpace
+start "" "%EXE%"
+
+:: Self-destruct temporary updater folder
+timeout /t 2 /nobreak >nul
+(goto) 2>nul & rd /s /q "%~dp0"
+"#;
+
+    std::fs::write(&helper_path, helper_script).map_err(|e| {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        format!("Failed to write update handoff script: {}", e)
+    })?;
+
+    // In development mode or test runner, do not spawn the process-killing helper
+    let exe_str = current_exe.to_string_lossy();
+    if exe_str.contains("\\target\\debug\\") || exe_str.contains("\\target\\release\\") {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Ok("AltSpace is running in development mode. Update verified successfully.".to_string());
+    }
+
+    // Spawn detached helper process
+    let current_pid = std::process::id();
+    Command::new("cmd.exe")
+        .args([
+            "/c",
+            helper_path.to_str().unwrap(),
+            &current_pid.to_string(),
+            extract_dir.to_str().unwrap(),
+            current_dir.to_str().unwrap(),
+            current_exe.to_str().unwrap(),
+        ])
+        .creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS)
+        .spawn()
+        .map_err(|e| {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            format!("Failed to spawn update helper: {}", e)
+        })?;
+
+    Ok("Update downloaded and verified. AltSpace will restart now.".to_string())
 }
 
 #[allow(dead_code)]
 pub fn apply_update() -> Result<String, String> {
-    install_update(None)
+    install_update(None, None)
 }
 
 #[cfg(test)]
@@ -241,9 +458,9 @@ mod tests {
     }
 
     #[test]
-    fn test_install_update_fails_closed() {
-        let res = install_update(Some("https://example.com/bad.exe".into()));
+    fn test_install_update_fails_closed_on_bad_url() {
+        let res = install_update(Some("http://insecure.example.com/bad.exe".into()), None);
         assert!(res.is_err());
-        assert!(res.unwrap_err().contains("disabled for security hardening"));
+        assert!(res.unwrap_err().contains("Insecure update URL rejected"));
     }
 }

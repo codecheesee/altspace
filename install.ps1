@@ -109,17 +109,18 @@ try {
         } catch {}
     }
 
-    $runningProcesses = Get-Process -Name altspace, raycast-windows -ErrorAction SilentlyContinue
+    $processNames = @("altspace", "AltSpace-Portable", "raycast-windows")
+    $runningProcesses = Get-Process -Name $processNames -ErrorAction SilentlyContinue
     if ($runningProcesses) {
         $isUpdate = $true
-        Write-Host '[*] Active AltSpace instance detected. Stopping process for update...' -ForegroundColor Yellow
-        Stop-Process -Name altspace -Force -ErrorAction SilentlyContinue
-        Stop-Process -Name raycast-windows -Force -ErrorAction SilentlyContinue
+        Write-Host "[*] Active AltSpace instance detected. Stopping process for update..." -ForegroundColor Yellow
+        $runningProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+        & taskkill.exe /F /IM altspace.exe /IM AltSpace-Portable.exe /IM raycast-windows.exe 2>$null | Out-Null
 
         # Grace period for OS handle release
         $timeout = [DateTime]::UtcNow.AddSeconds(4)
         while ([DateTime]::UtcNow -lt $timeout) {
-            $remaining = Get-Process -Name altspace, raycast-windows -ErrorAction SilentlyContinue
+            $remaining = Get-Process -Name $processNames -ErrorAction SilentlyContinue
             if (-not $remaining) { break }
             Start-Sleep -Milliseconds 250
         }
@@ -162,43 +163,51 @@ try {
         Safe-CopyFile -Source $localBin -Destination $BinaryPath
         if (Test-Path $localDll) { Safe-CopyFile -Source $localDll -Destination $DllPath }
     } else {
-        Write-Host "[*] Resolving the latest verified GitHub release for $Repo..." -ForegroundColor Green
-        $headers = @{ 'User-Agent' = 'AltSpace-Installer'; 'Accept' = 'application/vnd.github+json' }
-        $release = $null
+        Write-Host "[*] Resolving latest verified AltSpace release..." -ForegroundColor Green
+        $headers = @{ "User-Agent" = "AltSpace-Installer"; "Accept" = "application/json" }
+        $resolvedTag = $Tag
+        $manifest = $null
 
-        if ($Tag) {
-            try {
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $headers -ErrorAction Stop
-            } catch {}
-        } else {
-            try {
-                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=5" -Headers $headers -ErrorAction Stop
-                if ($releases -and $releases.Count -gt 0) { $release = $releases[0] }
-            } catch {}
-            if (-not $release) {
+        # 1. Query static CDN manifest first (instant, 0 rate limit)
+        $manifestUrls = @(
+            "https://codecheesee.github.io/altspace/latest-release.json",
+            "https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json"
+        )
+        if (-not $resolvedTag) {
+            foreach ($mUrl in $manifestUrls) {
                 try {
-                    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers -ErrorAction Stop
+                    $manifest = Invoke-RestMethod -Uri $mUrl -Headers $headers -TimeoutSec 4 -ErrorAction Stop
+                    if ($manifest -and $manifest.version) {
+                        $resolvedTag = if ($manifest.version.StartsWith("v")) { $manifest.version } else { "v$($manifest.version)" }
+                        Write-Host "[*] Resolved version from CDN manifest: $resolvedTag" -ForegroundColor Cyan
+                        break
+                    }
                 } catch {}
             }
         }
 
-        if ($release) {
-            Write-Host "[*] Selected release: $($release.tag_name) ($($release.name))" -ForegroundColor Cyan
-            $zipAsset = Get-ReleaseAssetByNames $release @('AltSpace-Portable-x64.zip', 'altspace-portable-x64.zip')
-            $checksumAsset = Get-ReleaseAsset $release 'SHA256SUMS.txt'
-            Invoke-WebRequest -Uri $zipAsset.browser_download_url -Headers $headers -OutFile $portableZip -UseBasicParsing
-            Invoke-WebRequest -Uri $checksumAsset.browser_download_url -Headers $headers -OutFile $checksums -UseBasicParsing
-            Assert-Sha256 $portableZip $checksums $zipAsset.name
-        } else {
-            # Fallback to direct asset download if GitHub API rate-limited
-            Write-Host "[*] GitHub API rate-limited or unavailable. Using direct release CDN ($FallbackTag)..." -ForegroundColor Yellow
-            $zipUrl = "https://github.com/$Repo/releases/download/$FallbackTag/AltSpace-Portable-x64.zip"
-            $checksumUrl = "https://github.com/$Repo/releases/download/$FallbackTag/SHA256SUMS.txt"
-            Invoke-WebRequest -Uri $zipUrl -Headers $headers -OutFile $portableZip -UseBasicParsing
-            Invoke-WebRequest -Uri $checksumUrl -Headers $headers -OutFile $checksums -UseBasicParsing
-            Assert-Sha256 $portableZip $checksums 'AltSpace-Portable-x64.zip'
+        # 2. Query GitHub Releases API with short timeout if CDN unavailable
+        if (-not $resolvedTag) {
+            try {
+                $ghRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers -TimeoutSec 4 -ErrorAction Stop
+                if ($ghRelease -and $ghRelease.tag_name) {
+                    $resolvedTag = $ghRelease.tag_name
+                }
+            } catch {}
         }
 
+        # 3. Fallback to pinned verified tag if rate-limited or offline
+        if (-not $resolvedTag) {
+            $resolvedTag = $FallbackTag
+            Write-Host "[-] Using verified fallback release ($resolvedTag)..." -ForegroundColor Yellow
+        }
+
+        $zipUrl = "https://github.com/$Repo/releases/download/$resolvedTag/AltSpace-Portable-x64.zip"
+        $checksumUrl = "https://github.com/$Repo/releases/download/$resolvedTag/SHA256SUMS.txt"
+        Write-Host "[*] Downloading AltSpace package ($resolvedTag)..." -ForegroundColor Green
+        Invoke-WebRequest -Uri $zipUrl -Headers $headers -OutFile $portableZip -UseBasicParsing
+        Invoke-WebRequest -Uri $checksumUrl -Headers $headers -OutFile $checksums -UseBasicParsing
+        Assert-Sha256 $portableZip $checksums "AltSpace-Portable-x64.zip"
         Expand-Archive -Path $portableZip -DestinationPath $TempRoot -Force
         $selectedExe = $null
         if (Test-Path $portableExe) {
