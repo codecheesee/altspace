@@ -5,9 +5,9 @@ use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindow,
-    IsWindow, IsWindowVisible, SetWindowPos, ShowWindow, GW_HWNDNEXT, HWND_TOP,
-    SWP_NOACTIVATE, SWP_SHOWWINDOW, SW_MAXIMIZE, SW_RESTORE,
+    GetClassNameW, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetWindow, IsWindow,
+    IsWindowVisible, SetWindowPos, ShowWindow, GW_HWNDNEXT, HWND_TOP, SWP_NOACTIVATE,
+    SWP_SHOWWINDOW, SW_MAXIMIZE, SW_RESTORE,
 };
 
 /// Tracks the window that was focused before AltSpace was summoned
@@ -277,7 +277,10 @@ mod tests {
     #[test]
     fn test_snap_position_parsing() {
         assert_eq!(SnapPosition::from_str("left"), Some(SnapPosition::LeftHalf));
-        assert_eq!(SnapPosition::from_str("RIGHT"), Some(SnapPosition::RightHalf));
+        assert_eq!(
+            SnapPosition::from_str("RIGHT"),
+            Some(SnapPosition::RightHalf)
+        );
         assert_eq!(SnapPosition::from_str("center"), Some(SnapPosition::Center));
         assert_eq!(SnapPosition::from_str("max"), Some(SnapPosition::Maximize));
         assert_eq!(SnapPosition::from_str("invalid_pos"), None);

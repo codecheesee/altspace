@@ -29,14 +29,20 @@ impl AppIndex {
 
         let search_dirs = [
             dirs::data_dir().map(|p| p.join("Microsoft\\Windows\\Start Menu\\Programs")),
-            Some(PathBuf::from(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs")),
+            Some(PathBuf::from(
+                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs",
+            )),
         ];
 
         for dir in search_dirs.into_iter().flatten() {
             if !dir.exists() {
                 continue;
             }
-            for entry in WalkDir::new(dir).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+            for entry in WalkDir::new(dir)
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 let path = entry.path();
                 if let Some(ext) = path.extension() {
                     let ext_str = ext.to_string_lossy().to_lowercase();
@@ -44,7 +50,10 @@ impl AppIndex {
                         if let Some(stem) = path.file_stem() {
                             let name = stem.to_string_lossy().to_string();
                             let lower = name.to_lowercase();
-                            if !lower.contains("uninstall") && !lower.contains("help") && !lower.contains("readme") {
+                            if !lower.contains("uninstall")
+                                && !lower.contains("help")
+                                && !lower.contains("readme")
+                            {
                                 found.push(AppInfo {
                                     name,
                                     path: path.to_path_buf(),
@@ -64,16 +73,33 @@ impl AppIndex {
     pub fn search(&self, query: &str) -> Vec<(AppInfo, i64)> {
         if query.trim().is_empty() {
             let popular = [
-                "visual studio code", "code", "cursor", "chrome", "firefox", "notion",
-                "obsidian", "terminal", "powershell", "everything", "spotify", "slack",
-                "discord", "file explorer", "explorer", "canva", "settings"
+                "visual studio code",
+                "code",
+                "cursor",
+                "chrome",
+                "firefox",
+                "notion",
+                "obsidian",
+                "terminal",
+                "powershell",
+                "everything",
+                "spotify",
+                "slack",
+                "discord",
+                "file explorer",
+                "explorer",
+                "canva",
+                "settings",
             ];
             let mut top = Vec::new();
             let mut others = Vec::new();
 
             for app in &self.apps {
                 let name_lower = app.name.to_lowercase();
-                if popular.iter().any(|&p| name_lower == p || name_lower.contains(p)) {
+                if popular
+                    .iter()
+                    .any(|&p| name_lower == p || name_lower.contains(p))
+                {
                     top.push((app.clone(), 100));
                 } else {
                     others.push((app.clone(), 0));
@@ -99,7 +125,9 @@ impl AppIndex {
                 continue;
             }
             // Fast-path 3: Any word inside app name starts with query (e.g. "code" matches "Visual Studio Code")
-            let word_match = name_lower.split_whitespace().any(|w| w.starts_with(&q_lower));
+            let word_match = name_lower
+                .split_whitespace()
+                .any(|w| w.starts_with(&q_lower));
             if word_match {
                 matches.push((app.clone(), 3000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
@@ -135,7 +163,9 @@ impl AppIndex {
 }
 
 impl Default for AppIndex {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 mod dirs {
@@ -153,7 +183,10 @@ mod tests {
     fn test_app_scan() {
         let index = AppIndex::new();
         println!("Indexed {} applications", index.apps.len());
-        assert!(!index.apps.is_empty(), "Expected to find at least one installed app");
+        assert!(
+            !index.apps.is_empty(),
+            "Expected to find at least one installed app"
+        );
         let matches = index.search("code");
         println!("App search 'code' count: {}", matches.len());
         for (m, score) in matches {

@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "2.3.0-dev"
+version = "2.3.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["AltSpace Core Team <maintainers@altspace.dev>"]
@@ -23,3 +23,8 @@ sha2 = "0.10"
 base64 = "0.22"
 ed25519-dalek = { version = "2.1", default-features = false }
 rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Keep build speed high on SSD while preventing 30+ GB debug symbol bloat from 3rd-party crates
+[profile.dev.package."*"]
+opt-level = 0
+debug = 0

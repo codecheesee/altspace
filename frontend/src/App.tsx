@@ -44,6 +44,7 @@ import { refreshCurrencyRates } from "./lib/calc";
 import {
   getLicenseStatus,
   getProTrialState,
+  refreshEntitlement,
   isUnlimitedTier,
   type TrialState,
   type LicenseStatus,
@@ -206,7 +207,24 @@ export default function App() {
   // Input Modal State (replaces prompt/alert)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [trialState] = useState<TrialState>(() => getProTrialState());
-  const [licenseStatus] = useState<LicenseStatus>(() => getLicenseStatus());
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(() => getLicenseStatus());
+
+  // Proactively verify entitlements and maintainer sovereign access on startup
+  useEffect(() => {
+    let isMounted = true;
+    refreshEntitlement()
+      .then((status) => {
+        if (isMounted && status) {
+          setLicenseStatus(status);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to verify sovereign entitlement on mount:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [isSafeMode, setIsSafeMode] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
@@ -553,6 +571,32 @@ export default function App() {
         return;
       } catch (err: any) {
         setPortStatusMsg(`Game launch error: ${err}`);
+      }
+    }
+  }, [handleDismissWindow, notify, setPortStatusMsg]);
+
+  const handleLaunchGameBoosted = useCallback(async (launchUri: string) => {
+    if (tauriInvoke) {
+      try {
+        await tauriInvoke("launch_game_advanced", { launchUri, boost: true, record: false });
+        notify("🚀 Launching Game with High CPU Priority...");
+        handleDismissWindow();
+        return;
+      } catch (err: any) {
+        setPortStatusMsg(`Game boost error: ${err}`);
+      }
+    }
+  }, [handleDismissWindow, notify, setPortStatusMsg]);
+
+  const handleLaunchGameRecord = useCallback(async (launchUri: string) => {
+    if (tauriInvoke) {
+      try {
+        await tauriInvoke("launch_game_advanced", { launchUri, boost: false, record: true });
+        notify("🎥 Launching Game with Game Bar Capture Overlay...");
+        handleDismissWindow();
+        return;
+      } catch (err: any) {
+        setPortStatusMsg(`Game record error: ${err}`);
       }
     }
   }, [handleDismissWindow, notify, setPortStatusMsg]);
@@ -975,6 +1019,12 @@ export default function App() {
               handleOpenUrl("https://github.com/codecheesee/altspace/blob/main/docs/OLLAMA_SETUP_GUIDE.md");
               notify("Opening Ollama Setup Guide in browser...");
             }
+          } else if (selectedSpecial.kind === "game") {
+            if (e.ctrlKey) {
+              handleLaunchGameBoosted(selectedSpecial.data.launch_uri);
+            } else {
+              handleLaunchGame(selectedSpecial.data.launch_uri);
+            }
           }
         } else if (selectedItem) {
           if (e.ctrlKey) handleOpenFolder(selectedItem.path);
@@ -1200,6 +1250,8 @@ export default function App() {
             onOpenUrl={handleOpenUrl}
             onOpenFolder={handleOpenFolder}
             onLaunchGame={handleLaunchGame}
+            onLaunchGameBoosted={handleLaunchGameBoosted}
+            onLaunchGameRecord={handleLaunchGameRecord}
             onSelectTheme={handleSelectTheme}
             onSnapWindow={handleSnapWindow}
             onOpenQuickLook={() => setQuickLookOpen(true)}
@@ -1274,6 +1326,8 @@ export default function App() {
         actions={getContextualActions()}
         actionSelectedIndex={actionSelectedIndex}
         setActionSelectedIndex={setActionSelectedIndex}
+        isProOrSupporter={isUnlimitedTier(licenseStatus)}
+        licenseTier={licenseStatus.tier}
       />
 
       {/* Self-Healing Action Ledger Floating Toast */}

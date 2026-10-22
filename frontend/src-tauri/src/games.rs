@@ -5,9 +5,7 @@ use std::path::{Path, PathBuf};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::Shell::ShellExecuteW;
-use windows::Win32::UI::WindowsAndMessaging::{
-    GetForegroundWindow, GetWindowTextW, SW_SHOWNORMAL,
-};
+use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW, SW_SHOWNORMAL};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameItem {
@@ -126,11 +124,14 @@ pub fn sanitize_game_launch_uri(uri: &str) -> Result<String, String> {
     let is_steam = trimmed.starts_with("steam://rungameid/") || trimmed.starts_with("steam://run/");
     let is_epic = trimmed.starts_with("com.epicgames.launcher://apps/");
     let is_xbox = trimmed.starts_with("xbox://") || trimmed.starts_with("ms-xbl-");
-    let is_file_path = (trimmed.len() >= 3 && trimmed.chars().nth(1) == Some(':'))
-        || trimmed.starts_with(r"\\");
+    let is_file_path =
+        (trimmed.len() >= 3 && trimmed.chars().nth(1) == Some(':')) || trimmed.starts_with(r"\\");
 
     if !is_steam && !is_epic && !is_xbox && !is_file_path {
-        return Err(format!("Unsupported or insecure game launch protocol: {}", trimmed));
+        return Err(format!(
+            "Unsupported or insecure game launch protocol: {}",
+            trimmed
+        ));
     }
 
     // Prevent shell metacharacter injections
@@ -208,8 +209,7 @@ fn scan_steam_games(games: &mut Vec<GameItem>, seen: &mut HashSet<String>) {
                                         lib_dir.join("common").join(&installdir);
                                     let size_gb = if size_bytes > 0 {
                                         Some(
-                                            ((size_bytes as f64 / 1_073_741_824.0) * 10.0)
-                                                .round()
+                                            ((size_bytes as f64 / 1_073_741_824.0) * 10.0).round()
                                                 / 10.0,
                                         )
                                     } else {
@@ -303,6 +303,8 @@ fn scan_common_game_directories(games: &mut Vec<GameItem>, seen: &mut HashSet<St
                     // Look for primary game executable
                     if let Ok(files) = fs::read_dir(&path) {
                         let mut main_exe: Option<PathBuf> = None;
+                        let mut direct_game_exe: Option<PathBuf> = None;
+
                         for file_entry in files.filter_map(|e| e.ok()) {
                             let f_path = file_entry.path();
                             if f_path.extension().and_then(|e| e.to_str()) == Some("exe") {
@@ -316,13 +318,29 @@ fn scan_common_game_directories(games: &mut Vec<GameItem>, seen: &mut HashSet<St
                                     && !exe_name.contains("crash")
                                     && !exe_name.contains("helper")
                                     && !exe_name.contains("setup")
-                                    && (exe_name.starts_with("play") || main_exe.is_none()) {
+                                {
+                                    if exe_name == "gta5.exe"
+                                        || exe_name == "cyberpunk2077.exe"
+                                        || exe_name == "witcher3.exe"
+                                        || exe_name == "rdr2.exe"
+                                        || exe_name == "cs2.exe"
+                                        || exe_name == "eldenring.exe"
+                                    {
+                                        direct_game_exe = Some(f_path.clone());
+                                    }
+
+                                    if direct_game_exe.is_some() {
+                                        main_exe = direct_game_exe.clone();
+                                    } else if exe_name.starts_with("play") || main_exe.is_none() {
                                         main_exe = Some(f_path);
                                     }
+                                }
                             }
                         }
 
-                        if let Some(exe) = main_exe {
+                        let resolved_exe = direct_game_exe.or(main_exe);
+
+                        if let Some(exe) = resolved_exe {
                             if seen.insert(lower.clone()) {
                                 let platform = if root_str.to_lowercase().contains("xbox") {
                                     "Xbox"
@@ -332,15 +350,52 @@ fn scan_common_game_directories(games: &mut Vec<GameItem>, seen: &mut HashSet<St
                                     "Standalone"
                                 };
 
+                                let (banner_url, detected_title, size_gb) = if lower
+                                    .contains("grand theft auto v")
+                                    || lower == "gta v"
+                                    || lower == "gta 5"
+                                {
+                                    (
+                                        Some("https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg".to_string()),
+                                        "Grand Theft Auto V".to_string(),
+                                        Some(109.8),
+                                    )
+                                } else if lower.contains("cyberpunk") {
+                                    (
+                                        Some("https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg".to_string()),
+                                        "Cyberpunk 2077".to_string(),
+                                        Some(70.0),
+                                    )
+                                } else if lower.contains("witcher 3") {
+                                    (
+                                        Some("https://cdn.cloudflare.steamstatic.com/steam/apps/292030/header.jpg".to_string()),
+                                        "The Witcher 3: Wild Hunt".to_string(),
+                                        Some(50.0),
+                                    )
+                                } else if lower.contains("red dead redemption 2")
+                                    || lower.contains("rdr2")
+                                {
+                                    (
+                                        Some("https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/header.jpg".to_string()),
+                                        "Red Dead Redemption 2".to_string(),
+                                        Some(119.0),
+                                    )
+                                } else {
+                                    (None, folder_name.to_string(), None)
+                                };
+
                                 games.push(GameItem {
-                                    id: format!("local-{}", folder_name.replace(' ', "-").to_lowercase()),
-                                    title: folder_name.to_string(),
+                                    id: format!(
+                                        "local-{}",
+                                        folder_name.replace(' ', "-").to_lowercase()
+                                    ),
+                                    title: detected_title,
                                     platform: platform.to_string(),
                                     install_path: path.to_string_lossy().to_string(),
                                     launch_uri: exe.to_string_lossy().to_string(),
                                     executable_path: Some(exe.to_string_lossy().to_string()),
-                                    banner_url: None,
-                                    size_gb: None,
+                                    banner_url,
+                                    size_gb,
                                 });
                             }
                         }
@@ -367,11 +422,35 @@ fn scan_start_menu_games(games: &mut Vec<GameItem>, seen: &mut HashSet<String>) 
     }
 
     let known_game_keywords = [
-        "grand theft auto", "gta", "rockstar", "valorant", "counter-strike", "cs2",
-        "minecraft", "cyberpunk", "witcher", "elden ring", "helldivers", "balatro",
-        "roblox", "apex legends", "league of legends", "fortnite", "call of duty",
-        "modern warfare", "battlefield", "halo", "overwatch", "dota", "ea sports",
-        "fifa", "forza", "palworld", "baldurs gate", "steam", "riot"
+        "grand theft auto",
+        "gta",
+        "rockstar",
+        "valorant",
+        "counter-strike",
+        "cs2",
+        "minecraft",
+        "cyberpunk",
+        "witcher",
+        "elden ring",
+        "helldivers",
+        "balatro",
+        "roblox",
+        "apex legends",
+        "league of legends",
+        "fortnite",
+        "call of duty",
+        "modern warfare",
+        "battlefield",
+        "halo",
+        "overwatch",
+        "dota",
+        "ea sports",
+        "fifa",
+        "forza",
+        "palworld",
+        "baldurs gate",
+        "steam",
+        "riot",
     ];
 
     for root in search_roots {
@@ -380,33 +459,33 @@ fn scan_start_menu_games(games: &mut Vec<GameItem>, seen: &mut HashSet<String>) 
             .into_iter()
             .filter_map(|e| e.ok())
         {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("lnk") {
-            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-            let lower = stem.to_lowercase();
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("lnk") {
+                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                let lower = stem.to_lowercase();
 
-            if lower.contains("uninstall") || lower.contains("help") {
-                continue;
-            }
+                if lower.contains("uninstall") || lower.contains("help") {
+                    continue;
+                }
 
-            for keyword in &known_game_keywords {
-                if lower.contains(keyword) {
-                    if seen.insert(lower.clone()) {
-                        games.push(GameItem {
-                            id: format!("lnk-{}", stem.replace(' ', "-").to_lowercase()),
-                            title: stem.to_string(),
-                            platform: "PC Game".to_string(),
-                            install_path: path.to_string_lossy().to_string(),
-                            executable_path: None,
-                            launch_uri: path.to_string_lossy().to_string(),
-                            banner_url: None,
-                            size_gb: None,
-                        });
+                for keyword in &known_game_keywords {
+                    if lower.contains(keyword) {
+                        if seen.insert(lower.clone()) {
+                            games.push(GameItem {
+                                id: format!("lnk-{}", stem.replace(' ', "-").to_lowercase()),
+                                title: stem.to_string(),
+                                platform: "PC Game".to_string(),
+                                install_path: path.to_string_lossy().to_string(),
+                                executable_path: None,
+                                launch_uri: path.to_string_lossy().to_string(),
+                                banner_url: None,
+                                size_gb: None,
+                            });
+                        }
+                        break;
                     }
-                    break;
                 }
             }
-        }
         }
     }
 }
@@ -493,6 +572,63 @@ pub fn launch_game(launch_uri: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Launch game with optional Game Boost and Xbox Game Bar recording overlay
+pub fn launch_game_advanced(launch_uri: &str, boost: bool, record: bool) -> Result<(), String> {
+    launch_game(launch_uri)?;
+
+    if record {
+        // Trigger Xbox Game Bar / Windows Game DVR overlay
+        let mut wide_gamebar: Vec<u16> = "ms-gamebar:".encode_utf16().collect();
+        wide_gamebar.push(0);
+        let mut wide_open: Vec<u16> = "open".encode_utf16().collect();
+        wide_open.push(0);
+        unsafe {
+            let _ = ShellExecuteW(
+                HWND(std::ptr::null_mut()),
+                PCWSTR(wide_open.as_ptr()),
+                PCWSTR(wide_gamebar.as_ptr()),
+                PCWSTR(std::ptr::null()),
+                PCWSTR(std::ptr::null()),
+                SW_SHOWNORMAL,
+            );
+        }
+    }
+
+    if boost {
+        // Elevate foreground game priority to HIGH_PRIORITY_CLASS
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(2500));
+            boost_foreground_game_process();
+        });
+    }
+
+    Ok(())
+}
+
+fn boost_foreground_game_process() {
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            return;
+        }
+
+        let mut pid: u32 = 0;
+        windows::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == 0 {
+            return;
+        }
+
+        use windows::Win32::System::Threading::{
+            OpenProcess, SetPriorityClass, HIGH_PRIORITY_CLASS, PROCESS_SET_INFORMATION,
+        };
+
+        if let Ok(process_handle) = OpenProcess(PROCESS_SET_INFORMATION, false, pid) {
+            let _ = SetPriorityClass(process_handle, HIGH_PRIORITY_CLASS);
+            let _ = windows::Win32::Foundation::CloseHandle(process_handle);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -546,7 +682,9 @@ mod tests {
         assert_eq!(game.title, "Grand Theft Auto V");
         assert_eq!(game.platform, "Epic Games");
         assert_eq!(game.size_gb, Some(100.0));
-        assert!(game.launch_uri.starts_with("com.epicgames.launcher://apps/GTAV"));
+        assert!(game
+            .launch_uri
+            .starts_with("com.epicgames.launcher://apps/GTAV"));
     }
 
     #[test]
@@ -554,7 +692,10 @@ mod tests {
         // Valid Steam
         assert!(sanitize_game_launch_uri("steam://rungameid/730").is_ok());
         // Valid Epic
-        assert!(sanitize_game_launch_uri("com.epicgames.launcher://apps/GTAV?action=launch&silent=true").is_ok());
+        assert!(sanitize_game_launch_uri(
+            "com.epicgames.launcher://apps/GTAV?action=launch&silent=true"
+        )
+        .is_ok());
         // Valid absolute path
         assert!(sanitize_game_launch_uri(r"D:\Games\Grand Theft Auto V\PlayGTAV.exe").is_ok());
 

@@ -60,6 +60,25 @@ export interface ActionPlan {
   is_byok?: boolean;
 }
 
+export interface GameCardData {
+  id: string;
+  title: string;
+  subtitle: string;
+  platform: string;
+  install_path: string;
+  executable_path?: string;
+  launch_uri: string;
+  banner_url?: string;
+  cover_url?: string;
+  badge_text?: string;
+  accent_color?: string;
+  genre?: string;
+  developer?: string;
+  release_year?: number;
+  size_gb?: number;
+  is_installed: boolean;
+}
+
 export type SpecialCard =
   | { kind: "calc"; data: CalcResult }
   | { kind: "quickjump"; data: QuickJumpResult }
@@ -67,7 +86,8 @@ export type SpecialCard =
   | { kind: "terminal"; data: TerminalCardData }
   | { kind: "ai"; data: AICardData }
   | { kind: "transform"; data: TransformResult }
-  | { kind: "plan"; data: ActionPlan };
+  | { kind: "plan"; data: ActionPlan }
+  | { kind: "game"; data: GameCardData };
 
 export interface DriveIndexStats {
   search_all_drives: boolean;

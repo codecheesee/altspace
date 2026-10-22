@@ -1,8 +1,8 @@
+use crate::crypto_vault;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::os::windows::process::CommandExt;
 use std::process::{Command, Stdio};
-use crate::crypto_vault;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -85,13 +85,19 @@ pub fn chat_completion(request: ByokChatRequest) -> Result<ByokChatResponse, Str
     }
 }
 
-fn execute_anthropic_request(api_key: &str, req: &ByokChatRequest) -> Result<ByokChatResponse, String> {
+fn execute_anthropic_request(
+    api_key: &str,
+    req: &ByokChatRequest,
+) -> Result<ByokChatResponse, String> {
     let model = req.model.as_deref().unwrap_or("claude-3-7-sonnet-20250219");
     let max_tokens = req.max_tokens.unwrap_or(1024);
 
     let mut body_map = serde_json::Map::new();
     body_map.insert("model".into(), serde_json::Value::String(model.into()));
-    body_map.insert("max_tokens".into(), serde_json::Value::Number(max_tokens.into()));
+    body_map.insert(
+        "max_tokens".into(),
+        serde_json::Value::Number(max_tokens.into()),
+    );
     if let Some(ref sys) = req.system_prompt {
         body_map.insert("system".into(), serde_json::Value::String(sys.clone()));
     }
@@ -112,22 +118,36 @@ fn execute_anthropic_request(api_key: &str, req: &ByokChatRequest) -> Result<Byo
     );
 
     let stdout = run_curl_with_config(&curl_config)?;
-    let val: serde_json::Value = serde_json::from_str(&stdout)
-        .map_err(|e| format!("Failed to parse Anthropic response: {} (raw: {})", e, stdout))?;
+    let val: serde_json::Value = serde_json::from_str(&stdout).map_err(|e| {
+        format!(
+            "Failed to parse Anthropic response: {} (raw: {})",
+            e, stdout
+        )
+    })?;
 
     if let Some(err_obj) = val.get("error") {
-        let msg = err_obj.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown Anthropic API error");
+        let msg = err_obj
+            .get("message")
+            .and_then(|m| m.as_str())
+            .unwrap_or("Unknown Anthropic API error");
         return Err(format!("Anthropic API error: {}", msg));
     }
 
-    let content_text = val.get("content")
+    let content_text = val
+        .get("content")
         .and_then(|c| c.as_array())
-        .and_then(|arr| arr.iter().find(|item| item.get("type").and_then(|t| t.as_str()) == Some("text")))
+        .and_then(|arr| {
+            arr.iter()
+                .find(|item| item.get("type").and_then(|t| t.as_str()) == Some("text"))
+        })
         .and_then(|item| item.get("text"))
         .and_then(|t| t.as_str())
         .unwrap_or("");
 
-    let stop_reason = val.get("stop_reason").and_then(|s| s.as_str()).map(|s| s.to_string());
+    let stop_reason = val
+        .get("stop_reason")
+        .and_then(|s| s.as_str())
+        .map(|s| s.to_string());
 
     Ok(ByokChatResponse {
         provider: "anthropic".into(),
@@ -145,8 +165,14 @@ fn execute_openai_compatible_request(
     let (url, default_model) = match provider {
         "openai" => ("https://api.openai.com/v1/chat/completions", "gpt-4o"),
         "deepseek" => ("https://api.deepseek.com/chat/completions", "deepseek-chat"),
-        "groq" => ("https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile"),
-        "openrouter" => ("https://openrouter.ai/api/v1/chat/completions", "openai/gpt-4o"),
+        "groq" => (
+            "https://api.groq.com/openai/v1/chat/completions",
+            "llama-3.3-70b-versatile",
+        ),
+        "openrouter" => (
+            "https://openrouter.ai/api/v1/chat/completions",
+            "openai/gpt-4o",
+        ),
         _ => unreachable!(),
     };
 
@@ -167,7 +193,10 @@ fn execute_openai_compatible_request(
         }
     }
     if let Some(max_tok) = req.max_tokens {
-        body_map.insert("max_tokens".into(), serde_json::Value::Number(max_tok.into()));
+        body_map.insert(
+            "max_tokens".into(),
+            serde_json::Value::Number(max_tok.into()),
+        );
     }
 
     let body_json = serde_json::to_string(&body_map)
@@ -185,11 +214,15 @@ fn execute_openai_compatible_request(
         .map_err(|e| format!("Failed to parse provider response: {} (raw: {})", e, stdout))?;
 
     if let Some(err_obj) = val.get("error") {
-        let msg = err_obj.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown provider API error");
+        let msg = err_obj
+            .get("message")
+            .and_then(|m| m.as_str())
+            .unwrap_or("Unknown provider API error");
         return Err(format!("{} API error: {}", provider, msg));
     }
 
-    let content_text = val.get("choices")
+    let content_text = val
+        .get("choices")
         .and_then(|c| c.as_array())
         .and_then(|arr| arr.first())
         .and_then(|choice| choice.get("message"))
@@ -197,7 +230,8 @@ fn execute_openai_compatible_request(
         .and_then(|cnt| cnt.as_str())
         .unwrap_or("");
 
-    let finish_reason = val.get("choices")
+    let finish_reason = val
+        .get("choices")
         .and_then(|c| c.as_array())
         .and_then(|arr| arr.first())
         .and_then(|choice| choice.get("finish_reason"))
@@ -238,7 +272,11 @@ fn run_curl_with_config(config: &str) -> Result<String, String> {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Curl process failed (exit code {:?}): {}", output.status.code(), stderr));
+        return Err(format!(
+            "Curl process failed (exit code {:?}): {}",
+            output.status.code(),
+            stderr
+        ));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
@@ -281,11 +319,19 @@ mod tests {
         let provider = "openai";
         crypto_vault::store_byok_key(provider, "sk-proj-test1234567890abcdef1234567890").unwrap();
 
-        let status = get_byok_status(provider).unwrap().expect("Status should be Some");
+        let status = get_byok_status(provider)
+            .unwrap()
+            .expect("Status should be Some");
         assert_eq!(status.provider, "openai");
         assert!(status.is_configured);
-        assert!(!status.fingerprint.contains("test1234567890abcdef"), "Fingerprint must not leak full key");
-        assert!(status.fingerprint.contains("***"), "Fingerprint must be masked");
+        assert!(
+            !status.fingerprint.contains("test1234567890abcdef"),
+            "Fingerprint must not leak full key"
+        );
+        assert!(
+            status.fingerprint.contains("***"),
+            "Fingerprint must be masked"
+        );
 
         crypto_vault::delete_byok_key(provider).unwrap();
         assert!(get_byok_status(provider).unwrap().is_none());

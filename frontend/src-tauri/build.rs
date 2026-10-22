@@ -7,7 +7,10 @@ fn main() {
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let sdk_lib_dir = manifest_dir.join("sdk").join("lib");
-    let sdk_dll = manifest_dir.join("sdk").join("dll").join("Everything64.dll");
+    let sdk_dll = manifest_dir
+        .join("sdk")
+        .join("dll")
+        .join("Everything64.dll");
 
     println!("cargo:rustc-link-search=native={}", sdk_lib_dir.display());
     println!("cargo:rustc-link-lib=Everything64");

@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "altspace-broker"
-version = "2.3.0-dev"
+version = "2.3.0"
 dependencies = [
  "altspace-win32",
  "log",
@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "altspace-context"
-version = "2.3.0-dev"
+version = "2.3.0"
 dependencies = [
  "altspace-win32",
  "log",
@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "altspace-core"
-version = "2.3.0-dev"
+version = "2.3.0"
 dependencies = [
  "altspace-broker",
  "altspace-context",
@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "altspace-sentinel"
-version = "2.3.0-dev"
+version = "2.3.0"
 dependencies = [
  "altspace-win32",
  "log",
@@ -94,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "altspace-win32"
-version = "2.3.0-dev"
+version = "2.3.0"
 dependencies = [
  "log",
  "serde",
@@ -2626,7 +2626,7 @@ checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
 name = "raycast-windows"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "altspace-broker",
  "altspace-context",

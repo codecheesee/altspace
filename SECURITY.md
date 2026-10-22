@@ -10,7 +10,8 @@ Only the latest canonical release series receives active security updates and vu
 
 | Version | Supported | Security Posture |
 | :--- | :---: | :--- |
-| **2.2.x** | ✅ Yes | Canonical security-hardened release. Authoritative Rust broker, parameter-bound tokens, DPAPI vault, script execution blocked. |
+| **2.3.x** | ✅ Yes | Canonical latest release. Multi-Store Game Hub, Smart Noise Filtering Engine, Minimalist Omnibar, single-instance presentation state machine, authoritative Rust broker, parameter-bound tokens, DPAPI vault. |
+| **2.2.x** | ⚡ Limited | Security maintenance mode. Upgrade to 2.3.x recommended. |
 | **2.1.x** | ❌ No | Deprecated. Contains uncontained shell execution routes. Upgrade immediately. |
 | **2.0.x** | ❌ No | Deprecated. Contains legacy IPC token exposure. Upgrade immediately. |
 | **< 2.0.0** | ❌ No | End-of-life legacy preview builds. |
@@ -39,7 +40,7 @@ To help us triage and reproduce the issue rapidly, please include:
 
 ---
 
-## Core Security Invariants (v2.2.0+)
+## Core Security Invariants (v2.3.0+)
 
 AltSpace enforces the following architectural security controls:
 

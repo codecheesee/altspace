@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: codecheesee.altspace
+PackageVersion: 2.3.0
+InstallerType: nullsoft
+InstallModes:
+  - interactive
+  - silent
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    Scope: user
+    UpgradeBehavior: install
+ManifestType: installer
+ManifestVersion: 1.6.0

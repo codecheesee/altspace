@@ -1,8 +1,8 @@
 use chrono::Local;
-use std::sync::LazyLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 use std::time::Duration;
 use windows::Win32::Foundation::{GlobalFree, HANDLE, HGLOBAL, HWND};
@@ -36,15 +36,15 @@ pub struct ClipboardManager {
 impl ClipboardManager {
     pub fn new() -> Self {
         let secret_patterns = vec![
-            r#"ghp_[a-zA-Z0-9]{30,}"#,                     // GitHub PAT
-            r#"gho_[a-zA-Z0-9]{30,}"#,                     // GitHub OAuth
-            r#"github_pat_[a-zA-Z0-9_]{40,}"#,             // GitHub fine-grained PAT
-            r#"sk-[a-zA-Z0-9_\-]{20,}"#,                   // OpenAI & generic AI keys
-            r#"sk-ant-[a-zA-Z0-9_\-]{20,}"#,               // Anthropic key
-            r#"(AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}"#,         // AWS Access Key
+            r#"ghp_[a-zA-Z0-9]{30,}"#,                                   // GitHub PAT
+            r#"gho_[a-zA-Z0-9]{30,}"#,                                   // GitHub OAuth
+            r#"github_pat_[a-zA-Z0-9_]{40,}"#,                           // GitHub fine-grained PAT
+            r#"sk-[a-zA-Z0-9_\-]{20,}"#,                                 // OpenAI & generic AI keys
+            r#"sk-ant-[a-zA-Z0-9_\-]{20,}"#,                             // Anthropic key
+            r#"(AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}"#,                      // AWS Access Key
             r#"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"#, // Private Keys
             r#"ey[A-Za-z0-9_\-]{10,}\.ey[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"#, // JWT token
-            r#"xox[baprs]-[0-9a-zA-Z]{10,}"#,              // Slack tokens
+            r#"xox[baprs]-[0-9a-zA-Z]{10,}"#,                            // Slack tokens
             r#"(?i)(?:api[_-]?key|secret|token|password|bearer)\s*[:=]\s*['"]?[a-zA-Z0-9_\-\.]{16,}['"]?"#, // Key-value tokens
         ];
 
@@ -53,7 +53,9 @@ impl ClipboardManager {
             .filter_map(|p| Regex::new(p).ok())
             .collect();
 
-        let color_regex = Regex::new(r"^(?:#[0-9a-fA-F]{3,8}|rgba?\([0-9\s,\.]+\)|hsla?\([0-9\s,\.%]+\))$").unwrap();
+        let color_regex =
+            Regex::new(r"^(?:#[0-9a-fA-F]{3,8}|rgba?\([0-9\s,\.]+\)|hsla?\([0-9\s,\.%]+\))$")
+                .unwrap();
         let url_regex = Regex::new(r"^https?://[^\s]+$").unwrap();
 
         Self {
@@ -87,9 +89,10 @@ impl ClipboardManager {
 
         if ((trimmed.starts_with('{') && trimmed.ends_with('}'))
             || (trimmed.starts_with('[') && trimmed.ends_with(']')))
-            && serde_json::from_str::<serde_json::Value>(trimmed).is_ok() {
-                return "json".into();
-            }
+            && serde_json::from_str::<serde_json::Value>(trimmed).is_ok()
+        {
+            return "json".into();
+        }
 
         if trimmed.contains("fn ")
             || trimmed.contains("function ")
@@ -310,11 +313,14 @@ mod tests {
 
         // Try adding secret - should be rejected!
         assert!(!mgr.add_item("ghp_999999999999999999999999999999999999"));
-        assert_eq!(mgr.get_history().len(), 1, "Secret should not have been added!");
+        assert_eq!(
+            mgr.get_history().len(),
+            1,
+            "Secret should not have been added!"
+        );
 
         // Add color
         assert!(mgr.add_item("#10B981"));
         assert_eq!(mgr.get_history().len(), 2);
     }
 }
-

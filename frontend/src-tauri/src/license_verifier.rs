@@ -1,16 +1,14 @@
+use base64::prelude::*;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
-use base64::prelude::*;
 
 use crate::crypto_vault;
 
 /// Master Public Key for AltSpace Ed25519 Cryptographic Licensing
 /// Generated via scripts/keygen_and_license.cjs
 pub const MASTER_PUBLIC_KEY: [u8; 32] = [
-    0x04, 0x13, 0x91, 0x1f, 0x35, 0x48, 0xcc, 0x6e,
-    0xf3, 0x9f, 0x93, 0x44, 0xb8, 0xb6, 0x92, 0xeb,
-    0x6d, 0xcb, 0x10, 0x10, 0x81, 0x9d, 0xeb, 0x36,
-    0x17, 0x94, 0x76, 0x84, 0xcf, 0xcd, 0x0d, 0x35,
+    0x04, 0x13, 0x91, 0x1f, 0x35, 0x48, 0xcc, 0x6e, 0xf3, 0x9f, 0x93, 0x44, 0xb8, 0xb6, 0x92, 0xeb,
+    0x6d, 0xcb, 0x10, 0x10, 0x81, 0x9d, 0xeb, 0x36, 0x17, 0x94, 0x76, 0x84, 0xcf, 0xcd, 0x0d, 0x35,
 ];
 
 fn default_any() -> String {
@@ -59,7 +57,9 @@ pub fn verify_license_str(
 ) -> Result<LicensePayload, String> {
     let trimmed = license_str.trim();
     if !trimmed.starts_with("ALTS1-") {
-        return Err("Invalid license key prefix. Expected format: ALTS1-<payload>.<signature>".to_string());
+        return Err(
+            "Invalid license key prefix. Expected format: ALTS1-<payload>.<signature>".to_string(),
+        );
     }
 
     let token_body = &trimmed["ALTS1-".len()..];
@@ -72,7 +72,10 @@ pub fn verify_license_str(
     let sig_bytes = decode_base64url(parts[1])?;
 
     if sig_bytes.len() != 64 {
-        return Err(format!("Invalid signature length: expected 64 bytes, got {}", sig_bytes.len()));
+        return Err(format!(
+            "Invalid signature length: expected 64 bytes, got {}",
+            sig_bytes.len()
+        ));
     }
 
     let verifying_key = VerifyingKey::from_bytes(&MASTER_PUBLIC_KEY)
@@ -85,7 +88,10 @@ pub fn verify_license_str(
     // Cryptographic signature verification over the payload bytes
     verifying_key
         .verify(&payload_bytes, &signature)
-        .map_err(|_| "Cryptographic signature verification failed: Invalid or forged license key.".to_string())?;
+        .map_err(|_| {
+            "Cryptographic signature verification failed: Invalid or forged license key."
+                .to_string()
+        })?;
 
     // Parse verified payload JSON
     let payload: LicensePayload = serde_json::from_slice(&payload_bytes)
@@ -94,7 +100,10 @@ pub fn verify_license_str(
     // Expiration check
     let now = chrono::Utc::now().timestamp();
     if payload.exp > 0 && payload.exp < now {
-        return Err(format!("License key expired on unix timestamp {}", payload.exp));
+        return Err(format!(
+            "License key expired on unix timestamp {}",
+            payload.exp
+        ));
     }
 
     // Machine lock check
@@ -114,20 +123,25 @@ pub fn verify_license_str(
 
 /// Tauri command: Verifies and activates a cryptographic license key, saving to DPAPI
 #[tauri::command]
-pub fn verify_and_activate_license(license_key: String) -> Result<LicenseVerificationResult, String> {
-    let current_machine_id = crypto_vault::get_or_create_device_id().unwrap_or_else(|_| "ALTS-UNKNOWN".to_string());
+pub fn verify_and_activate_license(
+    license_key: String,
+) -> Result<LicenseVerificationResult, String> {
+    let current_machine_id =
+        crypto_vault::get_or_create_device_id().unwrap_or_else(|_| "ALTS-UNKNOWN".to_string());
     let payload = verify_license_str(&license_key, Some(&current_machine_id))?;
 
     // Save verified license into DPAPI vault
     if let Ok(serialized) = serde_json::to_string(&payload) {
         let _ = crypto_vault::store_secret("altspace_verified_license", &serialized);
-        let _ = crypto_vault::store_secret("altspace_entitlement_token", &format!("ALTS-PRO-{}", payload.id));
+        let _ = crypto_vault::store_secret(
+            "altspace_entitlement_token",
+            &format!("ALTS-PRO-{}", payload.id),
+        );
     }
 
     let is_perpetual = payload.exp == 0;
     let expires_at = if payload.exp > 0 {
-        chrono::DateTime::from_timestamp(payload.exp, 0)
-            .map(|dt| dt.to_rfc3339())
+        chrono::DateTime::from_timestamp(payload.exp, 0).map(|dt| dt.to_rfc3339())
     } else {
         None
     };
@@ -141,14 +155,18 @@ pub fn verify_and_activate_license(license_key: String) -> Result<LicenseVerific
         is_perpetual,
         expires_at,
         machine: payload.machine.clone(),
-        message: format!("Successfully activated {} license for {}!", payload.tier, payload.user),
+        message: format!(
+            "Successfully activated {} license for {}!",
+            payload.tier, payload.user
+        ),
     })
 }
 
 /// Tauri command: Retrieves currently active verified license if present in DPAPI
 #[tauri::command]
 pub fn get_active_verified_license() -> Result<Option<LicenseVerificationResult>, String> {
-    let current_machine_id = crypto_vault::get_or_create_device_id().unwrap_or_else(|_| "ALTS-UNKNOWN".to_string());
+    let current_machine_id =
+        crypto_vault::get_or_create_device_id().unwrap_or_else(|_| "ALTS-UNKNOWN".to_string());
     let raw = match crypto_vault::retrieve_secret("altspace_verified_license") {
         Ok(Some(s)) if !s.trim().is_empty() => s,
         _ => return Ok(None),
@@ -172,8 +190,7 @@ pub fn get_active_verified_license() -> Result<Option<LicenseVerificationResult>
 
     let is_perpetual = payload.exp == 0;
     let expires_at = if payload.exp > 0 {
-        chrono::DateTime::from_timestamp(payload.exp, 0)
-            .map(|dt| dt.to_rfc3339())
+        chrono::DateTime::from_timestamp(payload.exp, 0).map(|dt| dt.to_rfc3339())
     } else {
         None
     };
@@ -208,7 +225,9 @@ mod tests {
         let tampered_key = "ALTS1-eyJ2IjoxLCJpZCI6IkFMVFMtNjNCREQ3RjMiLCJ1c2VyIjoiaGFja2VyIiwiZW1haWwiOiJzaGlscGlAdGVzdC5jb20iLCJ0aWVyIjoiUHJvIiwibWFjaGluZSI6IkFOWSIsImlhdCI6MTc5MjU3ODQ1MywiZXhwIjowfQ.F9LGpEtucWShkXLZX7DsQN56oL5NGgfqK6ja07l9ly6gWfkowiG8NPLrv4QVUGYVfcEvniz5JFmokC1mJOrmAA";
         let err = verify_license_str(tampered_key, None);
         assert!(err.is_err());
-        assert!(err.unwrap_err().contains("Cryptographic signature verification failed"));
+        assert!(err
+            .unwrap_err()
+            .contains("Cryptographic signature verification failed"));
     }
 
     #[test]

@@ -11,7 +11,7 @@ All contributions to this repository are licensed under the **Apache License 2.0
 1. **Issue Selection**: Review existing issues or open a new discussion detailing the feature request or bug report.
 2. **Fork and Branch**: Create a feature branch off `main` using descriptive naming (e.g. `feat/virtual-desktop-api`, `fix/mft-query-escape`).
 3. **Automated Verification**:
-   - Ensure the TypeScript frontend compiles cleanly and passes all 87 tests:
+   - Ensure the TypeScript frontend compiles cleanly and passes all 103 tests:
      ```bash
      cd frontend
      npm test

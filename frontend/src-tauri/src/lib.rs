@@ -1,35 +1,40 @@
 mod actions;
 mod apps;
+pub mod broker;
+pub mod byok;
 mod clipboard;
+pub mod crypto_vault;
+pub mod docker_wsl;
 mod everything;
+mod frecency;
 mod games;
+pub mod github_auth;
 mod icons;
+pub mod license_verifier;
 mod plugins;
 mod ports;
 mod terminal_runner;
-mod frecency;
 mod updater;
 mod windows_mgmt;
-pub mod crypto_vault;
-pub mod broker;
-pub mod license_verifier;
-pub mod github_auth;
-pub mod docker_wsl;
-pub mod byok;
 
 use apps::AppIndex;
 use everything::{DriveIndexStats, EverythingClient};
-use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use std::os::windows::process::CommandExt;
 use std::process::Command;
-use std::sync::{atomic::{AtomicBool, Ordering}, Mutex};
+use std::sync::LazyLock;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 use tauri::{Emitter, Manager};
 use windows::core::w;
-use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HWND, WAIT_OBJECT_0};
+use windows::Win32::Foundation::{
+    CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HWND, WAIT_OBJECT_0,
+};
 use windows::Win32::Graphics::Dwm::{
-    DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE,
-    DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+    DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE, DWMWA_WINDOW_CORNER_PREFERENCE,
+    DWMWCP_ROUND,
 };
 use windows::Win32::System::Registry::{
     RegCloseKey, RegDeleteValueW, RegOpenKeyExW, RegQueryValueExW, RegSetValueExW,
@@ -44,10 +49,10 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    AllowSetForegroundWindow, BringWindowToTop, FindWindowW, GetForegroundWindow, GetMessageW,
-    GetWindowThreadProcessId, IsHungAppWindow, IsWindow, PeekMessageW, SetForegroundWindow,
-    SetWindowPos, ShowWindow, HWND_TOPMOST, MSG, PM_NOREMOVE, SWP_NOMOVE, SWP_NOSIZE,
-    SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WM_HOTKEY,
+    AllowSetForegroundWindow, BringWindowToTop, EnumWindows, GetForegroundWindow, GetMessageW,
+    GetWindowTextW, GetWindowThreadProcessId, IsHungAppWindow, IsWindow, PeekMessageW,
+    SetForegroundWindow, SetWindowPos, ShowWindow, HWND_TOPMOST, MSG, PM_NOREMOVE, SWP_NOMOVE,
+    SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WM_HOTKEY,
 };
 
 #[link(name = "user32")]
@@ -94,7 +99,12 @@ pub fn force_foreground_window(hwnd: HWND) {
 
         let mut attached = false;
         if fg_thread != 0 && fg_thread != target_thread && target_thread != 0 {
-            attached = AttachThreadInput(target_thread, fg_thread, windows::Win32::Foundation::BOOL(1)).as_bool();
+            attached = AttachThreadInput(
+                target_thread,
+                fg_thread,
+                windows::Win32::Foundation::BOOL(1),
+            )
+            .as_bool();
         }
 
         let _ = ShowWindow(hwnd, SW_SHOW);
@@ -114,7 +124,11 @@ pub fn force_foreground_window(hwnd: HWND) {
         let _ = SetForegroundWindow(hwnd);
 
         if attached {
-            let _ = AttachThreadInput(target_thread, fg_thread, windows::Win32::Foundation::BOOL(0));
+            let _ = AttachThreadInput(
+                target_thread,
+                fg_thread,
+                windows::Win32::Foundation::BOOL(0),
+            );
         }
     }
 }
@@ -132,18 +146,30 @@ pub struct SearchItem {
     pub updated: Option<String>,
 }
 
+static LAST_SHOWN: LazyLock<Mutex<std::time::Instant>> =
+    LazyLock::new(|| Mutex::new(std::time::Instant::now()));
+static HAS_GAINED_FOCUS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn mark_window_shown() {
+    if let Ok(mut lock) = LAST_SHOWN.lock() {
+        *lock = std::time::Instant::now();
+    }
+    HAS_GAINED_FOCUS.store(false, Ordering::SeqCst);
+}
+
 static APP_INDEX: LazyLock<Mutex<AppIndex>> = LazyLock::new(|| Mutex::new(AppIndex::new()));
 static EVERYTHING_CLIENT: LazyLock<EverythingClient> = LazyLock::new(EverythingClient::new);
 
-static FEATURE_FLAGS: LazyLock<Mutex<std::collections::HashMap<String, bool>>> = LazyLock::new(|| {
-    let mut map = std::collections::HashMap::new();
-    map.insert("ports_advanced".into(), true);
-    map.insert("developer_transforms".into(), true);
-    map.insert("secret_vault".into(), true);
-    map.insert("docker_wsl".into(), true);
-    map.insert("local_copilot".into(), true);
-    Mutex::new(map)
-});
+static FEATURE_FLAGS: LazyLock<Mutex<std::collections::HashMap<String, bool>>> =
+    LazyLock::new(|| {
+        let mut map = std::collections::HashMap::new();
+        map.insert("ports_advanced".into(), true);
+        map.insert("developer_transforms".into(), true);
+        map.insert("secret_vault".into(), true);
+        map.insert("docker_wsl".into(), true);
+        map.insert("local_copilot".into(), true);
+        Mutex::new(map)
+    });
 
 pub fn is_feature_enabled(id: &str) -> bool {
     if let Ok(guard) = FEATURE_FLAGS.lock() {
@@ -203,16 +229,66 @@ fn search(query: String) -> Vec<SearchItem> {
 
     // 2. Search files via Everything IPC with fallback if query has >= 2 characters
     if query_trimmed.len() >= 2 {
-        if let Ok(files) = EVERYTHING_CLIENT.search(query_trimmed, 30) {
+        if let Ok(files) = EVERYTHING_CLIENT.search(query_trimmed, 40) {
             for file in files {
+                // Skip known least-used noise extensions unless explicitly searched in query
+                if !file.is_folder {
+                    let ext = file.name.rsplit('.').next().unwrap_or("").to_lowercase();
+                    let is_noise_ext = matches!(
+                        ext.as_str(),
+                        "ini"
+                            | "sys"
+                            | "dll"
+                            | "drv"
+                            | "inf"
+                            | "cat"
+                            | "cur"
+                            | "ani"
+                            | "tmp"
+                            | "temp"
+                            | "bak"
+                            | "backup"
+                            | "old"
+                            | "log"
+                            | "cache"
+                            | "dmp"
+                            | "chk"
+                            | "part"
+                            | "crdownload"
+                            | "swp"
+                            | "pdb"
+                            | "obj"
+                            | "lib"
+                            | "exp"
+                            | "ilk"
+                            | "idb"
+                            | "pyc"
+                            | "class"
+                            | "ink"
+                    );
+                    let query_mentions_ext =
+                        q_lower.contains(&format!(".{}", ext)) || q_lower.ends_with(&ext);
+                    if is_noise_ext && !query_mentions_ext {
+                        continue;
+                    }
+                }
+
                 let full = if file.path.ends_with('\\') {
                     format!("{}{}", file.path, file.name)
                 } else {
                     format!("{}\\{}", file.path, file.name)
                 };
 
-                let category = if file.is_folder { "Folder".into() } else { "File".into() };
-                let icon_type = if file.is_folder { "folder".into() } else { "file".into() };
+                let category = if file.is_folder {
+                    "Folder".into()
+                } else {
+                    "File".into()
+                };
+                let icon_type = if file.is_folder {
+                    "folder".into()
+                } else {
+                    "file".into()
+                };
                 let is_app_binary = file.name.ends_with(".exe") || file.name.ends_with(".lnk");
                 let icon_data = if is_app_binary {
                     icons::get_app_icon_base64(&full)
@@ -226,7 +302,10 @@ fn search(query: String) -> Vec<SearchItem> {
                     10000
                 } else if name_lower.starts_with(&q_lower) {
                     5200 + (100 - name_lower.len().min(100) as i64)
-                } else if name_lower.split(|c: char| !c.is_alphanumeric()).any(|w| w.starts_with(&q_lower)) {
+                } else if name_lower
+                    .split(|c: char| !c.is_alphanumeric())
+                    .any(|w| w.starts_with(&q_lower))
+                {
                     3500 + (100 - name_lower.len().min(100) as i64)
                 } else if name_lower.contains(&q_lower) {
                     2200 + (100 - name_lower.len().min(100) as i64)
@@ -254,7 +333,11 @@ fn search(query: String) -> Vec<SearchItem> {
 
     // Sort all candidates globally by relevance score descending
     scored_results.sort_by_key(|a| std::cmp::Reverse(a.1));
-    scored_results.into_iter().map(|(item, _)| item).take(25).collect()
+    scored_results
+        .into_iter()
+        .map(|(item, _)| item)
+        .take(25)
+        .collect()
 }
 
 #[tauri::command]
@@ -453,13 +536,30 @@ fn execute_shell_command(command: String) -> Result<terminal_runner::ShellExecut
     if let Ok(ref result) = res {
         if !result.success || result.exit_code != 0 {
             broker::record_failure_event(broker::FailureEvent {
-                id: format!("term_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()),
+                id: format!(
+                    "term_{}",
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis()
+                ),
                 source: "terminal".into(),
                 command_or_target: command.clone(),
                 exit_code: Some(result.exit_code),
-                error_message: if !result.stderr.is_empty() { result.stderr.clone() } else { format!("Exited with code {}", result.exit_code) },
-                stdout_excerpt: if !result.stdout.is_empty() { Some(result.stdout.chars().take(500).collect()) } else { None },
-                timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(),
+                error_message: if !result.stderr.is_empty() {
+                    result.stderr.clone()
+                } else {
+                    format!("Exited with code {}", result.exit_code)
+                },
+                stdout_excerpt: if !result.stdout.is_empty() {
+                    Some(result.stdout.chars().take(500).collect())
+                } else {
+                    None
+                },
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
             });
         }
     }
@@ -481,14 +581,7 @@ fn get_autostart_status() -> bool {
         let mut hkey = windows::Win32::System::Registry::HKEY::default();
         if RegOpenKeyExW(HKEY_CURRENT_USER, subkey, 0, KEY_READ, &mut hkey).is_ok() {
             let mut data_len = 0u32;
-            let res = RegQueryValueExW(
-                hkey,
-                value_name,
-                None,
-                None,
-                None,
-                Some(&mut data_len),
-            );
+            let res = RegQueryValueExW(hkey, value_name, None, None, None, Some(&mut data_len));
             let _ = RegCloseKey(hkey);
             res.is_ok()
         } else {
@@ -547,7 +640,12 @@ fn execute_system_command(command: String) -> Result<(), String> {
         }
         "empty_bin" => {
             Command::new("powershell")
-                .args(["-WindowStyle", "Hidden", "-Command", "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"])
+                .args([
+                    "-WindowStyle",
+                    "Hidden",
+                    "-Command",
+                    "Clear-RecycleBin -Force -ErrorAction SilentlyContinue",
+                ])
                 .creation_flags(CREATE_NO_WINDOW)
                 .spawn()
                 .map_err(|e| e.to_string())?;
@@ -576,8 +674,8 @@ fn read_file_preview(path: String) -> Result<FilePreview, String> {
         .to_lowercase();
 
     let text_exts = [
-        "txt", "md", "json", "rs", "ts", "tsx", "js", "jsx", "html", "css", "py", "toml",
-        "yaml", "yml", "ini", "log", "env", "sh", "bat", "ps1", "sql", "c", "cpp", "h",
+        "txt", "md", "json", "rs", "ts", "tsx", "js", "jsx", "html", "css", "py", "toml", "yaml",
+        "yml", "ini", "log", "env", "sh", "bat", "ps1", "sql", "c", "cpp", "h",
     ];
 
     if text_exts.contains(&ext.as_str()) {
@@ -615,7 +713,11 @@ pub struct GitInfo {
 #[tauri::command]
 fn get_git_info(path: String) -> GitInfo {
     let p = std::path::Path::new(&path);
-    let dir = if p.is_dir() { p } else { p.parent().unwrap_or(p) };
+    let dir = if p.is_dir() {
+        p
+    } else {
+        p.parent().unwrap_or(p)
+    };
 
     let branch_out = Command::new("git")
         .args(["-C", &dir.to_string_lossy(), "branch", "--show-current"])
@@ -647,7 +749,13 @@ fn get_git_info(path: String) -> GitInfo {
             };
 
             let log_out = Command::new("git")
-                .args(["-C", &dir.to_string_lossy(), "log", "-1", "--format=%s (%cr)"])
+                .args([
+                    "-C",
+                    &dir.to_string_lossy(),
+                    "log",
+                    "-1",
+                    "--format=%s (%cr)",
+                ])
                 .creation_flags(CREATE_NO_WINDOW)
                 .output();
             let last_commit_message = if let Ok(l_out) = log_out {
@@ -682,7 +790,9 @@ fn get_git_info(path: String) -> GitInfo {
 
 #[tauri::command]
 fn kill_all_dev_servers() -> Result<usize, String> {
-    let dev_ports = [3000, 3001, 5173, 5174, 8080, 8000, 4000, 4200, 8888, 9000, 1420];
+    let dev_ports = [
+        3000, 3001, 5173, 5174, 8080, 8000, 4000, 4200, 8888, 9000, 1420,
+    ];
     let active = ports::get_listening_ports();
     let mut killed = 0;
     let mut killed_pids = std::collections::HashSet::new();
@@ -690,10 +800,11 @@ fn kill_all_dev_servers() -> Result<usize, String> {
     for item in active {
         if dev_ports.contains(&item.port)
             && !killed_pids.contains(&item.pid)
-                && ports::kill_pid(item.pid).is_ok() {
-                    killed_pids.insert(item.pid);
-                    killed += 1;
-                }
+            && ports::kill_pid(item.pid).is_ok()
+        {
+            killed_pids.insert(item.pid);
+            killed += 1;
+        }
     }
     Ok(killed)
 }
@@ -738,7 +849,10 @@ pub fn validate_url_for_opening(raw_url: &str) -> Result<url::Url, String> {
             if is_loopback {
                 Ok(parsed)
             } else {
-                Err("Insecure HTTP is restricted to localhost/loopback addresses. Use HTTPS.".into())
+                Err(
+                    "Insecure HTTP is restricted to localhost/loopback addresses. Use HTTPS."
+                        .into(),
+                )
             }
         }
         other => Err(format!(
@@ -772,7 +886,14 @@ pub fn validate_settings_uri_for_opening(raw_uri: &str) -> Result<String, String
 
     let subpage = &trimmed["ms-settings:".len()..];
     for ch in subpage.chars() {
-        if !ch.is_ascii_alphanumeric() && ch != '-' && ch != '_' && ch != '.' && ch != '?' && ch != '=' && ch != '&' {
+        if !ch.is_ascii_alphanumeric()
+            && ch != '-'
+            && ch != '_'
+            && ch != '.'
+            && ch != '?'
+            && ch != '='
+            && ch != '&'
+        {
             return Err("Settings URI contains forbidden characters".into());
         }
     }
@@ -787,7 +908,11 @@ pub fn validate_settings_uri_for_opening(raw_uri: &str) -> Result<String, String
 
 fn open_url_internal(url: &str) -> Result<(), String> {
     let parsed = validate_url_for_opening(url)?;
-    let wide_url: Vec<u16> = parsed.as_str().encode_utf16().chain(std::iter::once(0)).collect();
+    let wide_url: Vec<u16> = parsed
+        .as_str()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     unsafe {
         let res = ShellExecuteW(
             HWND::default(),
@@ -798,7 +923,10 @@ fn open_url_internal(url: &str) -> Result<(), String> {
             SW_SHOWNORMAL,
         );
         if res.0 as usize <= 32 {
-            return Err(format!("System failed to open URL (code {})", res.0 as usize));
+            return Err(format!(
+                "System failed to open URL (code {})",
+                res.0 as usize
+            ));
         }
     }
     Ok(())
@@ -825,7 +953,10 @@ fn open_settings_uri(window: tauri::WebviewWindow, uri: String) -> Result<(), St
             SW_SHOWNORMAL,
         );
         if res.0 as usize <= 32 {
-            return Err(format!("System failed to open Settings URI (code {})", res.0 as usize));
+            return Err(format!(
+                "System failed to open Settings URI (code {})",
+                res.0 as usize
+            ));
         }
     }
     Ok(())
@@ -843,6 +974,17 @@ fn launch_game(window: tauri::WebviewWindow, launch_uri: String) -> Result<(), S
 }
 
 #[tauri::command]
+fn launch_game_advanced(
+    window: tauri::WebviewWindow,
+    launch_uri: String,
+    boost: bool,
+    record: bool,
+) -> Result<(), String> {
+    let _ = window.hide();
+    games::launch_game_advanced(&launch_uri, boost, record)
+}
+
+#[tauri::command]
 fn get_game_mode_status() -> games::GameModeStatus {
     games::get_game_mode_status()
 }
@@ -856,11 +998,26 @@ fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
 
             // Register hotkeys with MOD_NOREPEAT to prevent stutter:
             // ID 1: Alt + Space (Default Raycast shortcut)
-            let _ = RegisterHotKey(HWND::default(), 1, MOD_ALT | MOD_NOREPEAT, VK_SPACE.0 as u32);
+            let _ = RegisterHotKey(
+                HWND::default(),
+                1,
+                MOD_ALT | MOD_NOREPEAT,
+                VK_SPACE.0 as u32,
+            );
             // ID 2: Ctrl + Space (Conflict-free instant shortcut, never blocked by PowerToys)
-            let _ = RegisterHotKey(HWND::default(), 2, MOD_CONTROL | MOD_NOREPEAT, VK_SPACE.0 as u32);
+            let _ = RegisterHotKey(
+                HWND::default(),
+                2,
+                MOD_CONTROL | MOD_NOREPEAT,
+                VK_SPACE.0 as u32,
+            );
             // ID 3: Alt + Shift + Space (Fallback power-user shortcut)
-            let _ = RegisterHotKey(HWND::default(), 3, MOD_ALT | MOD_SHIFT | MOD_NOREPEAT, VK_SPACE.0 as u32);
+            let _ = RegisterHotKey(
+                HWND::default(),
+                3,
+                MOD_ALT | MOD_SHIFT | MOD_NOREPEAT,
+                VK_SPACE.0 as u32,
+            );
 
             while GetMessageW(&mut msg, HWND::default(), 0, 0).as_bool() {
                 if msg.message == WM_HOTKEY && (msg.wParam.0 >= 1 && msg.wParam.0 <= 3) {
@@ -873,6 +1030,7 @@ fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
                             if let Ok(hwnd) = window.hwnd() {
                                 windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
                             }
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -905,7 +1063,12 @@ fn install_plugin(
     script_content: String,
     script_filename: String,
 ) -> Result<(), String> {
-    plugins::install_plugin(&plugin_id, &manifest_json, &script_content, &script_filename)
+    plugins::install_plugin(
+        &plugin_id,
+        &manifest_json,
+        &script_content,
+        &script_filename,
+    )
 }
 
 #[tauri::command]
@@ -972,7 +1135,9 @@ pub struct MaintainerStatus {
 fn check_maintainer_status() -> Result<MaintainerStatus, String> {
     // 1. Direct local token check (works without git.exe installed on any Windows PC)
     if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
-        let marker_path = std::path::PathBuf::from(local_appdata).join("AltSpace").join("maintainer.json");
+        let marker_path = std::path::PathBuf::from(local_appdata)
+            .join("AltSpace")
+            .join("maintainer.json");
         if marker_path.exists() {
             if let Ok(content) = std::fs::read_to_string(&marker_path) {
                 if content.contains("\"codecheesee\"") && content.contains("\"maintainer\"") {
@@ -1001,12 +1166,18 @@ fn check_maintainer_status() -> Result<MaintainerStatus, String> {
                 .map(|o| String::from_utf8_lossy(&o.stdout).to_lowercase())
                 .unwrap_or_default();
 
-            if email_str.contains("codecheesee") || email_str.contains("narayan") || remote_str.contains("codecheesee/altspace") {
+            if email_str.contains("codecheesee")
+                || email_str.contains("narayan")
+                || remote_str.contains("codecheesee/altspace")
+            {
                 if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
                     let dir = std::path::PathBuf::from(local_appdata).join("AltSpace");
                     let _ = std::fs::create_dir_all(&dir);
                     let marker_path = dir.join("maintainer.json");
-                    let _ = std::fs::write(&marker_path, "{\"login\":\"codecheesee\",\"tier\":\"maintainer\",\"unlimited\":true}");
+                    let _ = std::fs::write(
+                        &marker_path,
+                        "{\"login\":\"codecheesee\",\"tier\":\"maintainer\",\"unlimited\":true}",
+                    );
                 }
                 return Ok(MaintainerStatus {
                     is_maintainer: true,
@@ -1026,7 +1197,9 @@ fn check_maintainer_status() -> Result<MaintainerStatus, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tauri::command]
-fn broker_evaluate_action(request: broker::ActionRequest) -> Result<broker::ActionEvaluation, String> {
+fn broker_evaluate_action(
+    request: broker::ActionRequest,
+) -> Result<broker::ActionEvaluation, String> {
     Ok(broker::evaluate_action(&request))
 }
 
@@ -1070,7 +1243,9 @@ fn vault_has_secret(key: String) -> Result<bool, String> {
 fn vault_check_entitlement_lease() -> Result<bool, String> {
     if let Ok(Some(lease)) = crypto_vault::retrieve_secret("altspace_entitlement_token") {
         let trimmed = lease.trim().to_uppercase();
-        Ok(trimmed.starts_with("ALTS-PRO-") || trimmed.starts_with("PRO-") || trimmed.contains("PRO"))
+        Ok(trimmed.starts_with("ALTS-PRO-")
+            || trimmed.starts_with("PRO-")
+            || trimmed.contains("PRO"))
     } else {
         Ok(false)
     }
@@ -1130,7 +1305,10 @@ fn get_environment_cockpit() -> Result<docker_wsl::EnvironmentCockpitData, Strin
 }
 
 #[tauri::command]
-fn docker_container_action(id: String, action: String) -> Result<docker_wsl::CockpitActionResult, String> {
+fn docker_container_action(
+    id: String,
+    action: String,
+) -> Result<docker_wsl::CockpitActionResult, String> {
     if !is_feature_enabled("docker_wsl") {
         return Err("Docker & WSL2 Cockpit is disabled in Settings".into());
     }
@@ -1191,15 +1369,29 @@ fn get_machine_id() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn record_terminal_failure(command: String, exit_code: i32, stderr: String, stdout: Option<String>) {
+fn record_terminal_failure(
+    command: String,
+    exit_code: i32,
+    stderr: String,
+    stdout: Option<String>,
+) {
     broker::record_failure_event(broker::FailureEvent {
-        id: format!("term_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()),
+        id: format!(
+            "term_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis()
+        ),
         source: "terminal".into(),
         command_or_target: command,
         exit_code: Some(exit_code),
         error_message: stderr,
         stdout_excerpt: stdout,
-        timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs(),
     });
 }
 
@@ -1252,7 +1444,9 @@ static AEGIS_SCANNER: std::sync::LazyLock<altspace_sentinel::SecretScanner> =
     std::sync::LazyLock::new(altspace_sentinel::SecretScanner::new);
 
 static AEGIS_HEALING: std::sync::LazyLock<altspace_core::HealingEngine> =
-    std::sync::LazyLock::new(|| altspace_core::HealingEngine::new(altspace_core::ExecutionMode::Supervised));
+    std::sync::LazyLock::new(|| {
+        altspace_core::HealingEngine::new(altspace_core::ExecutionMode::Supervised)
+    });
 
 static AEGIS_RECIPES: std::sync::LazyLock<altspace_core::RecipeCatalog> =
     std::sync::LazyLock::new(altspace_core::RecipeCatalog::default);
@@ -1313,7 +1507,9 @@ fn aegis_set_execution_mode(mode: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn aegis_scan_healing_failures(workspace_path: Option<String>) -> Result<Vec<altspace_core::RecipeFailure>, String> {
+fn aegis_scan_healing_failures(
+    workspace_path: Option<String>,
+) -> Result<Vec<altspace_core::RecipeFailure>, String> {
     let path = workspace_path.as_deref().map(std::path::Path::new);
     Ok(AEGIS_RECIPES.scan_environment(path))
 }
@@ -1326,11 +1522,15 @@ fn aegis_execute_healing_recipe(
 ) -> Result<altspace_core::RecipeResult, String> {
     if recipe_id.starts_with("port-") {
         let p = port.unwrap_or_else(|| {
-            recipe_id.strip_prefix("port-").and_then(|s| s.parse().ok()).unwrap_or(3000)
+            recipe_id
+                .strip_prefix("port-")
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(3000)
         });
         AEGIS_RECIPES.fix_port_collision(p)
     } else if recipe_id == "git-index-lock" {
-        let root_str = workspace_path.ok_or_else(|| "Workspace path required for git lock cleanup".to_string())?;
+        let root_str = workspace_path
+            .ok_or_else(|| "Workspace path required for git lock cleanup".to_string())?;
         AEGIS_RECIPES.fix_git_lock(std::path::Path::new(&root_str))
     } else if recipe_id == "zombies-workers" {
         AEGIS_RECIPES.fix_zombie_processes()
@@ -1338,6 +1538,37 @@ fn aegis_execute_healing_recipe(
         AEGIS_RECIPES.fix_wsl_memory()
     } else {
         Err(format!("Unknown healing recipe '{}'", recipe_id))
+    }
+}
+
+unsafe extern "system" fn find_altspace_enum_proc(
+    hwnd: HWND,
+    lparam: windows::Win32::Foundation::LPARAM,
+) -> windows::Win32::Foundation::BOOL {
+    let mut buf = [0u16; 128];
+    let len = GetWindowTextW(hwnd, &mut buf);
+    if len > 0 {
+        let title = String::from_utf16_lossy(&buf[..len as usize]);
+        if title == "AltSpace" {
+            *(lparam.0 as *mut HWND) = hwnd;
+            return windows::Win32::Foundation::BOOL(0);
+        }
+    }
+    windows::Win32::Foundation::BOOL(1)
+}
+
+fn find_existing_altspace_hwnd() -> Option<HWND> {
+    let mut target = HWND::default();
+    unsafe {
+        let _ = EnumWindows(
+            Some(find_altspace_enum_proc),
+            windows::Win32::Foundation::LPARAM(&mut target as *mut _ as _),
+        );
+        if !target.0.is_null() && IsWindow(target).as_bool() {
+            Some(target)
+        } else {
+            None
+        }
     }
 }
 
@@ -1362,7 +1593,7 @@ pub fn run() {
 
             // 2. Direct Window Summoning:
             // Find the existing AltSpace window and bring it directly to top.
-            if let Ok(existing_hwnd) = FindWindowW(None, w!("AltSpace")) {
+            if let Some(existing_hwnd) = find_existing_altspace_hwnd() {
                 if !existing_hwnd.0.is_null() && IsWindow(existing_hwnd).as_bool() {
                     if IsHungAppWindow(existing_hwnd).as_bool() {
                         // Previous instance is hung/frozen - terminate it to unblock the user!
@@ -1393,14 +1624,15 @@ pub fn run() {
             }
 
             // 3. Signal the named summon event so Tauri's webview focuses the input bar
-            if let Ok(event) = OpenEventW(EVENT_MODIFY_STATE, false, w!("AltSpace_Summon_Event_2026")) {
+            if let Ok(event) =
+                OpenEventW(EVENT_MODIFY_STATE, false, w!("AltSpace_Summon_Event_2026"))
+            {
                 let _ = SetEvent(event);
                 let _ = CloseHandle(event);
             }
             return;
         }
     }
-
 
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
@@ -1438,6 +1670,7 @@ pub fn run() {
             launch_in_terminal_window,
             get_installed_games,
             launch_game,
+            launch_game_advanced,
             get_game_mode_status,
             list_plugins,
             run_plugin,
@@ -1514,8 +1747,8 @@ pub fn run() {
                         .unwrap_or_else(|| std::path::PathBuf::from("."))
                 });
             let _ = std::fs::create_dir_all(&app_data_dir);
-            let frecency_db = frecency::FrecencyDb::open(&app_data_dir)
-                .expect("Failed to open frecency DB");
+            let frecency_db =
+                frecency::FrecencyDb::open(&app_data_dir).expect("Failed to open frecency DB");
             app.manage(frecency_db);
             // Start background Single-Instance Named Event summoner thread
             let app_handle_for_summon = app.handle().clone();
@@ -1535,6 +1768,7 @@ pub fn run() {
                                     windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
                                     force_foreground_window(HWND(hwnd.0 as _));
                                 }
+                                mark_window_shown();
                                 let _ = window.show();
                                 let _ = window.unminimize();
                                 let _ = window.set_focus();
@@ -1565,9 +1799,17 @@ pub fn run() {
             use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
             use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
-            let show_i = MenuItem::with_id(app, "show", "⚡ Show AltSpace (Alt+Space)", true, None::<&str>)?;
-            let clipboard_i = MenuItem::with_id(app, "clipboard", "📋 Clipboard History", true, None::<&str>)?;
-            let ports_i = MenuItem::with_id(app, "ports", "🔌 Dev Ports Inspector", true, None::<&str>)?;
+            let show_i = MenuItem::with_id(
+                app,
+                "show",
+                "⚡ Show AltSpace (Alt+Space)",
+                true,
+                None::<&str>,
+            )?;
+            let clipboard_i =
+                MenuItem::with_id(app, "clipboard", "📋 Clipboard History", true, None::<&str>)?;
+            let ports_i =
+                MenuItem::with_id(app, "ports", "🔌 Dev Ports Inspector", true, None::<&str>)?;
             let games_i = MenuItem::with_id(app, "games", "🎮 Game Launcher", true, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
             let autostart_label = if get_autostart_status() {
@@ -1575,11 +1817,20 @@ pub fn run() {
             } else {
                 "Launch on Windows Startup"
             };
-            let autostart_i = MenuItem::with_id(app, "autostart", autostart_label, true, None::<&str>)?;
-            let updates_i = MenuItem::with_id(app, "updates", "🔄 Check for Updates", true, None::<&str>)?;
+            let autostart_i =
+                MenuItem::with_id(app, "autostart", autostart_label, true, None::<&str>)?;
+            let updates_i =
+                MenuItem::with_id(app, "updates", "🔄 Check for Updates", true, None::<&str>)?;
             let sep2 = PredefinedMenuItem::separator(app)?;
-            let feedback_i = MenuItem::with_id(app, "feedback", "💬 Rate & Send Feedback", true, None::<&str>)?;
-            let github_i = MenuItem::with_id(app, "github", "⭐ Star on GitHub", true, None::<&str>)?;
+            let feedback_i = MenuItem::with_id(
+                app,
+                "feedback",
+                "💬 Rate & Send Feedback",
+                true,
+                None::<&str>,
+            )?;
+            let github_i =
+                MenuItem::with_id(app, "github", "⭐ Star on GitHub", true, None::<&str>)?;
             let sep3 = PredefinedMenuItem::separator(app)?;
             let quit_i = MenuItem::with_id(app, "quit", "❌ Exit AltSpace", true, None::<&str>)?;
 
@@ -1612,6 +1863,7 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1622,6 +1874,7 @@ pub fn run() {
                     }
                     "clipboard" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1633,6 +1886,7 @@ pub fn run() {
                     }
                     "ports" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1644,6 +1898,7 @@ pub fn run() {
                     }
                     "games" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1659,6 +1914,7 @@ pub fn run() {
                     }
                     "updates" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1667,6 +1923,7 @@ pub fn run() {
                     }
                     "feedback" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            mark_window_shown();
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
@@ -1698,6 +1955,7 @@ pub fn run() {
                                 if vis {
                                     let _ = window.hide();
                                 } else {
+                                    mark_window_shown();
                                     let _ = window.show();
                                     let _ = window.unminimize();
                                     let _ = window.set_focus();
@@ -1715,7 +1973,10 @@ pub fn run() {
 
             // Prevent window close from exiting app; hide to tray instead
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 800.0, height: 520.0 }));
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+                    width: 800.0,
+                    height: 520.0,
+                }));
                 let _ = window.center();
 
                 if let Ok(hwnd) = window.hwnd() {
@@ -1723,21 +1984,28 @@ pub fn run() {
                 }
 
                 let w_clone = window.clone();
-                window.on_window_event(move |event| {
-                    match event {
-                        tauri::WindowEvent::CloseRequested { api, .. } => {
-                            api.prevent_close();
+                window.on_window_event(move |event| match event {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        api.prevent_close();
+                        let _ = w_clone.hide();
+                    }
+                    tauri::WindowEvent::Focused(focused) => {
+                        if *focused {
+                            HAS_GAINED_FOCUS.store(true, Ordering::SeqCst);
+                        } else if HAS_GAINED_FOCUS.load(Ordering::SeqCst)
+                            && LAST_SHOWN
+                                .lock()
+                                .map(|t| t.elapsed())
+                                .unwrap_or(std::time::Duration::from_secs(10))
+                                > std::time::Duration::from_millis(800)
+                        {
                             let _ = w_clone.hide();
                         }
-                        tauri::WindowEvent::Focused(focused) => {
-                            if !*focused {
-                                let _ = w_clone.hide();
-                            }
-                        }
-                        _ => {}
                     }
+                    _ => {}
                 });
 
+                mark_window_shown();
                 let _ = window.show();
                 let _ = window.unminimize();
                 let _ = window.set_focus();
@@ -1787,7 +2055,9 @@ mod tests {
         assert!(validate_url_for_opening("javascript:alert(1)").is_err());
         assert!(validate_url_for_opening("file:///C:/Windows/System32/calc.exe").is_err());
         assert!(validate_url_for_opening("data:text/html,<script>alert(1)</script>").is_err());
-        assert!(validate_url_for_opening("ms-appinstaller:?source=https://evil.com/app.msix").is_err());
+        assert!(
+            validate_url_for_opening("ms-appinstaller:?source=https://evil.com/app.msix").is_err()
+        );
         assert!(validate_url_for_opening("cmd:foo").is_err());
         assert!(validate_url_for_opening("powershell:bar").is_err());
         assert!(validate_url_for_opening("smb://attacker/share").is_err());

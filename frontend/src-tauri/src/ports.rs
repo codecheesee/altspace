@@ -65,7 +65,11 @@ pub fn get_process_tree_map() -> HashMap<u32, ProcessSnapshot> {
             if Process32FirstW(snapshot, &mut entry).is_ok() {
                 loop {
                     let name = String::from_utf16_lossy(
-                        &entry.szExeFile[..entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len())],
+                        &entry.szExeFile[..entry
+                            .szExeFile
+                            .iter()
+                            .position(|&c| c == 0)
+                            .unwrap_or(entry.szExeFile.len())],
                     );
                     map.insert(
                         entry.th32ProcessID,
@@ -231,7 +235,10 @@ pub fn kill_pid(pid: u32) -> Result<(), String> {
             "dwm.exe",
         ];
         if protected.iter().any(|&p| name_lower == p) {
-            return Err(format!("Cannot terminate protected Windows system service: {}", proc_name));
+            return Err(format!(
+                "Cannot terminate protected Windows system service: {}",
+                proc_name
+            ));
         }
     }
 
@@ -272,7 +279,9 @@ fn extract_project_hint(cmd: Option<&str>, _exe: Option<&str>) -> Option<String>
                 if let Some(parent) = std::path::Path::new(clean).parent() {
                     if let Some(folder_name) = parent.file_name() {
                         let name_str = folder_name.to_string_lossy().to_string();
-                        if !name_str.eq_ignore_ascii_case("bin") && !name_str.eq_ignore_ascii_case("dist") {
+                        if !name_str.eq_ignore_ascii_case("bin")
+                            && !name_str.eq_ignore_ascii_case("dist")
+                        {
                             return Some(name_str);
                         }
                     }
@@ -322,12 +331,20 @@ pub fn get_port_process_forensics(port: u16, pid: u32) -> Result<PortProcessFore
 
     let name_lower = process_name.to_lowercase();
     let protected = [
-        "csrss.exe", "lsass.exe", "services.exe", "smss.exe", "wininit.exe",
-        "winlogon.exe", "dwm.exe", "system",
+        "csrss.exe",
+        "lsass.exe",
+        "services.exe",
+        "smss.exe",
+        "wininit.exe",
+        "winlogon.exe",
+        "dwm.exe",
+        "system",
     ];
     let is_protected = pid <= 4 || protected.iter().any(|&p| name_lower == p);
 
-    let is_wsl_or_docker = name_lower.contains("wsl") || name_lower.contains("docker") || name_lower.contains("vpnkit");
+    let is_wsl_or_docker = name_lower.contains("wsl")
+        || name_lower.contains("docker")
+        || name_lower.contains("vpnkit");
 
     let (command_line, executable_path, project_hint) = if !is_protected {
         query_process_details_safe(pid)
@@ -377,7 +394,10 @@ pub fn kill_and_verify_port(port: u16, pid: u32) -> Result<KillVerifyResult, Str
         message: if verified_free {
             format!("Port :{} freed and verified in {}ms", port, elapsed_ms)
         } else {
-            format!("Process {} terminated, port :{} in TIME_WAIT / draining", pid, port)
+            format!(
+                "Process {} terminated, port :{} in TIME_WAIT / draining",
+                pid, port
+            )
         },
     })
 }
@@ -398,7 +418,9 @@ mod tests {
             "Listening ports should be sorted"
         );
         assert!(
-            ports.windows(2).all(|pair| pair[0].port != pair[1].port || pair[0].pid != pair[1].pid),
+            ports
+                .windows(2)
+                .all(|pair| pair[0].port != pair[1].port || pair[0].pid != pair[1].pid),
             "Listening ports should not contain duplicate port/PID pairs"
         );
     }

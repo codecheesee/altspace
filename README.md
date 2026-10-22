@@ -69,8 +69,8 @@ To protect maintainer innovations and commercial sustainability while fostering 
 AltSpace is distributed as a native Windows application with several installation paths:
 
 - **Official Web Landing Page:** Visit [**https://codecheesee.github.io/altspace/**](https://codecheesee.github.io/altspace/) to explore features, download installers, and view live contributor bounties.
-- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe) (v2.2.0, 4.1 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
-- **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-MSI-x64.msi) (v2.2.0, 6.5 MB) for enterprise WiX Group Policy deployments.
+- **Recommended (Installer):** Download [**`AltSpace-Setup-x64.exe`**](https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe) (v2.3.0, 4.2 MB). The per-user NSIS installer creates Start Menu and Desktop shortcuts and does not require administrator privileges.
+- **Enterprise / MSI Installer:** Download [**`AltSpace-MSI-x64.msi`**](https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-MSI-x64.msi) (v2.3.0, 6.5 MB) for enterprise WiX Group Policy deployments.
 - **Windows Package Manager (Winget):**
   *(Catalog submission to official Microsoft `winget-pkgs` is in validation review. To install via local manifest or once merged:)*
   ```powershell
@@ -78,14 +78,14 @@ AltSpace is distributed as a native Windows application with several installatio
   winget install codecheesee.altspace
 
   # Or install directly from repository manifest:
-  winget install --manifest distribution/winget/manifests/c/codecheesee/altspace/2.2.0/
+  winget install --manifest distribution/winget/manifests/c/codecheesee/altspace/2.3.0/
   ```
 - **PowerShell (Instant One-Liner):** Run the verified installer script directly in PowerShell:
   ```powershell
   irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex
   ```
   The script resolves the latest GitHub release, downloads `AltSpace-Portable-x64.zip`, verifies the archive with SHA-256 against `SHA256SUMS.txt`, validates the Authenticode signature against publisher Codecheesee, creates desktop shortcuts, and launches AltSpace.
-- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Portable-x64.zip) (5.3 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
+- **Portable (.zip):** Download [**`AltSpace-Portable-x64.zip`**](https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Portable-x64.zip) (5.4 MB), extract to any folder, and run `AltSpace-Portable.exe`. Keep `Everything64.dll` beside the executable.
 
 > [!TIP]
 > **Windows SmartScreen Note**: AltSpace is an independent, community-driven open-source project. If Windows SmartScreen displays *"Windows protected your PC"*, click **More info** &rarr; **Run anyway**. All binaries are built openly and checksum-verified on GitHub Actions.
@@ -113,7 +113,19 @@ Inspect running network services directly from the omnibar.
 - Type `:3000` or `:port` to enumerate listening TCP ports, process IDs (PIDs), and owning binaries (`node.exe`, `python.exe`, `docker-proxy.exe`).
 - Press <kbd>Enter</kbd> to terminate blocking processes immediately, eliminating port collision errors during development.
 
-### 3. Local AI and Model Context Protocol (MCP)
+### 3. Smart Game Hub & Multi-Store Game Launcher (`:games`)
+Instant discovery and single-stroke execution for your entire PC gaming library:
+- Scans Steam manifests (`.acf`), Epic Games manifests (`.item`), Xbox Game Pass apps (`shell:AppsFolder`), and standalone game installation roots across all local drive letters (`C:\Games`, `D:\Games`, `G:\Games`).
+- Dynamic **Hero Launcher Card** with platform badges, executable verification, disk footprint, and zero-latency launch via native protocol handlers (`steam://run/`, `com.epicgames.launcher://apps/`).
+- Seamless store acquisition fallbacks when searching uninstalled titles.
+
+### 4. Search Noise & Least-Used Extension Filtering Engine
+System disks are replete with internal configuration, cache, and driver files that clutter search results.
+- Blocks 34 internal extensions by default (`.ink`, `.ini`, `.log`, `.tmp`, `.dll`, `.sys`, `.dat`, `.bak`, `.old`, `.chk`, etc.).
+- Granular settings panel in Action Drawer (`Ctrl + /` or `:settings`) with master toggles, category filtering, and custom extension exclusion lists.
+- Power-user query override automatically permits matches when the user explicitly searches for an extension (e.g. `config.ini` or `.ink`).
+
+### 5. Local AI and Model Context Protocol (MCP)
 AltSpace connects to local Ollama endpoints (`localhost:11434`) to execute natural language desktop actions without sending code or prompts over the internet:
 - Type `? kill port 3000` to dispatch automated process termination.
 - Type `? snap window left` to invoke native window tile management.
@@ -315,10 +327,10 @@ npm install
 npm run tauri dev
 ```
 
-### Automated Test Suite (165 Tests)
+### Automated Test Suite (181 Tests)
 
 ```bash
-# Run 87 frontend unit, red-team security, governance, installer trust, and launch kit tests
+# Run 103 frontend unit, red-team security, governance, installer trust, game search, and noise filter tests
 npm test --prefix frontend
 
 # Run frontend production build & type checks

@@ -73,9 +73,17 @@ impl EverythingClient {
     }
 
     pub fn get_stats(&self) -> DriveIndexStats {
-        let drives = self.indexed_drives.read().unwrap_or_else(|e| e.into_inner()).clone();
+        let drives = self
+            .indexed_drives
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
         let total_drives = drives.len();
-        let indexed_count = self.cached_index.read().unwrap_or_else(|e| e.into_inner()).len();
+        let indexed_count = self
+            .cached_index
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .len();
         let is_indexing = self.is_indexing.load(Ordering::Relaxed);
 
         DriveIndexStats {
@@ -360,7 +368,10 @@ impl EverythingClient {
             if path_obj.is_dir() {
                 // If user typed an existing folder path, return the folder itself first
                 if let Some(folder_name) = path_obj.file_name().and_then(|n| n.to_str()) {
-                    let parent = path_obj.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                    let parent = path_obj
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
                     let full = path_obj.to_string_lossy().to_string().to_lowercase();
                     seen_paths.insert(full);
                     results.push(FileResult {
@@ -375,8 +386,15 @@ impl EverythingClient {
                     let mut dir_items = Vec::new();
                     for entry in entries.filter_map(|e| e.ok()).take(limit as usize) {
                         let ep = entry.path();
-                        let ename = ep.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-                        let epath = ep.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                        let ename = ep
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let epath = ep
+                            .parent()
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or_default();
                         let is_dir = ep.is_dir();
                         let full = ep.to_string_lossy().to_string().to_lowercase();
                         if !seen_paths.contains(&full) {
@@ -398,7 +416,10 @@ impl EverythingClient {
             } else {
                 // It's a direct file
                 if let Some(fname) = path_obj.file_name().and_then(|n| n.to_str()) {
-                    let parent = path_obj.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                    let parent = path_obj
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default();
                     return vec![FileResult {
                         name: fname.to_string(),
                         path: parent,
@@ -409,7 +430,11 @@ impl EverythingClient {
         }
 
         // B. ON-DEMAND DIRECT FOLDER MATCHING ACROSS DETECTED DRIVES & COMMON USER FOLDERS
-        let drives = self.indexed_drives.read().unwrap_or_else(|e| e.into_inner()).clone();
+        let drives = self
+            .indexed_drives
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
         for drive in &drives {
             let candidate = PathBuf::from(format!("{}\\{}", drive, q_trimmed));
             if candidate.exists() && candidate.is_dir() {
@@ -417,7 +442,11 @@ impl EverythingClient {
                 if !seen_paths.contains(&full) {
                     seen_paths.insert(full);
                     results.push(FileResult {
-                        name: candidate.file_name().and_then(|n| n.to_str()).unwrap_or(q_trimmed).to_string(),
+                        name: candidate
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or(q_trimmed)
+                            .to_string(),
                         path: format!("{}\\", drive),
                         is_folder: true,
                     });
@@ -427,7 +456,18 @@ impl EverythingClient {
 
         if let Some(profile_os) = std::env::var_os("USERPROFILE") {
             let profile = PathBuf::from(profile_os);
-            let common_subdirs = ["Desktop", "Downloads", "Documents", "Pictures", "Videos", "source", "projects", "dev", "workspace", "OneDrive"];
+            let common_subdirs = [
+                "Desktop",
+                "Downloads",
+                "Documents",
+                "Pictures",
+                "Videos",
+                "source",
+                "projects",
+                "dev",
+                "workspace",
+                "OneDrive",
+            ];
             for sub in &common_subdirs {
                 let candidate = profile.join(sub).join(q_trimmed);
                 if candidate.exists() && candidate.is_dir() {
@@ -534,13 +574,19 @@ mod tests {
 
         let res = client.fallback_search("C:", 5);
         println!("Search 'C:' count: {}", res.len());
-        assert!(stats.indexed_count > 0 || !res.is_empty(), "Indexer should discover system drives and paths");
+        assert!(
+            stats.indexed_count > 0 || !res.is_empty(),
+            "Indexer should discover system drives and paths"
+        );
     }
 
     #[test]
     fn test_search_never_fails_even_without_everything_service() {
         let client = EverythingClient::new();
         let res = client.search("Desktop", 5);
-        assert!(res.is_ok(), "search should never return Err even if Everything service is absent");
+        assert!(
+            res.is_ok(),
+            "search should never return Err even if Everything service is absent"
+        );
     }
 }

@@ -1,8 +1,8 @@
+use crate::crypto_vault;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::os::windows::process::CommandExt;
 use std::process::{Command, Stdio};
-use crate::crypto_vault;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 const GITHUB_VAULT_TOKEN_KEY: &str = "altspace_github_oauth_token";
@@ -55,11 +55,15 @@ pub fn github_device_code_request(client_id: String) -> Result<DeviceCodeRespons
     let output = Command::new("curl.exe")
         .args([
             "-s",
-            "-X", "POST",
+            "-X",
+            "POST",
             "https://github.com/login/device/code",
-            "-H", "Accept: application/json",
-            "-H", "User-Agent: AltSpace-Desktop",
-            "-d", &format!("client_id={}&scope=read:user user:email", clean_id),
+            "-H",
+            "Accept: application/json",
+            "-H",
+            "User-Agent: AltSpace-Desktop",
+            "-d",
+            &format!("client_id={}&scope=read:user user:email", clean_id),
         ])
         .creation_flags(CREATE_NO_WINDOW)
         .output()
@@ -73,7 +77,10 @@ pub fn github_device_code_request(client_id: String) -> Result<DeviceCodeRespons
     }
 
     if let Ok(err_val) = serde_json::from_str::<serde_json::Value>(&stdout) {
-        if let Some(err_msg) = err_val.get("error_description").or_else(|| err_val.get("error")) {
+        if let Some(err_msg) = err_val
+            .get("error_description")
+            .or_else(|| err_val.get("error"))
+        {
             return Err(format!("GitHub API error: {}", err_msg));
         }
     }
@@ -85,7 +92,10 @@ pub fn github_device_code_request(client_id: String) -> Result<DeviceCodeRespons
 /// SECURITY: When an access token is returned, it is stored directly in Windows DPAPI.
 /// The plaintext token is NEVER emitted across the IPC boundary to the WebView!
 #[tauri::command]
-pub fn github_device_token_poll(client_id: String, device_code: String) -> Result<DeviceTokenResponse, String> {
+pub fn github_device_token_poll(
+    client_id: String,
+    device_code: String,
+) -> Result<DeviceTokenResponse, String> {
     let clean_id = client_id.trim();
     let clean_code = device_code.trim();
 
@@ -195,12 +205,19 @@ fn fetch_github_user_profile(token: &str) -> Result<GitHubUserProfile, String> {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("GitHub API user profile request failed: {}", stderr));
+        return Err(format!(
+            "GitHub API user profile request failed: {}",
+            stderr
+        ));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let val: serde_json::Value = serde_json::from_str(&stdout)
-        .map_err(|e| format!("Failed to parse GitHub user profile JSON: {} (raw: {})", e, stdout))?;
+    let val: serde_json::Value = serde_json::from_str(&stdout).map_err(|e| {
+        format!(
+            "Failed to parse GitHub user profile JSON: {} (raw: {})",
+            e, stdout
+        )
+    })?;
 
     if let Some(msg) = val.get("message").and_then(|m| m.as_str()) {
         return Err(format!("GitHub API error: {}", msg));
@@ -213,9 +230,18 @@ fn fetch_github_user_profile(token: &str) -> Result<GitHubUserProfile, String> {
         .to_string();
 
     let id = val.get("id").and_then(|i| i.as_u64()).unwrap_or(0);
-    let name = val.get("name").and_then(|n| n.as_str()).map(|s| s.to_string());
-    let avatar_url = val.get("avatar_url").and_then(|a| a.as_str()).map(|s| s.to_string());
-    let email = val.get("email").and_then(|e| e.as_str()).map(|s| s.to_string());
+    let name = val
+        .get("name")
+        .and_then(|n| n.as_str())
+        .map(|s| s.to_string());
+    let avatar_url = val
+        .get("avatar_url")
+        .and_then(|a| a.as_str())
+        .map(|s| s.to_string());
+    let email = val
+        .get("email")
+        .and_then(|e| e.as_str())
+        .map(|s| s.to_string());
 
     Ok(GitHubUserProfile {
         login,
@@ -244,7 +270,10 @@ mod tests {
         // Ensures RawGitHubOAuthResponse parses and maps to DeviceTokenResponse with access_token stripped
         let mock_github_json = r#"{"access_token":"gho_mock1234567890abcdef","token_type":"bearer","scope":"read:user"}"#;
         let raw: RawGitHubOAuthResponse = serde_json::from_str(mock_github_json).unwrap();
-        assert_eq!(raw.access_token.as_deref(), Some("gho_mock1234567890abcdef"));
+        assert_eq!(
+            raw.access_token.as_deref(),
+            Some("gho_mock1234567890abcdef")
+        );
 
         let client_response = DeviceTokenResponse {
             success: true,
@@ -263,7 +292,13 @@ mod tests {
 
         // Assert serialized response sent to WebView contains NO access_token field
         let serialized = serde_json::to_string(&client_response).unwrap();
-        assert!(!serialized.contains("access_token"), "Serialized IPC response must NOT contain access_token");
-        assert!(!serialized.contains("gho_mock"), "Serialized IPC response must NOT contain token value");
+        assert!(
+            !serialized.contains("access_token"),
+            "Serialized IPC response must NOT contain access_token"
+        );
+        assert!(
+            !serialized.contains("gho_mock"),
+            "Serialized IPC response must NOT contain token value"
+        );
     }
 }

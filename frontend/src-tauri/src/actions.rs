@@ -68,7 +68,11 @@ pub fn run_as_admin(target_path: &str) -> Result<(), String> {
         return Err("Target file does not exist on local filesystem".into());
     }
 
-    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    let ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
     if ext != "exe" && ext != "msc" {
         return Err(format!(
             "File extension '.{}' is not permitted for elevated execution (only .exe and .msc are allowed)",
@@ -76,7 +80,11 @@ pub fn run_as_admin(target_path: &str) -> Result<(), String> {
         ));
     }
 
-    let wide_path: Vec<u16> = p.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+    let wide_path: Vec<u16> = p
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
 
     unsafe {
         let res = ShellExecuteW(
@@ -89,7 +97,10 @@ pub fn run_as_admin(target_path: &str) -> Result<(), String> {
         );
 
         if res.0 as usize <= 32 {
-            return Err(format!("Elevation failed or cancelled by user (code {})", res.0 as usize));
+            return Err(format!(
+                "Elevation failed or cancelled by user (code {})",
+                res.0 as usize
+            ));
         }
     }
 
@@ -129,9 +140,7 @@ pub fn open_in_terminal(target_path: &str) -> Result<(), String> {
     let dir_str = dir.to_string_lossy().to_string();
 
     // Try Windows Terminal (wt.exe) first
-    let wt_spawn = Command::new("wt")
-        .args(["-d", &dir_str])
-        .spawn();
+    let wt_spawn = Command::new("wt").args(["-d", &dir_str]).spawn();
 
     if wt_spawn.is_ok() {
         return Ok(());

@@ -26,6 +26,8 @@ import {
 import { listEnvProfiles } from "../lib/secureVault";
 import { getEnvironmentCockpit } from "../lib/dockerWsl";
 import { isPlanQuery, synthesizeActionPlan } from "../lib/actionPlanner";
+import { resolveGameHeroCard, isQueryMatchForGame } from "../lib/searchNormalizer";
+import { isExtensionBlocked } from "../lib/fileFilter";
 import type {
   Item,
   Mode,
@@ -316,27 +318,57 @@ export function useSearchEngine({
         path: `plugin://${p.script_path}`,
       }));
 
-      // Games
+      // Games & Intelligent Game Normalizer
       const isGameFilter = qLower === ":game" || qLower === ":games" || qLower.startsWith(":game ");
       const gameSearchText = isGameFilter ? qLower.replace(/^:games?\s*/, "") : qLower;
       const matchedGames = installedGames.filter((g) => {
         if (isGameFilter) {
           if (!gameSearchText) return true;
-          return g.title.toLowerCase().includes(gameSearchText) || g.platform.toLowerCase().includes(gameSearchText);
+          return isQueryMatchForGame(gameSearchText, g.title).isMatch || g.platform.toLowerCase().includes(gameSearchText);
         }
-        return g.title.toLowerCase().includes(qLower) || (qLower.length >= 3 && g.platform.toLowerCase().includes(qLower));
+        return isQueryMatchForGame(qTrim, g.title).isMatch || (qLower.length >= 3 && g.platform.toLowerCase().includes(qLower));
       });
-      const gameItems: Item[] = matchedGames.map((g) => ({
-        id: g.id,
-        title: g.title,
-        subtitle: `${g.platform} • ${g.size_gb ? `${g.size_gb} GB • ` : ""}${g.install_path}`,
-        category: "Game",
-        iconType: "game",
-        path: g.launch_uri,
-        size: g.size_gb ? `${g.size_gb} GB` : undefined,
-        bannerUrl: g.banner_url || undefined,
-        platform: g.platform,
-      }));
+
+      const gameItems: Item[] = [];
+      for (const g of matchedGames) {
+        // 1. Primary game launcher
+        gameItems.push({
+          id: g.id,
+          title: g.title,
+          subtitle: `${g.platform} • ${g.size_gb ? `${g.size_gb} GB • ` : ""}${g.install_path}`,
+          category: "Game",
+          iconType: "game",
+          path: g.launch_uri,
+          size: g.size_gb ? `${g.size_gb} GB` : undefined,
+          bannerUrl: g.banner_url || undefined,
+          platform: g.platform,
+        });
+
+        // 2. Direct folder launcher if install_path exists
+        if (g.install_path) {
+          gameItems.push({
+            id: `${g.id}-folder`,
+            title: `${g.title} (Game Folder)`,
+            subtitle: `Open Directory • ${g.install_path}`,
+            category: "Folder",
+            iconType: "folder",
+            path: g.install_path,
+          });
+        }
+
+        // 3. Direct executable if executable_path exists
+        if (g.executable_path) {
+          const exeFilename = g.executable_path.split("\\").pop() || "Game Executable";
+          gameItems.push({
+            id: `${g.id}-exe`,
+            title: `${exeFilename} (${g.title})`,
+            subtitle: `Direct Binary • ${g.executable_path}`,
+            category: "Application",
+            iconType: "app",
+            path: g.executable_path,
+          });
+        }
+      }
 
       // Themes
       const isThemeFilter = qLower === ":theme" || qLower === ":themes" || qLower.startsWith(":theme ");
@@ -614,8 +646,9 @@ export function useSearchEngine({
           : [];
         const filtered = fallbackList.filter(
           (item) =>
-            item.title.toLowerCase().includes(q) ||
-            item.subtitle.toLowerCase().includes(q)
+            (item.title.toLowerCase().includes(q) ||
+            item.subtitle.toLowerCase().includes(q)) &&
+            (item.category !== "File" || !isExtensionBlocked(item.path, q))
         );
         setItems([
           ...utilityMatches,
@@ -674,17 +707,24 @@ export function useSearchEngine({
         .then((res) => {
           if (!active || currentSeq !== searchSeq.current || !res || !Array.isArray(res) || res.length === 0) return;
 
-          const mapped: Item[] = res.map((r: any) => ({
-            id: r.id,
-            title: r.title,
-            subtitle: r.subtitle,
-            category: r.category,
-            iconType: r.icon_type,
-            iconData: r.icon_data || undefined,
-            path: r.path,
-            size: r.size || undefined,
-            updated: r.updated || undefined,
-          }));
+          const mapped: Item[] = res
+            .map((r: any) => ({
+              id: r.id,
+              title: r.title,
+              subtitle: r.subtitle,
+              category: r.category,
+              iconType: r.icon_type,
+              iconData: r.icon_data || undefined,
+              path: r.path,
+              size: r.size || undefined,
+              updated: r.updated || undefined,
+            }))
+            .filter((item: Item) => {
+              if (item.category === "File") {
+                return !isExtensionBlocked(item.path, debouncedQuery);
+              }
+              return true;
+            });
 
           setItems((prev) => {
             const nonL2 = prev.filter(
@@ -693,7 +733,9 @@ export function useSearchEngine({
                 i.category === "Snippet" ||
                 i.category === "Window Management" ||
                 i.category === "Game" ||
-                i.category === "Theme"
+                i.category === "Theme" ||
+                i.id.endsWith("-folder") ||
+                i.id.endsWith("-exe")
             );
             const appsOnly = mapped.filter((i) => i.category === "Application");
             if (appsOnly.length > 0) saveCachedApps(appsOnly);
@@ -741,6 +783,11 @@ export function useSearchEngine({
       ? searchSnippets(query.trim())[0] || null
       : null;
 
+  const gameHeroData =
+    currentMode === "all" && !isAiQuery && !isTerminalCommand && !transformResult && !calcResult && !quickJumpResult && !directSnippetMatch
+      ? resolveGameHeroCard(query, installedGames)
+      : null;
+
   const specialCard: SpecialCard | null = actionPlan
     ? {
         kind: "plan",
@@ -774,6 +821,8 @@ export function useSearchEngine({
     ? { kind: "quickjump", data: quickJumpResult }
     : directSnippetMatch
     ? { kind: "snippet", data: directSnippetMatch }
+    : gameHeroData
+    ? { kind: "game", data: gameHeroData }
     : null;
 
   const selectedSpecial = currentMode === "all" && specialCard && selectedIndex === 0 ? specialCard : null;

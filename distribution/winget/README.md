@@ -7,7 +7,7 @@ This directory contains the official [Windows Package Manager (winget)](https://
 To verify that the manifest installs AltSpace cleanly on Windows without submission:
 
 ```powershell
-winget install --manifest distribution/winget/manifests/c/codecheesee/altspace/2.2.0/
+winget install --manifest distribution/winget/manifests/c/codecheesee/altspace/2.3.0/
 ```
 
 ## 2. Submit to Official Microsoft `winget-pkgs`
@@ -23,10 +23,10 @@ winget install Microsoft.WingetCreate
 ```powershell
 wingetcreate submit `
   --token <YOUR_GITHUB_PERSONAL_ACCESS_TOKEN> `
-  https://github.com/codecheesee/altspace/releases/download/v2.2.0/AltSpace-Setup-x64.exe
+  https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe
 ```
 
-Or clone `microsoft/winget-pkgs`, copy `distribution/winget/manifests/c/codecheesee/altspace/2.2.0/` into `manifests/c/codecheesee/altspace/2.2.0/`, and open a Pull Request.
+Or clone `microsoft/winget-pkgs`, copy `distribution/winget/manifests/c/codecheesee/altspace/2.3.0/` into `manifests/c/codecheesee/altspace/2.3.0/`, and open a Pull Request.
 
 Once merged by Microsoft's automated CI, anyone worldwide can install AltSpace with:
 ```powershell

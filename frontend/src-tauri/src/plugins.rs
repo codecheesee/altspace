@@ -122,12 +122,15 @@ impl HealthTracker {
 
     #[allow(dead_code)]
     pub fn record_failure(&mut self, id: &str, is_timeout: bool, err_msg: &str) {
-        let entry = self.records.entry(id.to_string()).or_insert_with(|| PluginHealthStatus {
-            consecutive_failures: 0,
-            consecutive_timeouts: 0,
-            is_quarantined: false,
-            quarantine_reason: None,
-        });
+        let entry = self
+            .records
+            .entry(id.to_string())
+            .or_insert_with(|| PluginHealthStatus {
+                consecutive_failures: 0,
+                consecutive_timeouts: 0,
+                is_quarantined: false,
+                quarantine_reason: None,
+            });
 
         entry.consecutive_failures += 1;
         if is_timeout {
@@ -154,14 +157,11 @@ impl HealthTracker {
     }
 }
 
-static HEALTH_TRACKER: LazyLock<Mutex<HealthTracker>> = LazyLock::new(|| Mutex::new(HealthTracker::default()));
+static HEALTH_TRACKER: LazyLock<Mutex<HealthTracker>> =
+    LazyLock::new(|| Mutex::new(HealthTracker::default()));
 
 pub fn is_plugin_revoked(id: &str) -> bool {
-    const REVOKED_IDS: &[&str] = &[
-        "malicious_tool",
-        "crypto_drainer",
-        "ransomware_mock",
-    ];
+    const REVOKED_IDS: &[&str] = &["malicious_tool", "crypto_drainer", "ransomware_mock"];
     REVOKED_IDS.contains(&id)
 }
 
@@ -180,12 +180,17 @@ pub fn record_plugin_success(id: &str) {
 
 #[allow(dead_code)]
 pub fn record_plugin_failure(id: &str, is_timeout: bool, err_msg: &str) {
-    HEALTH_TRACKER.lock().unwrap().record_failure(id, is_timeout, err_msg);
+    HEALTH_TRACKER
+        .lock()
+        .unwrap()
+        .record_failure(id, is_timeout, err_msg);
 }
 
 pub fn get_plugins_dir() -> PathBuf {
     if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
-        let dir = PathBuf::from(local_appdata).join("AltSpace").join("plugins");
+        let dir = PathBuf::from(local_appdata)
+            .join("AltSpace")
+            .join("plugins");
         let _ = fs::create_dir_all(&dir);
         return dir;
     }
@@ -231,13 +236,12 @@ pub fn scan_plugins_in_dir(plugins_dir: &Path) -> Vec<PluginItem> {
                                 let (status, status_message) = if is_revoked {
                                     (
                                         PluginStatus::Revoked,
-                                        Some("Extension is revoked on security grounds.".to_string()),
+                                        Some(
+                                            "Extension is revoked on security grounds.".to_string(),
+                                        ),
                                     )
                                 } else if health.is_quarantined {
-                                    (
-                                        PluginStatus::Quarantined,
-                                        health.quarantine_reason.clone(),
-                                    )
+                                    (PluginStatus::Quarantined, health.quarantine_reason.clone())
                                 } else {
                                     (
                                         PluginStatus::BlockedMigrationRequired,
@@ -282,7 +286,10 @@ pub fn validate_plugin_id(id: &str) -> Result<(), String> {
     if trimmed.len() > 64 {
         return Err("Plugin ID exceeds maximum length of 64 characters".into());
     }
-    if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
         return Err("Plugin ID can only contain letters, numbers, hyphens, and underscores".into());
     }
     if trimmed == "." || trimmed == ".." {
@@ -333,7 +340,9 @@ pub fn run_plugin_script_in_dir(
     let canon_dir = fs::canonicalize(base_plugins_dir)
         .map_err(|e| format!("Unable to resolve plugin directory safely: {}", e))?;
     if !canon_script.starts_with(&canon_dir) {
-        return Err("Security Violation: Script resides outside the AltSpace plugins directory.".into());
+        return Err(
+            "Security Violation: Script resides outside the AltSpace plugins directory.".into(),
+        );
     }
 
     let plugin_id = path
@@ -355,7 +364,10 @@ pub fn run_plugin_script_in_dir(
         return Err(format!(
             "Security Guard: Plugin '{}' is quarantined due to: {}.",
             plugin_id,
-            health.quarantine_reason.as_deref().unwrap_or("repeated failures")
+            health
+                .quarantine_reason
+                .as_deref()
+                .unwrap_or("repeated failures")
         ));
     }
 
@@ -401,8 +413,8 @@ pub fn install_plugin(
     validate_script_filename(script_filename)?;
 
     // Validate manifest JSON syntax
-    let manifest: PluginManifest = serde_json::from_str(manifest_json)
-        .map_err(|e| format!("Invalid manifest JSON: {}", e))?;
+    let manifest: PluginManifest =
+        serde_json::from_str(manifest_json).map_err(|e| format!("Invalid manifest JSON: {}", e))?;
 
     if manifest.id != plugin_id {
         return Err("Manifest ID mismatch with plugin ID".into());
@@ -418,7 +430,10 @@ pub fn uninstall_plugin_in_dir(plugin_id: &str, base_plugins_dir: &Path) -> Resu
 
     let target_dir = base_plugins_dir.join(plugin_id);
 
-    if let (Ok(canon_target), Ok(canon_plugins)) = (fs::canonicalize(&target_dir), fs::canonicalize(base_plugins_dir)) {
+    if let (Ok(canon_target), Ok(canon_plugins)) = (
+        fs::canonicalize(&target_dir),
+        fs::canonicalize(base_plugins_dir),
+    ) {
         if canon_target.starts_with(&canon_plugins) && canon_target != canon_plugins {
             fs::remove_dir_all(&canon_target)
                 .map_err(|e| format!("Failed to remove plugin dir: {}", e))?;
@@ -510,7 +525,8 @@ mod tests {
     #[test]
     fn test_plugin_preservation_and_migration_status() {
         let _guard = SAFE_MODE_TEST_LOCK.lock().unwrap();
-        let temp_dir = std::env::temp_dir().join(format!("altspace_test_preservation_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("altspace_test_preservation_{}", std::process::id()));
         let _ = fs::remove_dir_all(&temp_dir);
         let sample_plugin_dir = temp_dir.join("sample_tool");
         fs::create_dir_all(&sample_plugin_dir).unwrap();
@@ -538,12 +554,19 @@ mod tests {
         assert_eq!(item.name, "Sample Developer Tool");
         assert_eq!(item.keyword, ":sample");
         assert_eq!(item.status, PluginStatus::BlockedMigrationRequired);
-        assert!(item.status_message.as_ref().unwrap().contains("migration required"));
+        assert!(item
+            .status_message
+            .as_ref()
+            .unwrap()
+            .contains("migration required"));
 
         // 2. Verify files are completely preserved on disk
         assert!(sample_plugin_dir.join("manifest.json").exists());
         assert!(sample_plugin_dir.join("run.ps1").exists());
-        assert_eq!(fs::read_to_string(sample_plugin_dir.join("run.ps1")).unwrap(), script);
+        assert_eq!(
+            fs::read_to_string(sample_plugin_dir.join("run.ps1")).unwrap(),
+            script
+        );
 
         // 3. Verify running the script is blocked and does NOT delete the files
         let run_res = run_plugin_script_in_dir(&item.script_path, "", &temp_dir);
@@ -562,7 +585,8 @@ mod tests {
     #[test]
     fn test_safe_mode_interaction_with_blocked_status() {
         let _guard = SAFE_MODE_TEST_LOCK.lock().unwrap();
-        let temp_dir = std::env::temp_dir().join(format!("altspace_test_safemode_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("altspace_test_safemode_{}", std::process::id()));
         let _ = fs::remove_dir_all(&temp_dir);
         let sample_plugin_dir = temp_dir.join("sample_tool");
         fs::create_dir_all(&sample_plugin_dir).unwrap();
@@ -577,7 +601,10 @@ mod tests {
         fs::write(sample_plugin_dir.join("manifest.json"), manifest).unwrap();
         fs::write(sample_plugin_dir.join("run.ps1"), "Write-Output 123").unwrap();
 
-        let script_path = sample_plugin_dir.join("run.ps1").to_string_lossy().to_string();
+        let script_path = sample_plugin_dir
+            .join("run.ps1")
+            .to_string_lossy()
+            .to_string();
 
         // When Safe Mode is active:
         set_safe_mode(true);
@@ -593,7 +620,10 @@ mod tests {
         set_safe_mode(false);
         let plugins_normal = scan_plugins_in_dir(&temp_dir);
         assert_eq!(plugins_normal.len(), 1);
-        assert_eq!(plugins_normal[0].status, PluginStatus::BlockedMigrationRequired);
+        assert_eq!(
+            plugins_normal[0].status,
+            PluginStatus::BlockedMigrationRequired
+        );
 
         // Execution is STILL blocked even when safe mode is off
         let run_normal = run_plugin_script_in_dir(&script_path, "", &temp_dir);
@@ -606,7 +636,8 @@ mod tests {
 
     #[test]
     fn test_install_plugin_fails_closed_without_writing_files() {
-        let temp_dir = std::env::temp_dir().join(format!("altspace_test_install_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("altspace_test_install_{}", std::process::id()));
         let _ = fs::remove_dir_all(&temp_dir);
 
         let manifest = r#"{

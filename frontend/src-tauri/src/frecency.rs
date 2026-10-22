@@ -108,7 +108,11 @@ impl FrecencyDb {
             entries.push(FrecencyEntry { item_id, score });
         }
 
-        entries.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        entries.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         Ok(entries)
     }
 
@@ -150,7 +154,6 @@ fn now_epoch_secs() -> f64 {
         .unwrap_or_default()
         .as_secs_f64()
 }
-
 
 #[cfg(test)]
 pub mod tests {

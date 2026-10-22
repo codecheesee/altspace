@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::os::windows::process::CommandExt;
-use std::sync::{Arc, Mutex, LazyLock};
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{Duration, Instant};
-use sha2::{Digest, Sha256};
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -232,7 +232,10 @@ fn generate_secure_token() -> Result<String, String> {
     Ok(hex)
 }
 
-pub fn issue_approval_challenge_with_ttl(action: &TypedAction, ttl: Duration) -> Result<String, String> {
+pub fn issue_approval_challenge_with_ttl(
+    action: &TypedAction,
+    ttl: Duration,
+) -> Result<String, String> {
     let digest = compute_action_digest(action)?;
     let token = generate_secure_token()?;
     let challenge = ApprovalChallenge {
@@ -261,8 +264,7 @@ type UndoEntry = (PathBuf, Vec<u8>);
 type UndoMap = Arc<Mutex<HashMap<String, UndoEntry>>>;
 
 // In-memory undo buffers: action_id -> (original_path, original_content)
-static UNDO_STORE: LazyLock<UndoMap> =
-    LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
+static UNDO_STORE: LazyLock<UndoMap> = LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 // Action ledger history (bounded in-memory ring / SQLite synced)
 static ACTION_LEDGER: LazyLock<Arc<Mutex<Vec<LedgerEntry>>>> =
@@ -295,7 +297,9 @@ pub fn evaluate_action(request: &ActionRequest) -> ActionEvaluation {
             id: request.id.clone(),
             risk_tier: RiskTier::AlwaysApprove,
             requires_approval: false,
-            target_summary: "Run PowerShell command (Capability permanently disabled for security hardening)".into(),
+            target_summary:
+                "Run PowerShell command (Capability permanently disabled for security hardening)"
+                    .into(),
             diff_preview: None,
             reversibility: false,
             requires_entitlement: true,
@@ -305,13 +309,20 @@ pub fn evaluate_action(request: &ActionRequest) -> ActionEvaluation {
             id: request.id.clone(),
             risk_tier: RiskTier::PreviewThenApprove,
             requires_approval: false,
-            target_summary: format!("HTTP {} {} (Capability permanently disabled for security hardening)", method, url),
+            target_summary: format!(
+                "HTTP {} {} (Capability permanently disabled for security hardening)",
+                method, url
+            ),
             diff_preview: None,
             reversibility: false,
             requires_entitlement: true,
             approval_token: None,
         },
-        TypedAction::WriteFile { path, content, overwrite } => {
+        TypedAction::WriteFile {
+            path,
+            content,
+            overwrite,
+        } => {
             let exists = Path::new(path).exists();
             let summary = if exists {
                 format!("Overwrite existing file: {}", path)
@@ -319,7 +330,11 @@ pub fn evaluate_action(request: &ActionRequest) -> ActionEvaluation {
                 format!("Create new file: {}", path)
             };
             let diff = if content.len() > 1000 {
-                format!("{}... (truncated {} bytes)", &content[..1000], content.len())
+                format!(
+                    "{}... (truncated {} bytes)",
+                    &content[..1000],
+                    content.len()
+                )
             } else {
                 content.clone()
             };
@@ -363,7 +378,11 @@ pub fn evaluate_action(request: &ActionRequest) -> ActionEvaluation {
                 approval_token,
             }
         }
-        TypedAction::InstallPlugin { plugin_id, script_filename, .. } => {
+        TypedAction::InstallPlugin {
+            plugin_id,
+            script_filename,
+            ..
+        } => {
             let approval_token = issue_approval_challenge(&request.action).ok();
             ActionEvaluation {
                 id: request.id.clone(),
@@ -491,11 +510,7 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
 
         // Enforce expiry
         if Instant::now() > challenge.expires_at {
-            return make_failure(
-                &request.id,
-                "Approval token has expired.",
-                start.elapsed(),
-            );
+            return make_failure(&request.id, "Approval token has expired.", start.elapsed());
         }
 
         // Enforce parameter binding (prevent mutation)
@@ -524,10 +539,16 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
         TypedAction::ReadFile { path, .. } => format!("Read file: {}", path),
         TypedAction::WriteFile { path, .. } => format!("Write file: {}", path),
         TypedAction::DeleteFile { path } => format!("Delete: {}", path),
-        TypedAction::RunProgram { program, args, .. } => format!("Execute binary: {} with args: {:?}", program, args),
-        TypedAction::InstallPlugin { plugin_id, .. } => format!("Install extension '{}'", plugin_id),
+        TypedAction::RunProgram { program, args, .. } => {
+            format!("Execute binary: {} with args: {:?}", program, args)
+        }
+        TypedAction::InstallPlugin { plugin_id, .. } => {
+            format!("Install extension '{}'", plugin_id)
+        }
         TypedAction::InstallUpdate { release_url } => format!("Open release page: {}", release_url),
-        TypedAction::FreePortAndVerify { port, pid } => format!("Free TCP port :{} (PID {})", port, pid),
+        TypedAction::FreePortAndVerify { port, pid } => {
+            format!("Free TCP port :{} (PID {})", port, pid)
+        }
         TypedAction::RestartDockerContainer { id } => format!("Restart Docker container '{}'", id),
         TypedAction::ReclaimWslMemory => "Reclaim WSL2 hypervisor dynamic memory".into(),
         _ => "Unknown action".into(),
@@ -557,14 +578,26 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
                     let content = String::from_utf8_lossy(&bytes[..to_take]).to_string();
                     make_success(&request.id, content, String::new(), start.elapsed(), false)
                 }
-                Err(e) => make_failure(&request.id, &format!("Failed to read file: {}", e), start.elapsed()),
+                Err(e) => make_failure(
+                    &request.id,
+                    &format!("Failed to read file: {}", e),
+                    start.elapsed(),
+                ),
             }
         }
-        TypedAction::WriteFile { path, content, overwrite } => {
+        TypedAction::WriteFile {
+            path,
+            content,
+            overwrite,
+        } => {
             let p = PathBuf::from(path);
             let exists = p.exists();
             if exists && !*overwrite {
-                return make_failure(&request.id, "File exists and overwrite is false", start.elapsed());
+                return make_failure(
+                    &request.id,
+                    "File exists and overwrite is false",
+                    start.elapsed(),
+                );
             }
 
             // Stash original content for undo
@@ -581,8 +614,18 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
             }
 
             match fs::write(&p, content) {
-                Ok(_) => make_success(&request.id, format!("Wrote {} bytes to {}", content.len(), path), String::new(), start.elapsed(), exists),
-                Err(e) => make_failure(&request.id, &format!("Failed to write file: {}", e), start.elapsed()),
+                Ok(_) => make_success(
+                    &request.id,
+                    format!("Wrote {} bytes to {}", content.len(), path),
+                    String::new(),
+                    start.elapsed(),
+                    exists,
+                ),
+                Err(e) => make_failure(
+                    &request.id,
+                    &format!("Failed to write file: {}", e),
+                    start.elapsed(),
+                ),
             }
         }
         TypedAction::DeleteFile { path } => {
@@ -596,8 +639,18 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
                 fs::remove_file(p)
             };
             match res {
-                Ok(_) => make_success(&request.id, format!("Deleted: {}", path), String::new(), start.elapsed(), false),
-                Err(e) => make_failure(&request.id, &format!("Failed to delete: {}", e), start.elapsed()),
+                Ok(_) => make_success(
+                    &request.id,
+                    format!("Deleted: {}", path),
+                    String::new(),
+                    start.elapsed(),
+                    false,
+                ),
+                Err(e) => make_failure(
+                    &request.id,
+                    &format!("Failed to delete: {}", e),
+                    start.elapsed(),
+                ),
             }
         }
         TypedAction::RunProgram { program, args, cwd } => {
@@ -615,13 +668,26 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
                     if out.status.success() {
                         make_success(&request.id, stdout, stderr, start.elapsed(), false)
                     } else {
-                        make_failure(&request.id, &format!("Exit code: {:?}. {}", out.status.code(), stderr), start.elapsed())
+                        make_failure(
+                            &request.id,
+                            &format!("Exit code: {:?}. {}", out.status.code(), stderr),
+                            start.elapsed(),
+                        )
                     }
                 }
-                Err(e) => make_failure(&request.id, &format!("Failed to spawn {}: {}", program, e), start.elapsed()),
+                Err(e) => make_failure(
+                    &request.id,
+                    &format!("Failed to spawn {}: {}", program, e),
+                    start.elapsed(),
+                ),
             }
         }
-        TypedAction::InstallPlugin { plugin_id, manifest_json, script_filename, script_content } => {
+        TypedAction::InstallPlugin {
+            plugin_id,
+            manifest_json,
+            script_filename,
+            script_content,
+        } => {
             let res = crate::plugins::install_plugin(
                 plugin_id,
                 manifest_json,
@@ -629,21 +695,47 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
                 script_filename,
             );
             match res {
-                Ok(_) => make_success(&request.id, format!("Successfully installed extension '{}'", plugin_id), String::new(), start.elapsed(), true),
+                Ok(_) => make_success(
+                    &request.id,
+                    format!("Successfully installed extension '{}'", plugin_id),
+                    String::new(),
+                    start.elapsed(),
+                    true,
+                ),
                 Err(ref e) => make_failure(&request.id, e, start.elapsed()),
             }
         }
         TypedAction::InstallUpdate { release_url } => {
-            match Command::new("explorer.exe").arg(release_url).creation_flags(CREATE_NO_WINDOW).spawn() {
-                Ok(_) => make_success(&request.id, format!("Opened release page: {}", release_url), String::new(), start.elapsed(), false),
-                Err(e) => make_failure(&request.id, &format!("Failed to open browser: {}", e), start.elapsed()),
+            match Command::new("explorer.exe")
+                .arg(release_url)
+                .creation_flags(CREATE_NO_WINDOW)
+                .spawn()
+            {
+                Ok(_) => make_success(
+                    &request.id,
+                    format!("Opened release page: {}", release_url),
+                    String::new(),
+                    start.elapsed(),
+                    false,
+                ),
+                Err(e) => make_failure(
+                    &request.id,
+                    &format!("Failed to open browser: {}", e),
+                    start.elapsed(),
+                ),
             }
         }
         TypedAction::FreePortAndVerify { port, pid } => {
             match crate::ports::kill_and_verify_port(*port, *pid) {
                 Ok(res) => {
                     if res.verified_free || res.success {
-                        make_success(&request.id, res.message, String::new(), start.elapsed(), false)
+                        make_success(
+                            &request.id,
+                            res.message,
+                            String::new(),
+                            start.elapsed(),
+                            false,
+                        )
                     } else {
                         make_failure(&request.id, &res.message, start.elapsed())
                     }
@@ -654,7 +746,13 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
         TypedAction::RestartDockerContainer { id } => {
             let res = crate::docker_wsl::docker_action(id, "restart");
             if res.success {
-                make_success(&request.id, res.message, res.stdout.unwrap_or_default(), start.elapsed(), false)
+                make_success(
+                    &request.id,
+                    res.message,
+                    res.stdout.unwrap_or_default(),
+                    start.elapsed(),
+                    false,
+                )
             } else {
                 make_failure(&request.id, &res.message, start.elapsed())
             }
@@ -662,7 +760,13 @@ pub fn execute_action(request: &ActionRequest) -> ActionResult {
         TypedAction::ReclaimWslMemory => {
             let res = crate::docker_wsl::wsl_shutdown();
             if res.success {
-                make_success(&request.id, res.message, res.stdout.unwrap_or_default(), start.elapsed(), false)
+                make_success(
+                    &request.id,
+                    res.message,
+                    res.stdout.unwrap_or_default(),
+                    start.elapsed(),
+                    false,
+                )
             } else {
                 make_failure(&request.id, &res.message, start.elapsed())
             }
@@ -702,7 +806,13 @@ fn record_ledger(mut entry: LedgerEntry) {
     }
 }
 
-fn make_success(id: &str, stdout: String, stderr: String, dur: Duration, undo: bool) -> ActionResult {
+fn make_success(
+    id: &str,
+    stdout: String,
+    stderr: String,
+    dur: Duration,
+    undo: bool,
+) -> ActionResult {
     ActionResult {
         id: id.to_string(),
         status: ActionStatus::Completed,
@@ -736,7 +846,10 @@ mod tests {
     fn test_policy_classification_levels() {
         let read = ActionRequest {
             id: "act-1".into(),
-            action: TypedAction::ReadFile { path: "C:\\test.txt".into(), max_bytes: None },
+            action: TypedAction::ReadFile {
+                path: "C:\\test.txt".into(),
+                max_bytes: None,
+            },
             session_token: None,
             approval_token: None,
         };
@@ -747,7 +860,11 @@ mod tests {
 
         let write = ActionRequest {
             id: "act-2".into(),
-            action: TypedAction::WriteFile { path: "C:\\out.txt".into(), content: "hello".into(), overwrite: true },
+            action: TypedAction::WriteFile {
+                path: "C:\\out.txt".into(),
+                content: "hello".into(),
+                overwrite: true,
+            },
             session_token: None,
             approval_token: None,
         };
@@ -758,7 +875,9 @@ mod tests {
 
         let delete = ActionRequest {
             id: "act-3".into(),
-            action: TypedAction::DeleteFile { path: "C:\\del.txt".into() },
+            action: TypedAction::DeleteFile {
+                path: "C:\\del.txt".into(),
+            },
             session_token: None,
             approval_token: None,
         };
@@ -784,7 +903,11 @@ mod tests {
             approval_token: None,
         };
         let res = execute_action(&read_req);
-        assert!(res.success, "Level 1 action must execute without approval token: {:?}", res.error_message);
+        assert!(
+            res.success,
+            "Level 1 action must execute without approval token: {:?}",
+            res.error_message
+        );
         assert_eq!(res.stdout, "level1_data");
 
         let _ = fs::remove_file(test_file);
@@ -804,7 +927,10 @@ mod tests {
         };
         let res_write = execute_action(&write_req);
         assert!(!res_write.success);
-        assert!(res_write.error_message.unwrap().contains("Approval required"));
+        assert!(res_write
+            .error_message
+            .unwrap()
+            .contains("Approval required"));
 
         let del_req = ActionRequest {
             id: "act-unapproved-del".into(),
@@ -837,7 +963,9 @@ mod tests {
             approval_token: None,
         };
         let eval = evaluate_action(&eval_req);
-        let token = eval.approval_token.expect("Challenge token must be generated");
+        let token = eval
+            .approval_token
+            .expect("Challenge token must be generated");
 
         // 2. First execution succeeds
         let exec_req1 = ActionRequest {
@@ -847,7 +975,11 @@ mod tests {
             approval_token: Some(token.clone()),
         };
         let res1 = execute_action(&exec_req1);
-        assert!(res1.success, "First execution with token must succeed: {:?}", res1.error_message);
+        assert!(
+            res1.success,
+            "First execution with token must succeed: {:?}",
+            res1.error_message
+        );
 
         // 3. Second execution (replay) fails closed
         let exec_req2 = ActionRequest {
@@ -972,7 +1104,10 @@ mod tests {
         };
         let res = execute_action(&exec_req);
         assert!(!res.success, "RunPowerShell must fail closed");
-        assert!(res.error_message.unwrap().contains("RunPowerShell execution route is permanently removed"));
+        assert!(res
+            .error_message
+            .unwrap()
+            .contains("RunPowerShell execution route is permanently removed"));
     }
 
     #[test]
@@ -1002,7 +1137,10 @@ mod tests {
         };
         let res = execute_action(&exec_req);
         assert!(!res.success, "CallHttpEndpoint must fail closed");
-        assert!(res.error_message.unwrap().contains("CallHttpEndpoint execution route is permanently removed"));
+        assert!(res
+            .error_message
+            .unwrap()
+            .contains("CallHttpEndpoint execution route is permanently removed"));
     }
 
     #[test]
@@ -1020,29 +1158,51 @@ mod tests {
         record_ledger(entry);
 
         let recent = get_action_ledger();
-        let found = recent.iter().find(|e| e.id == "led-secret-test").expect("Ledger entry must exist");
-        assert!(!found.target.contains("sk-proj-superSecretOpenAiKey1234567890"), "Ledger target must not leak plaintext key");
-        assert!(found.target.contains("[REDACTED_API_KEY]"), "Ledger target must contain redacted placeholder");
+        let found = recent
+            .iter()
+            .find(|e| e.id == "led-secret-test")
+            .expect("Ledger entry must exist");
+        assert!(
+            !found
+                .target
+                .contains("sk-proj-superSecretOpenAiKey1234567890"),
+            "Ledger target must not leak plaintext key"
+        );
+        assert!(
+            found.target.contains("[REDACTED_API_KEY]"),
+            "Ledger target must contain redacted placeholder"
+        );
 
         let failure = FailureEvent {
             id: "fail-secret-test".into(),
             source: "cli".into(),
-            command_or_target: "git clone https://ghp_secretGitHubToken1234567890abcdef@github.com/org/repo".into(),
+            command_or_target:
+                "git clone https://ghp_secretGitHubToken1234567890abcdef@github.com/org/repo".into(),
             exit_code: Some(1),
-            error_message: "Failed for user C:\\Users\\alice\\AppData with sk-ant-secretAnthropicKey1234567".into(),
+            error_message:
+                "Failed for user C:\\Users\\alice\\AppData with sk-ant-secretAnthropicKey1234567"
+                    .into(),
             stdout_excerpt: Some("Authorization: Bearer mySecretJwtToken123456".into()),
             timestamp: 1000,
         };
         record_failure_event(failure);
 
         let failures = get_recent_failures();
-        let f = failures.iter().find(|e| e.id == "fail-secret-test").expect("Failure must exist");
-        assert!(!f.command_or_target.contains("ghp_secretGitHubToken1234567890abcdef"));
+        let f = failures
+            .iter()
+            .find(|e| e.id == "fail-secret-test")
+            .expect("Failure must exist");
+        assert!(!f
+            .command_or_target
+            .contains("ghp_secretGitHubToken1234567890abcdef"));
         assert!(f.command_or_target.contains("[REDACTED_GITHUB_TOKEN]"));
         assert!(!f.error_message.contains("sk-ant-secretAnthropicKey1234567"));
         assert!(f.error_message.contains("[REDACTED_ANTHROPIC_KEY]"));
         assert!(!f.error_message.contains("C:\\Users\\alice\\"));
         assert!(f.error_message.contains("~\\"));
-        assert_eq!(f.stdout_excerpt.as_deref(), Some("Authorization: Bearer [REDACTED_TOKEN]"));
+        assert_eq!(
+            f.stdout_excerpt.as_deref(),
+            Some("Authorization: Bearer [REDACTED_TOKEN]")
+        );
     }
 }

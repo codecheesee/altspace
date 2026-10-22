@@ -1,5 +1,5 @@
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::HWND;
@@ -43,9 +43,8 @@ fn save_cache_to_disk(cache: &HashMap<String, String>) {
 
 static ICON_CACHE_DIRTY: AtomicBool = AtomicBool::new(false);
 
-static ICON_CACHE: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| {
-    Mutex::new(load_cache_from_disk())
-});
+static ICON_CACHE: LazyLock<Mutex<HashMap<String, String>>> =
+    LazyLock::new(|| Mutex::new(load_cache_from_disk()));
 
 fn base64_encode(data: &[u8]) -> String {
     const CHARSET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -213,7 +212,10 @@ mod tests {
         assert!(icon.unwrap().starts_with("data:image/bmp;base64,"));
 
         let appdata = std::env::var("APPDATA").unwrap_or_default();
-        let lnk_path = format!(r"{}\Microsoft\Windows\Start Menu\Programs\Visual Studio Code\Visual Studio Code.lnk", appdata);
+        let lnk_path = format!(
+            r"{}\Microsoft\Windows\Start Menu\Programs\Visual Studio Code\Visual Studio Code.lnk",
+            appdata
+        );
         let lnk_icon = get_app_icon_base64(&lnk_path);
         println!("VS Code lnk icon extracted: {}", lnk_icon.is_some());
     }

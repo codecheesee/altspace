@@ -62,9 +62,8 @@ fn parse_changelog_lines(body: &str) -> (Vec<String>, Vec<String>) {
             continue;
         }
 
-        let is_bullet = trimmed.starts_with("- ")
-            || trimmed.starts_with("* ")
-            || trimmed.starts_with("• ");
+        let is_bullet =
+            trimmed.starts_with("- ") || trimmed.starts_with("* ") || trimmed.starts_with("• ");
 
         let text = if is_bullet {
             trimmed[2..].trim().to_string()
@@ -138,14 +137,19 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
                 if let Some(tag) = manifest.version {
                     let clean_latest = tag.trim_start_matches('v').trim().to_string();
                     let clean_current = current_version.trim_start_matches('v').trim().to_string();
-                    let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
+                    let has_update =
+                        !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
 
                     return Ok(UpdateInfo {
                         has_update,
                         current_version,
                         latest_version: clean_latest,
-                        release_name: manifest.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
-                        release_url: manifest.release_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
+                        release_name: manifest
+                            .name
+                            .unwrap_or_else(|| format!("AltSpace v{}", tag)),
+                        release_url: manifest.release_url.unwrap_or_else(|| {
+                            "https://github.com/codecheesee/altspace/releases".to_string()
+                        }),
                         release_notes: format!("AltSpace update v{} is available.", tag),
                         features: manifest.features.unwrap_or_default(),
                         fixes: manifest.fixes.unwrap_or_default(),
@@ -162,9 +166,12 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
         .args([
             "-s",
             "-f",
-            "-m", "5",
-            "-H", "User-Agent: AltSpace-Updater",
-            "-H", "Accept: application/json",
+            "-m",
+            "5",
+            "-H",
+            "User-Agent: AltSpace-Updater",
+            "-H",
+            "Accept: application/json",
             "https://api.github.com/repos/codecheesee/altspace/releases/latest",
         ])
         .creation_flags(CREATE_NO_WINDOW)
@@ -177,7 +184,8 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
                 if let Some(tag) = gh.tag_name {
                     let clean_latest = tag.trim_start_matches('v').trim().to_string();
                     let clean_current = current_version.trim_start_matches('v').trim().to_string();
-                    let has_update = !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
+                    let has_update =
+                        !clean_latest.is_empty() && is_newer_version(&clean_latest, &clean_current);
                     let body = gh.body.unwrap_or_default();
                     let (features, fixes) = parse_changelog_lines(&body);
 
@@ -186,7 +194,9 @@ pub fn check_for_update() -> Result<UpdateInfo, String> {
                         current_version,
                         latest_version: clean_latest,
                         release_name: gh.name.unwrap_or_else(|| format!("AltSpace v{}", tag)),
-                        release_url: gh.html_url.unwrap_or_else(|| "https://github.com/codecheesee/altspace/releases".to_string()),
+                        release_url: gh.html_url.unwrap_or_else(|| {
+                            "https://github.com/codecheesee/altspace/releases".to_string()
+                        }),
                         release_notes: body,
                         features,
                         fixes,

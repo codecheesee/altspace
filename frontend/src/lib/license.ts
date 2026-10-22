@@ -167,8 +167,24 @@ function parseEntitlement(value: unknown): VerifiedEntitlement | null {
 export function getLicenseStatus(): LicenseStatus {
   const session = getCurrentSession();
 
-  // 1. Check if authenticated as maintainer @codecheesee
-  if (session?.login === GITHUB_MAINTAINER_LOGIN || getStoredGitHubLogin() === GITHUB_MAINTAINER_LOGIN) {
+  // 1. Check if authenticated as maintainer @codecheesee or cached local sovereign status
+  const isCachedMaintainer = (() => {
+    try {
+      return (
+        typeof window !== "undefined" &&
+        (localStorage.getItem("altspace_is_maintainer") === "true" ||
+          localStorage.getItem("altspace_tier") === "Maintainer")
+      );
+    } catch (_) {
+      return false;
+    }
+  })();
+
+  if (
+    isCachedMaintainer ||
+    session?.login === GITHUB_MAINTAINER_LOGIN ||
+    getStoredGitHubLogin() === GITHUB_MAINTAINER_LOGIN
+  ) {
     return {
       isSupporter: true,
       isMaintainer: true,
@@ -268,6 +284,10 @@ export async function refreshEntitlement(): Promise<LicenseStatus> {
         "check_maintainer_status"
       );
       if (res && res.is_maintainer) {
+        try {
+          localStorage.setItem("altspace_is_maintainer", "true");
+          localStorage.setItem("altspace_tier", "Maintainer");
+        } catch (_) {}
         saveStoredGitHubLogin(res.login || GITHUB_MAINTAINER_LOGIN);
         return {
           isSupporter: true,
@@ -437,6 +457,8 @@ export function deactivateLicense(): void {
   try {
     localStorage.removeItem("altspace_entitlement_token");
     localStorage.removeItem("altspace_verified_license");
+    localStorage.removeItem("altspace_is_maintainer");
+    localStorage.removeItem("altspace_tier");
   } catch (_) {}
 }
 

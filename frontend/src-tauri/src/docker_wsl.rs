@@ -106,8 +106,13 @@ pub fn sanitize_identifier(input: &str) -> Result<String, String> {
     if trimmed.starts_with('-') {
         return Err("Identifier cannot begin with a dash to prevent flag injection".into());
     }
-    if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.') {
-        return Err("Identifier contains illegal characters (only alphanumeric, _, -, . allowed)".into());
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+    {
+        return Err(
+            "Identifier contains illegal characters (only alphanumeric, _, -, . allowed)".into(),
+        );
     }
     Ok(trimmed.to_string())
 }
@@ -124,7 +129,9 @@ pub fn run_command_with_timeout(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    let child = cmd.spawn().map_err(|e| format!("Failed to spawn {}: {}", program, e))?;
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn {}: {}", program, e))?;
 
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
@@ -177,7 +184,11 @@ pub fn get_vmmem_memory_usage() -> (bool, Option<u64>) {
 
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
-                let nul_pos = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
+                let nul_pos = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
                 let name = String::from_utf16_lossy(&entry.szExeFile[..nul_pos]).to_lowercase();
 
                 if name.starts_with("vmmem") {
@@ -206,7 +217,11 @@ pub fn get_vmmem_memory_usage() -> (bool, Option<u64>) {
                 for line in output.lines() {
                     let parts: Vec<&str> = line.split(',').collect();
                     if parts.len() >= 5 {
-                        let mem_str = parts[4].replace('\"', "").replace(" K", "").replace(" KB", "").replace(',', "");
+                        let mem_str = parts[4]
+                            .replace('\"', "")
+                            .replace(" K", "")
+                            .replace(" KB", "")
+                            .replace(',', "");
                         if let Ok(kb) = mem_str.trim().parse::<u64>() {
                             return (true, Some(kb / 1024));
                         }
@@ -262,8 +277,14 @@ pub fn get_wsl_overview() -> WslOverview {
     match run_command_with_timeout("wsl.exe", &["-l", "-v"], PROBE_TIMEOUT) {
         Ok(stdout) => {
             let distros = parse_wsl_list_output(&stdout);
-            let running_distros_count = distros.iter().filter(|d| d.state.eq_ignore_ascii_case("running")).count();
-            let default_distro = distros.iter().find(|d| d.is_default).map(|d| d.name.clone());
+            let running_distros_count = distros
+                .iter()
+                .filter(|d| d.state.eq_ignore_ascii_case("running"))
+                .count();
+            let default_distro = distros
+                .iter()
+                .find(|d| d.is_default)
+                .map(|d| d.name.clone());
 
             WslOverview {
                 installed: true,
@@ -347,7 +368,11 @@ pub fn parse_docker_container_line(line: &str) -> Option<DockerContainer> {
 
 /// Inspects Docker containers and daemon status.
 pub fn get_docker_overview() -> DockerOverview {
-    match run_command_with_timeout("docker.exe", &["ps", "-a", "--format", "{{json .}}"], PROBE_TIMEOUT) {
+    match run_command_with_timeout(
+        "docker.exe",
+        &["ps", "-a", "--format", "{{json .}}"],
+        PROBE_TIMEOUT,
+    ) {
         Ok(stdout) => {
             let mut containers = Vec::new();
             for line in stdout.lines() {
@@ -356,7 +381,10 @@ pub fn get_docker_overview() -> DockerOverview {
                 }
             }
 
-            let running_count = containers.iter().filter(|c| c.state.eq_ignore_ascii_case("running")).count();
+            let running_count = containers
+                .iter()
+                .filter(|c| c.state.eq_ignore_ascii_case("running"))
+                .count();
             let stopped_count = containers.len().saturating_sub(running_count);
 
             DockerOverview {
@@ -407,7 +435,13 @@ pub fn get_environment_cockpit_snapshot() -> EnvironmentCockpitData {
 pub fn docker_action(container_id: &str, action: &str) -> CockpitActionResult {
     let clean_id = match sanitize_identifier(container_id) {
         Ok(id) => id,
-        Err(e) => return CockpitActionResult { success: false, message: e, stdout: None },
+        Err(e) => {
+            return CockpitActionResult {
+                success: false,
+                message: e,
+                stdout: None,
+            }
+        }
     };
 
     let valid_actions = ["start", "stop", "restart"];
@@ -415,7 +449,10 @@ pub fn docker_action(container_id: &str, action: &str) -> CockpitActionResult {
     if !valid_actions.contains(&clean_action.as_str()) {
         return CockpitActionResult {
             success: false,
-            message: format!("Invalid docker action '{}'. Must be start, stop, or restart", action),
+            message: format!(
+                "Invalid docker action '{}'. Must be start, stop, or restart",
+                action
+            ),
             stdout: None,
         };
     }
@@ -423,7 +460,10 @@ pub fn docker_action(container_id: &str, action: &str) -> CockpitActionResult {
     match run_command_with_timeout("docker.exe", &[&clean_action, &clean_id], ACTION_TIMEOUT) {
         Ok(stdout) => CockpitActionResult {
             success: true,
-            message: format!("Successfully ran '{}' on container {}", clean_action, clean_id),
+            message: format!(
+                "Successfully ran '{}' on container {}",
+                clean_action, clean_id
+            ),
             stdout: Some(stdout),
         },
         Err(err) => CockpitActionResult {
@@ -439,7 +479,11 @@ pub fn docker_logs(container_id: &str, tail: u32) -> Result<String, String> {
     let clean_id = sanitize_identifier(container_id)?;
     let tail_str = tail.clamp(10, 500).to_string();
 
-    run_command_with_timeout("docker.exe", &["logs", "--tail", &tail_str, &clean_id], PROBE_TIMEOUT)
+    run_command_with_timeout(
+        "docker.exe",
+        &["logs", "--tail", &tail_str, &clean_id],
+        PROBE_TIMEOUT,
+    )
 }
 
 /// Reclaims WSL RAM by executing `wsl.exe --shutdown`.
@@ -462,7 +506,13 @@ pub fn wsl_shutdown() -> CockpitActionResult {
 pub fn wsl_terminate(distro_name: &str) -> CockpitActionResult {
     let clean_name = match sanitize_identifier(distro_name) {
         Ok(name) => name,
-        Err(e) => return CockpitActionResult { success: false, message: e, stdout: None },
+        Err(e) => {
+            return CockpitActionResult {
+                success: false,
+                message: e,
+                stdout: None,
+            }
+        }
     };
 
     match run_command_with_timeout("wsl.exe", &["-t", &clean_name], ACTION_TIMEOUT) {
@@ -489,15 +539,25 @@ pub fn docker_open_shell(container_id: &str) -> Result<String, String> {
         .spawn();
 
     if wt_result.is_ok() {
-        return Ok(format!("Opened interactive shell for {} in Windows Terminal", clean_id));
+        return Ok(format!(
+            "Opened interactive shell for {} in Windows Terminal",
+            clean_id
+        ));
     }
 
     Command::new("powershell.exe")
-        .args(["-NoExit", "-Command", &format!("docker exec -it {} sh", clean_id)])
+        .args([
+            "-NoExit",
+            "-Command",
+            &format!("docker exec -it {} sh", clean_id),
+        ])
         .spawn()
         .map_err(|e| format!("Failed to spawn shell terminal: {}", e))?;
 
-    Ok(format!("Opened interactive shell for {} in PowerShell", clean_id))
+    Ok(format!(
+        "Opened interactive shell for {} in PowerShell",
+        clean_id
+    ))
 }
 
 /// Spawns an interactive shell for a WSL distribution.
@@ -509,7 +569,10 @@ pub fn wsl_launch_shell(distro_name: &str) -> Result<String, String> {
         .spawn();
 
     if wt_result.is_ok() {
-        return Ok(format!("Launched WSL distribution '{}' in Windows Terminal", clean_name));
+        return Ok(format!(
+            "Launched WSL distribution '{}' in Windows Terminal",
+            clean_name
+        ));
     }
 
     Command::new("powershell.exe")
@@ -517,7 +580,10 @@ pub fn wsl_launch_shell(distro_name: &str) -> Result<String, String> {
         .spawn()
         .map_err(|e| format!("Failed to spawn WSL terminal: {}", e))?;
 
-    Ok(format!("Launched WSL distribution '{}' in PowerShell", clean_name))
+    Ok(format!(
+        "Launched WSL distribution '{}' in PowerShell",
+        clean_name
+    ))
 }
 
 /// Attempts to start the Docker Desktop application if present.

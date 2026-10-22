@@ -11,7 +11,20 @@ import {
   ArrowLeft,
   Search,
   ExternalLink,
+  Filter,
+  CheckCircle2,
+  RotateCcw,
+  Plus,
 } from "lucide-react";
+import {
+  KNOWN_NOISE_EXTENSIONS,
+  getExtensionFilterConfig,
+  toggleExtensionState,
+  toggleMasterFilter,
+  addCustomBlockedExtension,
+  resetExtensionFilterToDefault,
+  type ExtensionFilterConfig,
+} from "../lib/fileFilter";
 import { cn } from "../lib/utils";
 import { tauriInvoke } from "../lib/appStorage";
 import type { Mode, Item, PortItem, ActionItem } from "../types";
@@ -24,7 +37,8 @@ export type SubmenuCategory =
   | "aesthetics"
   | "shortcuts"
   | "security"
-  | "community";
+  | "community"
+  | "file-filters";
 
 interface ActionDrawerProps {
   isOpen: boolean;
@@ -40,6 +54,8 @@ interface ActionDrawerProps {
   actions: ActionItem[];
   actionSelectedIndex: number;
   setActionSelectedIndex: (idx: number | ((prev: number) => number)) => void;
+  isProOrSupporter?: boolean;
+  licenseTier?: string;
 }
 
 interface ShortcutDef {
@@ -167,10 +183,46 @@ export function ActionDrawer({
   actions,
   actionSelectedIndex,
   setActionSelectedIndex,
+  isProOrSupporter = false,
+  licenseTier = "Free",
 }: ActionDrawerProps) {
   const [currentCategory, setCurrentCategory] = useState<SubmenuCategory>("main");
   const [subSelectedIndex, setSubSelectedIndex] = useState(0);
   const [shortcutFilter, setShortcutFilter] = useState("");
+  const [filterConfig, setFilterConfig] = useState<ExtensionFilterConfig>(() => getExtensionFilterConfig());
+  const [extSearchText, setExtSearchText] = useState("");
+  const [customExtInput, setCustomExtInput] = useState("");
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
+
+  const handleToggleExtension = (ext: string, shouldBlock: boolean) => {
+    const updated = toggleExtensionState(ext, shouldBlock);
+    setFilterConfig(updated);
+    setFeedbackNotice(shouldBlock ? `Blocked ${ext} from search` : `Allowed ${ext} in search`);
+    setTimeout(() => setFeedbackNotice(null), 2500);
+  };
+
+  const handleToggleMaster = () => {
+    const updated = toggleMasterFilter(!filterConfig.filterEnabled);
+    setFilterConfig(updated);
+    setFeedbackNotice(updated.filterEnabled ? "Search Noise Filter Enabled" : "Search Noise Filter Disabled");
+    setTimeout(() => setFeedbackNotice(null), 2500);
+  };
+
+  const handleAddCustomExt = () => {
+    if (!customExtInput.trim()) return;
+    const updated = addCustomBlockedExtension(customExtInput.trim());
+    setFilterConfig(updated);
+    setFeedbackNotice(`Added ${customExtInput.trim()} to blocked list`);
+    setCustomExtInput("");
+    setTimeout(() => setFeedbackNotice(null), 2500);
+  };
+
+  const handleResetDefaults = () => {
+    const updated = resetExtensionFilterToDefault();
+    setFilterConfig(updated);
+    setFeedbackNotice("Reset filters to factory defaults");
+    setTimeout(() => setFeedbackNotice(null), 2500);
+  };
 
   // Reset to main view whenever opened
   useEffect(() => {
@@ -245,6 +297,13 @@ export function ActionDrawer({
         badge: `${categorizedActions.prefs.length} items`,
       },
       {
+        id: "file-filters" as SubmenuCategory,
+        title: "File Noise Filters",
+        desc: "Block unwanted extensions (.ini, .log, .tmp, .ink)",
+        icon: <Filter className="w-4 h-4 text-emerald-400" />,
+        badge: filterConfig.filterEnabled ? `${filterConfig.blockedExtensions.length} blocked` : "Disabled",
+      },
+      {
         id: "aesthetics" as SubmenuCategory,
         title: "Aesthetics & Themes",
         desc: "Dynamic themes, custom accent colors, glass effects",
@@ -267,10 +326,29 @@ export function ActionDrawer({
       },
       {
         id: "community" as SubmenuCategory,
-        title: "Founder Pass & Community",
-        desc: "Lock in 6-month Founder Pass ($19 / ₹999), feedback, GitHub",
-        icon: <Sparkles className="w-4 h-4 text-indigo-400" />,
-        badge: "Early Adopter",
+        title: licenseTier === "Maintainer"
+          ? "Maintainer & Community"
+          : isProOrSupporter
+          ? "Pro Membership & Community"
+          : "AltSpace Pro & Community",
+        desc: licenseTier === "Maintainer"
+          ? "Sovereign Lifetime Access (@codecheesee) · Feedback, GitHub"
+          : isProOrSupporter
+          ? "Active Subscription · Feedback, GitHub"
+          : "Founder Pass, Pro Features, Feedback, GitHub",
+        icon: (
+          <Sparkles
+            className={cn(
+              "w-4 h-4",
+              licenseTier === "Maintainer"
+                ? "text-amber-400"
+                : isProOrSupporter
+                ? "text-purple-400"
+                : "text-indigo-400"
+            )}
+          />
+        ),
+        badge: licenseTier === "Maintainer" ? "Maintainer" : isProOrSupporter ? "Pro" : "Get Pro",
       },
     ];
   }, [selectedItem, categorizedActions]);
@@ -592,6 +670,148 @@ export function ActionDrawer({
                 );
               })
             )}
+          </div>
+        )}
+
+        {/* Level 1: Dedicated File Noise Filters Submenu */}
+        {currentCategory === "file-filters" && (
+          <div className="flex flex-col space-y-2 overflow-hidden flex-1">
+            {/* Master Toggle Banner */}
+            <div className="p-3 rounded-xl border border-white/[0.08] bg-white/[0.03] flex items-center justify-between gap-3 shrink-0">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-white">Search Noise Filter</span>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border",
+                      filterConfig.filterEnabled
+                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                        : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                    )}
+                  >
+                    {filterConfig.filterEnabled ? "Active" : "Disabled"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Automatically hide clutter (.ini, .log, .tmp, .ink, .dll) from file search results.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleMaster}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 shadow-sm",
+                  filterConfig.filterEnabled
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                    : "bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700"
+                )}
+              >
+                {filterConfig.filterEnabled ? "Filter On" : "Filter Off"}
+              </button>
+            </div>
+
+            {/* Notification alert pill */}
+            {feedbackNotice && (
+              <div className="px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium flex items-center gap-1.5 animate-in fade-in shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{feedbackNotice}</span>
+              </div>
+            )}
+
+            {/* Filter controls row */}
+            <div className="flex items-center gap-2 shrink-0 px-0.5">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  value={extSearchText}
+                  onChange={(e) => setExtSearchText(e.target.value)}
+                  placeholder="Filter extensions (e.g. .ini, .log)..."
+                  className="w-full pl-7 pr-3 py-1.5 bg-black/40 border border-white/[0.08] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2]"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetDefaults}
+                title="Reset to recommended defaults"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-white/[0.08] hover:border-white/[0.2] bg-white/[0.04] text-xs text-zinc-300 hover:text-white transition cursor-pointer shrink-0"
+              >
+                <RotateCcw className="w-3 h-3 text-zinc-400" />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            {/* Add Custom Extension Bar */}
+            <div className="flex items-center gap-2 p-1.5 rounded-xl border border-white/[0.06] bg-black/20 shrink-0">
+              <input
+                type="text"
+                value={customExtInput}
+                onChange={(e) => setCustomExtInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCustomExt()}
+                placeholder="Add custom extension (e.g. .bak2, .part)..."
+                className="flex-1 px-2.5 py-1 bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomExt}
+                className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-medium text-white transition cursor-pointer shrink-0"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add</span>
+              </button>
+            </div>
+
+            {/* Extensions List */}
+            <div className="overflow-y-auto space-y-1.5 px-0.5 py-1 max-h-[260px] custom-scrollbar">
+              {KNOWN_NOISE_EXTENSIONS.filter(
+                (item) =>
+                  !extSearchText ||
+                  item.ext.toLowerCase().includes(extSearchText.toLowerCase()) ||
+                  item.description.toLowerCase().includes(extSearchText.toLowerCase()) ||
+                  item.category.toLowerCase().includes(extSearchText.toLowerCase())
+              ).map((item) => {
+                const isBlocked = filterConfig.blockedExtensions.includes(item.ext.toLowerCase());
+                return (
+                  <div
+                    key={item.ext}
+                    onClick={() => handleToggleExtension(item.ext, !isBlocked)}
+                    className="p-2.5 rounded-xl border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.12] flex items-center justify-between text-xs transition cursor-pointer select-none group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <kbd className="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-white/[0.06] border border-white/[0.1] text-amber-300 shrink-0">
+                        {item.ext}
+                      </kbd>
+                      <div className="min-w-0">
+                        <span className="text-zinc-200 block truncate font-medium">
+                          {item.description}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 block truncate">
+                          {item.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleExtension(item.ext, !isBlocked);
+                      }}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-[10.5px] font-semibold tracking-wider font-mono uppercase transition cursor-pointer shrink-0 border",
+                        isBlocked
+                          ? "bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25"
+                          : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
+                      )}
+                    >
+                      {isBlocked ? "Blocked" : "Allowed"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

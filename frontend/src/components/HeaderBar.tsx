@@ -56,7 +56,6 @@ export function HeaderBar({
   onOpenMenu,
   onOpenWebsite,
   onOpenLicense,
-  trialState,
   isProOrSupporter,
   executionMode = "supervised",
   onCycleExecutionMode,
@@ -191,50 +190,39 @@ export function HeaderBar({
           </button>
         )}
 
-        {/* Self-Healing Execution Mode Badge */}
-        {onCycleExecutionMode && (
-          <button
-            type="button"
-            onClick={onCycleExecutionMode}
-            title={`Aegis Self-Healing Mode: ${executionMode.toUpperCase()} (Click to toggle)`}
-            className={clsx(
-              "flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium transition cursor-pointer shrink-0 animate-in fade-in",
-              executionMode === "turbo"
-                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:border-emerald-400"
-                : executionMode === "supervised"
-                ? "bg-sky-500/15 border-sky-500/40 text-sky-300 hover:border-sky-400"
-                : "bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            <Zap className={clsx("w-3.5 h-3.5", executionMode === "turbo" ? "fill-emerald-400 text-emerald-400" : "")} />
-            <span className="capitalize hidden sm:inline">{executionMode}</span>
-          </button>
-        )}
-
-        {/* 7-Day Pro Trial / Founder Pass Call-to-Action Pill */}
-        {trialState?.isTrialActive ? (
+        {/* Self-Healing Execution Mode Badge */}
+        {onCycleExecutionMode && (
+          <button
+            type="button"
+            onClick={onCycleExecutionMode}
+            title={`Aegis Self-Healing Mode: ${executionMode.toUpperCase()} (Click to toggle)`}
+            className={clsx(
+              "flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium transition cursor-pointer shrink-0 animate-in fade-in",
+              executionMode === "turbo"
+                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:border-emerald-400"
+                : executionMode === "supervised"
+                ? "bg-sky-500/15 border-sky-500/40 text-sky-300 hover:border-sky-400"
+                : "bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+            )}
+          >
+            <Zap className={clsx("w-3.5 h-3.5", executionMode === "turbo" ? "fill-emerald-400 text-emerald-400" : "")} />
+            <span className="capitalize hidden sm:inline">{executionMode}</span>
+          </button>
+        )}
+
+        {/* Pro / Try Pro Action — Rendered ONLY for Free users and first-time users. Pro & Maintainer have zero clutter! */}
+        {!isProOrSupporter && (
           <button
             type="button"
             onClick={onOpenLicense}
-            title="Active 7-Day Pro Trial! Click to lock in 6 Months Pro with the Founder Pass for $19 / ₹999."
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/15 to-indigo-500/15 border border-amber-500/30 hover:border-amber-400 text-xs font-medium text-amber-300 hover:text-amber-100 transition cursor-pointer shrink-0 animate-in fade-in group"
+            title="Try AltSpace Pro — Unlock Aegis Turbo Mode, AI Intelligence, and Unlimited Actions."
+            aria-label="Try AltSpace Pro"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border border-purple-500/30 hover:border-purple-400 text-xs font-semibold text-purple-300 hover:text-white transition cursor-pointer shrink-0 animate-in fade-in group shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
-            <span className="font-semibold">Pro Trial: {trialState.daysRemaining}d</span>
-            <span className="hidden md:inline text-amber-400/80 font-mono">• Founder Pass $19 / ₹999</span>
+            <Sparkles className="w-3.5 h-3.5 text-purple-400 group-hover:rotate-12 transition-transform" />
+            <span>Try Pro</span>
           </button>
-        ) : !isProOrSupporter ? (
-          <button
-            type="button"
-            onClick={onOpenLicense}
-            title="Lock in the Early Adopter Founder Pass for $19 / ₹999 (6 months Pro) before the first 500 seats fill up."
-            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 hover:border-indigo-400 text-xs font-medium text-indigo-300 hover:text-indigo-100 transition cursor-pointer shrink-0 animate-in fade-in"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Founder Pass</span>
-            <span className="font-mono text-indigo-400/90">$19 / ₹999</span>
-          </button>
-        ) : null}
+        )}
 
         {/* Command Menu Action Button */}
         <button

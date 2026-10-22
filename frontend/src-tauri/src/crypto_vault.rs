@@ -26,8 +26,13 @@ fn sanitize_key(key: &str) -> Result<String, String> {
     if trimmed.is_empty() || trimmed.len() > 64 {
         return Err("Vault key must be between 1 and 64 characters".into());
     }
-    if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
-        return Err("Vault key must only contain alphanumeric characters, underscores, or dashes".into());
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(
+            "Vault key must only contain alphanumeric characters, underscores, or dashes".into(),
+        );
     }
     Ok(trimmed.to_string())
 }
@@ -132,7 +137,8 @@ pub fn retrieve_secret(key: &str) -> Result<Option<String>, String> {
     if !path.exists() {
         return Ok(None);
     }
-    let ciphertext = fs::read(&path).map_err(|e| format!("Failed to read encrypted secret: {}", e))?;
+    let ciphertext =
+        fs::read(&path).map_err(|e| format!("Failed to read encrypted secret: {}", e))?;
     let plaintext_bytes = unprotect_bytes(&ciphertext)?;
     let text = String::from_utf8(plaintext_bytes)
         .map_err(|e| format!("Corrupt or non-UTF8 secret payload: {}", e))?;
@@ -160,7 +166,8 @@ pub fn delete_secret(key: &str) -> Result<bool, String> {
 
 fn get_profiles_dir() -> Result<PathBuf, String> {
     let p = get_vault_dir()?.join("profiles");
-    fs::create_dir_all(&p).map_err(|e| format!("Failed to create profiles vault directory: {}", e))?;
+    fs::create_dir_all(&p)
+        .map_err(|e| format!("Failed to create profiles vault directory: {}", e))?;
     Ok(p)
 }
 
@@ -192,8 +199,14 @@ pub fn sanitize_profile_name(name: &str) -> Result<String, String> {
     if trimmed.is_empty() || trimmed.len() > 32 {
         return Err("Profile name must be between 1 and 32 characters".into());
     }
-    if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
-        return Err("Profile name must only contain alphanumeric characters, underscores, or hyphens".into());
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(
+            "Profile name must only contain alphanumeric characters, underscores, or hyphens"
+                .into(),
+        );
     }
     Ok(trimmed.to_lowercase())
 }
@@ -209,7 +222,9 @@ pub fn sanitize_env_key(key: &str) -> Result<String, String> {
         return Err("Environment variable key must begin with a letter or underscore".into());
     }
     if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
-        return Err("Environment variable key must contain only letters, numbers, or underscores".into());
+        return Err(
+            "Environment variable key must contain only letters, numbers, or underscores".into(),
+        );
     }
     Ok(trimmed.to_uppercase())
 }
@@ -258,8 +273,8 @@ pub fn retrieve_profile_payload(profile_name: &str) -> Result<EnvProfilePayload,
         return Err(format!("Environment profile '{}' not found", clean_name));
     }
 
-    let ciphertext = fs::read(&path)
-        .map_err(|e| format!("Failed to read encrypted profile: {}", e))?;
+    let ciphertext =
+        fs::read(&path).map_err(|e| format!("Failed to read encrypted profile: {}", e))?;
     let plaintext_bytes = unprotect_bytes(&ciphertext)?;
     let payload: EnvProfilePayload = serde_json::from_slice(&plaintext_bytes)
         .map_err(|e| format!("Failed to parse decrypted profile JSON: {}", e))?;
@@ -279,7 +294,8 @@ pub fn list_env_profiles() -> Result<Vec<EnvProfileSummary>, String> {
     let dir = get_profiles_dir()?;
     let mut profiles = Vec::new();
 
-    let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read profiles directory: {}", e))?;
+    let entries =
+        fs::read_dir(dir).map_err(|e| format!("Failed to read profiles directory: {}", e))?;
     for entry in entries.flatten() {
         let path = entry.path();
         if path.extension().and_then(|ext| ext.to_str()) == Some("dpapi") {
@@ -319,10 +335,7 @@ pub fn delete_env_profile(profile_name: &str) -> Result<bool, String> {
     }
 }
 
-pub fn launch_with_profile(
-    profile_name: &str,
-    target: &str,
-) -> Result<String, String> {
+pub fn launch_with_profile(profile_name: &str, target: &str) -> Result<String, String> {
     let payload = retrieve_profile_payload(profile_name)?;
 
     let mut cmd = match target {
@@ -356,7 +369,9 @@ pub fn launch_with_profile(
         for entry in &payload.variables {
             fallback.env(&entry.key, &entry.value);
         }
-        fallback.spawn().map_err(|e| format!("Failed to launch terminal with environment: {}", e))?;
+        fallback
+            .spawn()
+            .map_err(|e| format!("Failed to launch terminal with environment: {}", e))?;
     } else if let Err(e) = spawn_result {
         return Err(format!("Failed to launch process with environment: {}", e));
     }
@@ -383,10 +398,10 @@ pub fn get_or_create_device_id() -> Result<String, String> {
 
     #[cfg(windows)]
     {
+        use windows::core::w;
         use windows::Win32::System::Registry::{
             RegOpenKeyExW, RegQueryValueExW, HKEY_LOCAL_MACHINE, KEY_READ, REG_VALUE_TYPE,
         };
-        use windows::core::w;
 
         unsafe {
             let mut hkey = windows::Win32::System::Registry::HKEY::default();
@@ -422,7 +437,12 @@ pub fn get_or_create_device_id() -> Result<String, String> {
     if raw_id.is_empty() {
         let comp = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "DEVICE".into());
         let user = std::env::var("USERNAME").unwrap_or_else(|_| "USER".into());
-        raw_id = format!("{}-{}-{}", comp, user, chrono::Utc::now().timestamp_millis());
+        raw_id = format!(
+            "{}-{}-{}",
+            comp,
+            user,
+            chrono::Utc::now().timestamp_millis()
+        );
     }
 
     // Clean and produce a standardized ALTS-XXXX-XXXX-XXXX token
@@ -451,7 +471,9 @@ pub fn store_byok_key(provider: &str, api_key: &str) -> Result<(), String> {
         return Ok(());
     }
     let encrypted = protect_bytes(trimmed.as_bytes())?;
-    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    let path = get_vault_dir()?
+        .join("byok")
+        .join(format!("{}.dpapi", clean_provider));
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("Failed to create byok dir: {}", e))?;
     }
@@ -461,13 +483,16 @@ pub fn store_byok_key(provider: &str, api_key: &str) -> Result<(), String> {
 
 pub fn retrieve_byok_key(provider: &str) -> Result<Option<String>, String> {
     let clean_provider = sanitize_key(provider)?;
-    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    let path = get_vault_dir()?
+        .join("byok")
+        .join(format!("{}.dpapi", clean_provider));
     if !path.exists() {
         return Ok(None);
     }
     let raw = fs::read(&path).map_err(|e| format!("Failed to read byok key: {}", e))?;
     let decrypted = unprotect_bytes(&raw)?;
-    let key_str = String::from_utf8(decrypted).map_err(|e| format!("Invalid UTF-8 in byok key: {}", e))?;
+    let key_str =
+        String::from_utf8(decrypted).map_err(|e| format!("Invalid UTF-8 in byok key: {}", e))?;
     Ok(Some(key_str))
 }
 
@@ -492,7 +517,9 @@ pub fn list_byok_providers() -> Result<Vec<String>, String> {
 
 pub fn delete_byok_key(provider: &str) -> Result<bool, String> {
     let clean_provider = sanitize_key(provider)?;
-    let path = get_vault_dir()?.join("byok").join(format!("{}.dpapi", clean_provider));
+    let path = get_vault_dir()?
+        .join("byok")
+        .join(format!("{}.dpapi", clean_provider));
     if path.exists() {
         fs::remove_file(&path).map_err(|e| format!("Failed to delete byok key: {}", e))?;
         Ok(true)
@@ -527,18 +554,33 @@ mod tests {
     #[test]
     fn test_device_id_format() {
         let id = get_or_create_device_id().expect("Device ID should be generated");
-        assert!(id.starts_with("ALTS-"), "Device ID must start with ALTS- prefix");
-        assert_eq!(id.len(), 19, "Device ID must be 19 chars: ALTS-XXXX-XXXX-XXXX");
+        assert!(
+            id.starts_with("ALTS-"),
+            "Device ID must start with ALTS- prefix"
+        );
+        assert_eq!(
+            id.len(),
+            19,
+            "Device ID must be 19 chars: ALTS-XXXX-XXXX-XXXX"
+        );
     }
 
     #[test]
     fn test_dpapi_roundtrip() {
         let sample = "gho_testToken123456789SecretKey";
         let encrypted = protect_bytes(sample.as_bytes()).expect("Encryption should succeed");
-        assert_ne!(sample.as_bytes(), encrypted.as_slice(), "Ciphertext must not match plaintext");
+        assert_ne!(
+            sample.as_bytes(),
+            encrypted.as_slice(),
+            "Ciphertext must not match plaintext"
+        );
 
         let decrypted = unprotect_bytes(&encrypted).expect("Decryption should succeed");
-        assert_eq!(sample.as_bytes(), decrypted.as_slice(), "Decrypted data must match original");
+        assert_eq!(
+            sample.as_bytes(),
+            decrypted.as_slice(),
+            "Decrypted data must match original"
+        );
     }
 
     #[test]

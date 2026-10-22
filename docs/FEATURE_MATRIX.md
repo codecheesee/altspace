@@ -21,6 +21,8 @@ A modified fork can remove local client checks in its own build, but it **cannot
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Application Launcher** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
 | **Local File & Folder Search** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
+| **Search Noise & Least-Used Extension Filtering Engine** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
+| **Smart Game Hub & Multi-Store Game Launcher** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 1 (launch) | No | Yes |
 | **Calculator & Unit Converter** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
 | **Windows Settings Shortcuts** | Layer A (Core) | Yes | No | **Free Forever** | No | No | No | Yes |
 | **Port Inspector & Killer (`:port`)** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 3 (terminate) | No | Yes |

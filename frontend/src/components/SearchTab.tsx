@@ -21,6 +21,7 @@ import { ResultSection } from "./search/ResultSection";
 import { ResultRow } from "./search/ResultRow";
 import { ResultPreview } from "./search/ResultPreview";
 import { SearchEmptyState } from "./search/SearchEmptyState";
+import { GameHeroCard } from "./GameHeroCard";
 import type { Item, SpecialCard, GitInfo, ShellResult } from "../types";
 
 interface SearchTabProps {
@@ -47,6 +48,8 @@ interface SearchTabProps {
   onOpenUrl: (url: string) => void;
   onOpenFolder: (path: string) => void;
   onLaunchGame: (uri: string) => void;
+  onLaunchGameBoosted?: (uri: string) => void;
+  onLaunchGameRecord?: (uri: string) => void;
   onSelectTheme: (themeId: string) => void;
   onSnapWindow: (snapPosition: string) => void;
   onOpenQuickLook: () => void;
@@ -76,6 +79,8 @@ export function SearchTab({
   onOpenUrl,
   onOpenFolder,
   onLaunchGame,
+  onLaunchGameBoosted,
+  onLaunchGameRecord,
   onSelectTheme,
   onSnapWindow,
   onOpenQuickLook,
@@ -102,6 +107,24 @@ export function SearchTab({
         className="flex-1 overflow-y-auto p-2 space-y-1.5 focus:outline-none"
       >
         {/* Special Cards at index 0 */}
+        {specialCard && specialCard.kind === "game" && (
+          <div
+            key="game-hero-card"
+            id="result-option-0"
+            data-index={0}
+            onClick={() => setSelectedIndex(0)}
+          >
+            <GameHeroCard
+              game={specialCard.data}
+              isSelected={isSpecialSelected}
+              onLaunch={onLaunchGame}
+              onLaunchBoosted={onLaunchGameBoosted}
+              onLaunchRecord={onLaunchGameRecord}
+              onOpenFolder={onOpenFolder}
+            />
+          </div>
+        )}
+
         {specialCard && specialCard.kind === "transform" && (
           <div
             key="transform-result"
