@@ -36,16 +36,9 @@ pub struct RecipeResult {
     pub details: Option<String>,
 }
 
+#[derive(Default)]
 pub struct RecipeCatalog {
     guardrails: GuardrailEngine,
-}
-
-impl Default for RecipeCatalog {
-    fn default() -> Self {
-        Self {
-            guardrails: GuardrailEngine::default(),
-        }
-    }
 }
 
 impl RecipeCatalog {
@@ -207,13 +200,13 @@ impl RecipeCatalog {
         for p in procs.values() {
             let name = p.name.to_lowercase();
             // Orphaned dev worker processes
-            if (name == "node.exe" || name == "esbuild.exe" || name == "tsc.exe") && p.parent_pid == 0 {
-                if self.guardrails.validate_process_binary(&p.name).is_ok() {
-                    if terminate_process_tree(p.pid).is_ok() {
-                        terminated_count += 1;
-                        freed_pids.push(p.pid);
-                    }
-                }
+            if (name == "node.exe" || name == "esbuild.exe" || name == "tsc.exe")
+                && p.parent_pid == 0
+                && self.guardrails.validate_process_binary(&p.name).is_ok()
+                && terminate_process_tree(p.pid).is_ok()
+            {
+                terminated_count += 1;
+                freed_pids.push(p.pid);
             }
         }
 
