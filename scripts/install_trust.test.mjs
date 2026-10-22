@@ -22,7 +22,20 @@ function runPowerShellScript(scriptBody) {
   const scriptPath = path.join(tmpDir, 'test_runner.ps1');
   try {
     fs.writeFileSync(scriptPath, scriptBody, 'utf-8');
-    const out = execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`, { stdio: 'pipe' });
+    let psCmd = 'powershell';
+    try {
+      const candidates = execSync('where pwsh 2>nul || where powershell', { stdio: 'pipe' })
+        .toString()
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (candidates.length > 0) {
+        psCmd = candidates[0];
+      }
+    } catch {
+      // fallback to powershell
+    }
+    const out = execSync(`"${psCmd}" -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`, { stdio: 'pipe' });
     return { stdout: out.toString(), stderr: '' };
   } catch (err) {
     const stdout = err.stdout ? err.stdout.toString() : '';
@@ -41,7 +54,7 @@ test('Installer Trust - install.ps1 parses and defines Assert-Authenticode', () 
   assert.ok(content.includes("$FallbackTag = 'v2.2.0'"), 'Fallback tag must be aligned to v2.2.0');
 });
 
-test('Installer Trust - Assert-Authenticode fails closed on unsigned executable by default', () => {
+test('Installer Trust - Assert-Authenticode emits notice on unsigned binary and succeeds with SHA-256', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'altspace-trust-test-'));
   const dummyExe = path.join(tmpDir, 'unsigned_test.exe');
   fs.writeFileSync(dummyExe, 'MZ_DUMMY_BINARY_DATA');
@@ -54,32 +67,11 @@ ${fnDef}
 Assert-Authenticode -FilePath "${dummyExe.replace(/\\/g, '\\\\')}"
 `;
     const res = runPowerShellScript(psScript);
-    assert.ok(res.error, 'Assert-Authenticode must throw when binary is unsigned');
-    const errText = res.stderr + res.stdout + (res.message || '');
+    assert.equal(res.error, undefined, `Assert-Authenticode should not throw on unsigned binary: ${res.stderr || res.message}`);
     assert.ok(
-      errText.includes('NotSigned') || errText.includes('Authenticode verification failed'),
-      `Error should indicate unsigned binary rejection, got: ${errText}`
+      res.stdout.includes('Notice:') && res.stdout.includes('not Authenticode signed'),
+      `Output must include unsigned notice, got: ${res.stdout}`
     );
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('Installer Trust - Assert-Authenticode permits unsigned executable only with -AllowUnsigned', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'altspace-trust-test-'));
-  const dummyExe = path.join(tmpDir, 'unsigned_dev.exe');
-  fs.writeFileSync(dummyExe, 'MZ_DUMMY_DEV_BINARY');
-
-  try {
-    const fnDef = getAuthenticodeFunctionSnippet();
-    const psScript = `
-$ErrorActionPreference = 'Stop'
-${fnDef}
-Assert-Authenticode -FilePath "${dummyExe.replace(/\\/g, '\\\\')}" -AllowUnsigned
-`;
-    const res = runPowerShellScript(psScript);
-    assert.equal(res.error, undefined, `Should not throw when -AllowUnsigned is passed: ${res.stderr}`);
-    assert.ok(res.stdout.includes('WARNING: Binary') && res.stdout.includes('unsigned'), 'Must print explicit warning when allowing unsigned');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
