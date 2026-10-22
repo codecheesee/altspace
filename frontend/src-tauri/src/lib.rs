@@ -1236,6 +1236,9 @@ static AEGIS_SCANNER: std::sync::LazyLock<altspace_sentinel::SecretScanner> =
 static AEGIS_HEALING: std::sync::LazyLock<altspace_core::HealingEngine> =
     std::sync::LazyLock::new(|| altspace_core::HealingEngine::new(altspace_core::ExecutionMode::Supervised));
 
+static AEGIS_RECIPES: std::sync::LazyLock<altspace_core::RecipeCatalog> =
+    std::sync::LazyLock::new(altspace_core::RecipeCatalog::default);
+
 static ORBITAL_GRAPH: std::sync::LazyLock<altspace_context::WorkspaceGraph> =
     std::sync::LazyLock::new(altspace_context::WorkspaceGraph::new);
 
@@ -1289,6 +1292,35 @@ fn aegis_set_execution_mode(mode: String) -> Result<(), String> {
     };
     AEGIS_HEALING.set_mode(new_mode);
     Ok(())
+}
+
+#[tauri::command]
+fn aegis_scan_healing_failures(workspace_path: Option<String>) -> Result<Vec<altspace_core::RecipeFailure>, String> {
+    let path = workspace_path.as_deref().map(std::path::Path::new);
+    Ok(AEGIS_RECIPES.scan_environment(path))
+}
+
+#[tauri::command]
+fn aegis_execute_healing_recipe(
+    recipe_id: String,
+    port: Option<u16>,
+    workspace_path: Option<String>,
+) -> Result<altspace_core::RecipeResult, String> {
+    if recipe_id.starts_with("port-") {
+        let p = port.unwrap_or_else(|| {
+            recipe_id.strip_prefix("port-").and_then(|s| s.parse().ok()).unwrap_or(3000)
+        });
+        AEGIS_RECIPES.fix_port_collision(p)
+    } else if recipe_id == "git-index-lock" {
+        let root_str = workspace_path.ok_or_else(|| "Workspace path required for git lock cleanup".to_string())?;
+        AEGIS_RECIPES.fix_git_lock(std::path::Path::new(&root_str))
+    } else if recipe_id == "zombies-workers" {
+        AEGIS_RECIPES.fix_zombie_processes()
+    } else if recipe_id == "wsl-ram" {
+        AEGIS_RECIPES.fix_wsl_memory()
+    } else {
+        Err(format!("Unknown healing recipe '{}'", recipe_id))
+    }
 }
 
 pub fn run() {
@@ -1449,7 +1481,9 @@ pub fn run() {
             sentinel_scan_text,
             sentinel_suppress_hash,
             aegis_get_system_status,
-            aegis_set_execution_mode
+            aegis_set_execution_mode,
+            aegis_scan_healing_failures,
+            aegis_execute_healing_recipe
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));

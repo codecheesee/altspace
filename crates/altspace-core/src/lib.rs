@@ -2,11 +2,15 @@
 
 pub mod config;
 pub mod healing;
+pub mod guardrails;
 pub mod license;
+pub mod recipes;
 
 pub use config::AltSpaceConfig;
 pub use healing::{ExecutionMode, HealingEngine, RepairAction};
 pub use license::{LicenseStatus, LicenseVerifier};
+pub use guardrails::GuardrailEngine;
+pub use recipes::{RecipeCatalog, RecipeFailure, RecipeResult};
 
 #[cfg(test)]
 mod tests {

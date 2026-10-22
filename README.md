@@ -208,6 +208,23 @@ Every developer feature can be toggled via two non-intrusive paths:
 - **Option C (Omnibar)**: Type `> toggle <id>` (e.g. `> toggle docker_wsl`) for instant inline state changes.
 - **Invisibility Rule**: Toggled-off features are completely hidden from search, hotkeys, and tabs, failing closed in Rust IPC in `< 1µs`.
 
+### 19. Developer Self-Healing Platform & 3-Tier Execution Matrix (`:fix`)
+Powered by the **Aegis-Vortex Control Plane™**, AltSpace detects developer deadlocks and repairs them deterministically without sub-process spawning (`taskkill`, `netstat`) or dangerous scripts:
+- **3-Tier Execution Matrix**:
+  - `Manual`: Strict per-action confirmation for all developer actions.
+  - `Supervised` (Default): Balanced execution with real-time HUD notifications and an 8-second Action Ledger countdown.
+  - `Turbo` (Pro / Beta Trial): Zero-prompt autonomous repair within strict Blast-Radius Guardrails.
+- **Deterministic Repair Catalog**:
+  - **Port Collision Resolution**: Frees blocked dev ports (3000-9999) by terminating the holding dev worker while safeguarding system processes.
+  - **Git Lock Purge**: Unlocks stuck Git index locks (`.git/index.lock`, `HEAD.lock`) caused by interrupted commits or IDE crashes.
+  - **Zombie Dev Worker Cleanup**: Prunes orphaned Node.js, Python, Rust, and Vite background build processes without touching OS services.
+  - **WSL2 Memory Compaction**: Reclaims trapped hypervisor memory from idle WSL2 distributions via native NT management.
+- **Blast-Radius Guardrails & Loop Limiter**:
+  - Hardcoded OS immunity list (`System`, `csrss.exe`, `explorer.exe`, `svchost.exe`, `lsass.exe`, etc.).
+  - Whitelisted dev binaries only (`node.exe`, `python.exe`, `cargo.exe`, etc.).
+  - Loop circuit-breaker limits autonomic actions to max 3 interventions per 60-second window.
+  - Instant 1-Click Rollback on the floating Action Ledger HUD.
+
 ---
 
 ## Command Palette Syntax
@@ -216,6 +233,8 @@ Every developer feature can be toggled via two non-intrusive paths:
 | :--- | :--- | :--- |
 | `<search>` | Search installed applications, indexed files, and system settings | **Free Forever** |
 | `:<port>` *(e.g. `:3000`)* | Inspect process listening on port with parent tree and 1-click verified release | **Free Forever** |
+| `:fix` *(or `:healing`)* | Scan environment for port collisions, git locks, and zombie workers | **Free Forever** |
+| `:fix <port|zombies|wsl|git>` | Execute deterministic self-healing recipe directly | **Free Forever** |
 | `jwt`, `json`, `yaml` | Open offline JWT inspector and JSON &harr; YAML converter | **Free Forever** |
 | `regex`, `uuid`, `hash`, `ts` | Instant offline regex tester, UUID v4 generator, SHA-256 hash, timestamp tools | **Free Forever** |
 | `docker` | Inspect active containers, Compose labels, and trigger container restart | **Free Forever** |

@@ -9,7 +9,9 @@ import {
   Skull,
   Check,
   Sparkles,
+  Zap,
 } from "lucide-react";
+import { clsx } from "clsx";
 
 import type { TrialState } from "../lib/license";
 
@@ -35,6 +37,8 @@ interface HeaderBarProps {
   onOpenLicense?: () => void;
   trialState?: TrialState;
   isProOrSupporter?: boolean;
+  executionMode?: "manual" | "supervised" | "turbo";
+  onCycleExecutionMode?: () => void;
   onDismiss: () => void;
 }
 
@@ -54,6 +58,8 @@ export function HeaderBar({
   onOpenLicense,
   trialState,
   isProOrSupporter,
+  executionMode = "supervised",
+  onCycleExecutionMode,
   onDismiss,
 }: HeaderBarProps) {
   return (
@@ -185,6 +191,26 @@ export function HeaderBar({
           </button>
         )}
 
+        {/* Self-Healing Execution Mode Badge */}
+        {onCycleExecutionMode && (
+          <button
+            type="button"
+            onClick={onCycleExecutionMode}
+            title={`Aegis Self-Healing Mode: ${executionMode.toUpperCase()} (Click to toggle)`}
+            className={clsx(
+              "flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium transition cursor-pointer shrink-0 animate-in fade-in",
+              executionMode === "turbo"
+                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:border-emerald-400"
+                : executionMode === "supervised"
+                ? "bg-sky-500/15 border-sky-500/40 text-sky-300 hover:border-sky-400"
+                : "bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+            )}
+          >
+            <Zap className={clsx("w-3.5 h-3.5", executionMode === "turbo" ? "fill-emerald-400 text-emerald-400" : "")} />
+            <span className="capitalize hidden sm:inline">{executionMode}</span>
+          </button>
+        )}
+
         {/* 7-Day Pro Trial / Founder Pass Call-to-Action Pill */}
         {trialState?.isTrialActive ? (
           <button

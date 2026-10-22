@@ -34,6 +34,10 @@ A modified fork can remove local client checks in its own build, but it **cannot
 | **Local `.altconfig` Import/Export** | Layer A (Core) | Yes | No | **Free Forever** | No | Level 2 (challenge) | No | Yes |
 | **Local Ollama AI (`localhost:11434`)**| Layer A (Core) | Yes | No | **Free Forever** | No | Level 1 (prompt) | No | Yes |
 | **BYOK Cloud LLMs (Claude 3.7 / GPT-4o / DeepSeek)**| Layer A (BYOK) | Native Rust Engine | Direct Provider | **Pro / BYOK** | Provider API Key | Level 2 (dispatch) | DPAPI Vault | No |
+| **Developer Self-Healing Platform (:fix)** | Layer A (Aegis Core) | Yes | No | **Free / Pro** | No | Level 2 / Guardrails | Volatile RAM buffer | Yes |
+| **Deterministic Repair Catalog (Port/Git/Zombie/WSL)** | Layer A (Aegis Core) | Yes | No | **Free Forever** | No | Level 2 (supervised) | No | Yes |
+| **Turbo Autonomic Self-Healing (0-Prompt Recovery)** | Layer A (Aegis Enclave)| Yes | No | **Pro / Beta Trial** | No | Blast-Radius Guardrails | Volatile RAM buffer | Yes |
+| **Action Ledger Floating HUD & 1-Click Rollback** | Layer A (Aegis Core) | Yes | No | **Free Forever** | No | 8s Countdown Undo | No | Yes |
 | **Community Plugin Runner** | Layer A (Core) | Contained | No | **Free Forever** | No | BlockedForMigration | Preserved on Disk | Yes |
 | **Multi-Drive File Search** | Layer A (Core) | Yes | No | Trial / Pro | No | Level 1 | No | Yes |
 | **Native Shell Command Runner (`>`)** | Layer A (Core) | Disabled | No | N/A | No | Disabled for Security | No | N/A |

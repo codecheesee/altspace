@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { InputModal } from "./components/InputModal";
 import { HeaderBar } from "./components/HeaderBar";
+import { ActionLedgerToast, type HealingToastData } from "./components/ActionLedgerToast";
 import { FooterBar } from "./components/FooterBar";
 import { SearchTab } from "./components/SearchTab";
 import { ClipboardTab } from "./components/ClipboardTab";
@@ -216,6 +217,100 @@ export default function App() {
     onConfirm: (v: string) => void;
   } | null>(null);
 
+  const [healingToast, setHealingToast] = useState<HealingToastData | null>(null);
+  const [executionMode, setExecutionMode] = useState<"manual" | "supervised" | "turbo">("supervised");
+
+  const handleCycleExecutionMode = useCallback(() => {
+    setExecutionMode((prev) => {
+      let next: "manual" | "supervised" | "turbo";
+      if (prev === "manual") {
+        next = "supervised";
+        notify("Aegis Mode: Supervised (Default / Balanced)");
+      } else if (prev === "supervised") {
+        const isEligible = isUnlimitedTier(licenseStatus) || Boolean(trialState?.isTrialActive);
+        if (isEligible) {
+          next = "turbo";
+          notify("⚡ Aegis Mode: Turbo Autonomic (Blast-Radius Guardrails Active)");
+        } else {
+          notify("⚡ Turbo mode requires Founder Pass or active Pro Beta Trial");
+          setShowLicenseModal(true);
+          return prev;
+        }
+      } else {
+        next = "manual";
+        notify("Aegis Mode: Manual (Strict Confirmations)");
+      }
+      tauriInvoke("aegis_set_execution_mode", { mode: next }).catch(() => {});
+      return next;
+    });
+  }, [licenseStatus, notify, trialState?.isTrialActive]);
+
+  const handleExecuteRecipe = useCallback(async (recipeId: string, port?: number) => {
+    try {
+      notify(`⚡ Executing recipe: ${recipeId}...`);
+      const res = await tauriInvoke<any>("aegis_execute_healing_recipe", {
+        recipeId,
+        port,
+        workspacePath: null,
+      });
+      if (res && res.success) {
+        setHealingToast({
+          id: Date.now().toString(),
+          message: res.message,
+          recipeId: res.recipe_id,
+          undoToken: res.undo_token || undefined,
+        });
+        notify(`⚡ ${res.message}`);
+      } else {
+        notify(`Fix failed: ${res?.message || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      notify(`Fix error: ${err.message || err}`);
+    }
+  }, [notify]);
+
+  const handleParseFixCommand = useCallback((param: string) => {
+    const p = param.trim().toLowerCase();
+    if (p === "zombies" || p === "zombie" || p === "worker") {
+      handleExecuteRecipe("zombies-workers");
+    } else if (p === "wsl" || p === "wsl-ram" || p === "ram") {
+      handleExecuteRecipe("wsl-ram");
+    } else if (p === "git" || p === "git-lock" || p === "lock") {
+      handleExecuteRecipe("git-index-lock");
+    } else {
+      const numMatch = p.match(/\d+/);
+      if (numMatch) {
+        const portNum = parseInt(numMatch[0], 10);
+        handleExecuteRecipe(`port-${portNum}`, portNum);
+      } else {
+        notify("Usage: :fix <port|zombies|wsl|git>");
+      }
+    }
+  }, [handleExecuteRecipe, notify]);
+
+  const handleScanAndReportFailures = useCallback(async () => {
+    try {
+      notify("Scanning environment for deadlocks & collisions...");
+      const failures = await tauriInvoke<any[]>("aegis_scan_healing_failures", {
+        workspacePath: null,
+      });
+      if (!failures || failures.length === 0) {
+        notify("✓ No environment deadlocks detected! System running clean.");
+      } else {
+        const first = failures[0];
+        notify(`Found: ${first.title} (${failures.length} issue(s) total). Applying fix...`);
+        if (first.id.startsWith("port-")) {
+          const portNum = parseInt(first.target_ident.split(":")[0], 10);
+          handleExecuteRecipe(first.id, portNum);
+        } else {
+          handleExecuteRecipe(first.id);
+        }
+      }
+    } catch (err: any) {
+      notify(`Scan error: ${err.message || err}`);
+    }
+  }, [handleExecuteRecipe, notify]);
+
   // Auto-Updater Check on Mount & Periodic Interval
   useEffect(() => {
     const q = query.trim().toLowerCase();
@@ -224,6 +319,12 @@ export default function App() {
       setQuery("");
     } else if (q === ":pro" || q === ":founder" || q === ":license") {
       setShowLicenseModal(true);
+      setQuery("");
+    } else if (q === ":fix" || q === ":healing") {
+      handleScanAndReportFailures();
+      setQuery("");
+    } else if (q.startsWith(":fix ")) {
+      handleParseFixCommand(q.replace(":fix ", "").trim());
       setQuery("");
     }
   }, [query, setQuery]);
@@ -1068,6 +1169,8 @@ export default function App() {
         onOpenLicense={() => setShowLicenseModal(true)}
         trialState={trialState}
         isProOrSupporter={isUnlimitedTier(licenseStatus)}
+        executionMode={executionMode}
+        onCycleExecutionMode={handleCycleExecutionMode}
         onDismiss={handleDismissWindow}
       />
 
@@ -1171,6 +1274,16 @@ export default function App() {
         actions={getContextualActions()}
         actionSelectedIndex={actionSelectedIndex}
         setActionSelectedIndex={setActionSelectedIndex}
+      />
+
+      {/* Self-Healing Action Ledger Floating Toast */}
+      <ActionLedgerToast
+        toast={healingToast}
+        onDismiss={() => setHealingToast(null)}
+        onUndo={(token) => {
+          notify("Undoing previous action: " + token);
+          setHealingToast(null);
+        }}
       />
 
       <QuickLookModal
