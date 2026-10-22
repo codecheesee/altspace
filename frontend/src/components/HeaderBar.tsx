@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
   Search,
   Clipboard as ClipboardIcon,
@@ -7,7 +8,12 @@ import {
   X,
   Skull,
   Check,
+  Sparkles,
 } from "lucide-react";
+
+import type { TrialState } from "../lib/license";
+
+
 import type { Mode } from "../types";
 
 interface HeaderBarProps {
@@ -26,6 +32,9 @@ interface HeaderBarProps {
   setCopiedNotification: (msg: string | null) => void;
   onOpenMenu: () => void;
   onOpenWebsite?: () => void;
+  onOpenLicense?: () => void;
+  trialState?: TrialState;
+  isProOrSupporter?: boolean;
   onDismiss: () => void;
 }
 
@@ -42,6 +51,9 @@ export function HeaderBar({
   setCopiedNotification,
   onOpenMenu,
   onOpenWebsite,
+  onOpenLicense,
+  trialState,
+  isProOrSupporter,
   onDismiss,
 }: HeaderBarProps) {
   return (
@@ -172,6 +184,31 @@ export function HeaderBar({
             <X className="w-3.5 h-3.5" />
           </button>
         )}
+
+        {/* 7-Day Pro Trial / Founder Pass Call-to-Action Pill */}
+        {trialState?.isTrialActive ? (
+          <button
+            type="button"
+            onClick={onOpenLicense}
+            title="Active 7-Day Pro Trial! Click to lock in 6 Months Pro with the Founder Pass for $19 / ₹999."
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/15 to-indigo-500/15 border border-amber-500/30 hover:border-amber-400 text-xs font-medium text-amber-300 hover:text-amber-100 transition cursor-pointer shrink-0 animate-in fade-in group"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <span className="font-semibold">Pro Trial: {trialState.daysRemaining}d</span>
+            <span className="hidden md:inline text-amber-400/80 font-mono">• Founder Pass $19 / ₹999</span>
+          </button>
+        ) : !isProOrSupporter ? (
+          <button
+            type="button"
+            onClick={onOpenLicense}
+            title="Lock in the Early Adopter Founder Pass for $19 / ₹999 (6 months Pro) before the first 500 seats fill up."
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 hover:border-indigo-400 text-xs font-medium text-indigo-300 hover:text-indigo-100 transition cursor-pointer shrink-0 animate-in fade-in"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">Founder Pass</span>
+            <span className="font-mono text-indigo-400/90">$19 / ₹999</span>
+          </button>
+        ) : null}
 
         {/* Command Menu Action Button */}
         <button

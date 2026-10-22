@@ -235,7 +235,14 @@ pub fn kill_pid(pid: u32) -> Result<(), String> {
         }
     }
 
-    // Use taskkill /PID ... /F for reliable tree termination
+    // Zero-Subprocess termination via Vortex Win32 Driver (altspace-win32)
+    if let Ok(killed) = altspace_win32::process::terminate_process_tree(pid) {
+        if !killed.is_empty() {
+            return Ok(());
+        }
+    }
+
+    // Secondary fallback to taskkill if native process handle access was restricted
     use std::os::windows::process::CommandExt;
     let status = Command::new("taskkill")
         .args(["/PID", &pid.to_string(), "/F", "/T"])

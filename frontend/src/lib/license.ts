@@ -24,9 +24,58 @@ export interface FeatureBounty {
 }
 
 export const SUPPORTER_PRICE_INR = 299;
+export const FOUNDER_PASS_PRICE_USD = 19;
+export const FOUNDER_PASS_PRICE_INR = 999;
+export const FOUNDER_PASS_MONTHS = 6;
 export const TREASURY_ALLOCATION_PCT = 20;
 export const TREASURY_PER_SALE_INR = Math.round((SUPPORTER_PRICE_INR * TREASURY_ALLOCATION_PCT) / 100);
 export const ACTIVE_BOUNTIES: FeatureBounty[] = [];
+
+export interface TrialState {
+  isTrialActive: boolean;
+  daysRemaining: number;
+  hoursRemaining: number;
+  isExpired: boolean;
+  startedAt: number;
+}
+
+const TRIAL_DURATION_DAYS = 7;
+const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
+const TRIAL_STORAGE_KEY = "altspace_aegis_pro_trial_start_epoch";
+
+export function getProTrialState(): TrialState {
+  let startMs = 0;
+  try {
+    const stored = localStorage.getItem(TRIAL_STORAGE_KEY);
+    if (stored) {
+      startMs = parseInt(stored, 10);
+      if (isNaN(startMs)) {
+        startMs = Date.now();
+        localStorage.setItem(TRIAL_STORAGE_KEY, String(startMs));
+      }
+    } else {
+      startMs = Date.now();
+      localStorage.setItem(TRIAL_STORAGE_KEY, String(startMs));
+    }
+  } catch (_) {
+    startMs = Date.now();
+  }
+
+  const now = Date.now();
+  const elapsed = Math.max(0, now - startMs);
+  const remainingMs = Math.max(0, TRIAL_DURATION_MS - elapsed);
+  const isTrialActive = remainingMs > 0;
+  const daysRemaining = Math.max(1, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+  const hoursRemaining = Math.max(1, Math.ceil(remainingMs / (60 * 60 * 1000)));
+
+  return {
+    isTrialActive,
+    daysRemaining,
+    hoursRemaining,
+    isExpired: !isTrialActive,
+    startedAt: startMs,
+  };
+}
 
 export interface LicenseStatus {
   isSupporter: boolean;

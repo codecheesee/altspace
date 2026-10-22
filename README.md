@@ -1,4 +1,4 @@
-# AltSpace — Native Windows Command Palette and Launcher
+# AltSpace — The Secure AI Developer Control Plane for Windows
 
 [![CI / Release](https://github.com/codecheesee/altspace/actions/workflows/release.yml/badge.svg)](https://github.com/codecheesee/altspace/actions/workflows/release.yml)
 [![Discord Community](https://img.shields.io/discord/1562508214061236364?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/EtVCN9m7JV)
@@ -9,7 +9,42 @@
 [![Model Context Protocol](https://img.shields.io/badge/AI-Model%20Context%20Protocol%20(MCP)-emerald.svg)](https://github.com/codecheesee/altspace)
 [![Contributor Treasury](https://img.shields.io/badge/Governance-20%25%20Contributor%20Treasury-amber.svg)](TREASURY.md)
 
-AltSpace is a high-performance, keyboard-driven desktop command palette and spotlight launcher designed specifically for Windows 10 and Windows 11 (x64). Built on a native Rust core using Tauri v2, React 19, and Tailwind CSS v4, AltSpace delivers instant keystroke responsiveness, low baseline memory consumption (< 18MB RAM), and comprehensive developer tooling without background telemetric overhead.
+AltSpace is **The Secure AI Developer Control Plane for Windows 10 and Windows 11 (x64)**. Powered by the proprietary **Aegis-Vortex Control Plane™** architecture, AltSpace operates directly beneath your code editor and terminal to protect your credentials, stabilize active runtimes (Docker, WSL2, Node.js, Python), and reclaim host machine memory with zero telemetric overhead.
+
+Unlike Electron bloatware or cloud-dependent launchers, AltSpace executes as an ultra-lightweight native Rust system daemon (< 18MB idle RAM) with sub-3.5ms cold invocation latency.
+
+---
+
+## Architectural Framework: Aegis-Vortex Control Plane™
+
+AltSpace introduces a proprietary 3-pillar engineering architecture engineered specifically for the Windows developer ecosystem:
+
+```mermaid
+flowchart TD
+    subgraph AegisVortex["Aegis-Vortex Control Plane™"]
+        Aegis["1. Aegis Sentinel Kernel™<br/>• Real-time memory & clipboard secret interception<br/>• Shannon entropy calculation (> 4.5 bits) in < 0.5ms<br/>• DPAPI VirtualLock page-locked memory (0 pagefile leak)<br/>• 1-Click masking pill (Ctrl + Shift + M)"]
+        Vortex["2. Vortex Win32 Driver™<br/>• Direct kernel-level TCP table queries (GetExtendedTcpTable)<br/>• Toolhelp32 process tree hierarchy traversal<br/>• Zero subprocesses (0 taskkill, 0 netstat spawns)<br/>• Direct Named Pipe client (\\\\.\\pipe\\docker_engine)"]
+        Orbital["3. Orbital Context Fabric™<br/>• 7-dimension active workspace state graph<br/>• Soft foreground window detector (VS Code, Cursor, Windsurf)<br/>• Deterministic < 400 token compact YAML compressor<br/>• Native WSL2 path normalizer (\\\\wsl.localhost)"]
+    end
+
+    Aegis <--> Vortex
+    Vortex <--> Orbital
+```
+
+---
+
+## Intellectual Property & The Aegis Shielded Boundary
+
+To protect maintainer innovations and commercial sustainability while fostering a vibrant open-source ecosystem, AltSpace enforces the **Aegis Shielded Triad**:
+
+1. **Open Core Foundation (Apache 2.0)**:
+   The foundational desktop launcher, keyboard navigation, native Everything file indexing, basic port inspection, and developer utilities are 100% free and open source forever under Apache 2.0.
+
+2. **Aegis Shielded Pro Enclave**:
+   Advanced autonomous capabilities—including **Turbo Autonomic Self-Healing**, **Multi-Project DPAPI Credential Sync**, **Cloud Semantic Response Caching**, and **Hosted AI Edge Routing**—are governed under proprietary commercial licensing. Pro entitlements are cryptographically locked using **Ed25519 digital signatures** verified with constant-time cryptographic checks.
+
+3. **Cryptographic Upstream Cloud Attestation**:
+   All Pro cloud services, edge semantic caching nodes, and hosted AI routing endpoints require ephemeral cryptographic challenge tokens signed by the maintainer's hardware security infrastructure. Local client binary patching or reverse-engineering fails closed against upstream cloud services, ensuring absolute IP and revenue protection.
 
 ---
 

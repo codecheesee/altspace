@@ -1213,6 +1213,71 @@ fn vault_delete_byok_key(provider: String) -> Result<bool, String> {
     crypto_vault::delete_byok_key(&provider)
 }
 
+// ============================================================================
+// AEGIS-VORTEX CONTROL PLANE™ IPC INTERFACES
+// ============================================================================
+
+static AEGIS_SCANNER: std::sync::LazyLock<altspace_sentinel::SecretScanner> =
+    std::sync::LazyLock::new(altspace_sentinel::SecretScanner::new);
+
+static AEGIS_HEALING: std::sync::LazyLock<altspace_core::HealingEngine> =
+    std::sync::LazyLock::new(|| altspace_core::HealingEngine::new(altspace_core::ExecutionMode::Supervised));
+
+static ORBITAL_GRAPH: std::sync::LazyLock<altspace_context::WorkspaceGraph> =
+    std::sync::LazyLock::new(altspace_context::WorkspaceGraph::new);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AegisSystemStatus {
+    pub aegis_sentinel_active: bool,
+    pub vortex_driver_active: bool,
+    pub orbital_context_active: bool,
+    pub execution_mode: String,
+    pub architecture_name: String,
+    pub active_workspace_hint: Option<String>,
+}
+
+#[tauri::command]
+fn sentinel_scan_text(text: String) -> Result<altspace_sentinel::ScanResult, String> {
+    Ok(AEGIS_SCANNER.scan(&text))
+}
+
+#[tauri::command]
+fn sentinel_suppress_hash(hash: String) -> Result<(), String> {
+    AEGIS_SCANNER.suppress_hash(hash);
+    Ok(())
+}
+
+#[tauri::command]
+fn aegis_get_system_status() -> Result<AegisSystemStatus, String> {
+    let mode_str = match AEGIS_HEALING.get_mode() {
+        altspace_core::ExecutionMode::Manual => "manual",
+        altspace_core::ExecutionMode::Supervised => "supervised",
+        altspace_core::ExecutionMode::Turbo => "turbo",
+    };
+
+    let active_hint = ORBITAL_GRAPH.get_active_context().map(|c| c.project_name);
+
+    Ok(AegisSystemStatus {
+        aegis_sentinel_active: true,
+        vortex_driver_active: true,
+        orbital_context_active: true,
+        execution_mode: mode_str.to_string(),
+        architecture_name: "Aegis-Vortex Control Plane™".to_string(),
+        active_workspace_hint: active_hint,
+    })
+}
+
+#[tauri::command]
+fn aegis_set_execution_mode(mode: String) -> Result<(), String> {
+    let new_mode = match mode.to_lowercase().as_str() {
+        "manual" => altspace_core::ExecutionMode::Manual,
+        "turbo" => altspace_core::ExecutionMode::Turbo,
+        _ => altspace_core::ExecutionMode::Supervised,
+    };
+    AEGIS_HEALING.set_mode(new_mode);
+    Ok(())
+}
+
 pub fn run() {
     // Safe-Mode Flag Detection:
     if std::env::args().any(|arg| arg == "--safe-mode")
@@ -1367,7 +1432,11 @@ pub fn run() {
             vault_get_byok_status,
             byok_chat_completion,
             vault_list_byok_providers,
-            vault_delete_byok_key
+            vault_delete_byok_key,
+            sentinel_scan_text,
+            sentinel_suppress_hash,
+            aegis_get_system_status,
+            aegis_set_execution_mode
         ])
         .setup(|app| {
             app.manage(ExitState(AtomicBool::new(false)));

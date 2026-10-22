@@ -1,0 +1,13 @@
+[package]
+name = "altspace-context"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "7-Dimension Workspace Context Engine and deterministic context compressor (< 400 tokens) for AltSpace"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+altspace-win32 = { path = "../altspace-win32" }

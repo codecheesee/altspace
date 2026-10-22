@@ -1,0 +1,19 @@
+[package]
+name = "altspace-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Core orchestration, license management, and self-healing engine for AltSpace"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+ed25519-dalek = { workspace = true }
+altspace-win32 = { path = "../altspace-win32" }
+altspace-broker = { path = "../altspace-broker" }
+altspace-sentinel = { path = "../altspace-sentinel" }
+altspace-context = { path = "../altspace-context" }

@@ -1,4 +1,4 @@
-import { PanelRightClose, PanelRightOpen, History, Activity } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, History, Activity, MessageSquare } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Mode } from "../types";
 
@@ -36,6 +36,7 @@ export function FooterBar({
   onOpenActions,
   onOpenTimeline,
   onOpenDiagnostics,
+  onOpenFeedback,
   onOpenWebsite,
 }: FooterBarProps) {
   return (
@@ -121,6 +122,17 @@ export function FooterBar({
             <span className="hidden xl:inline">Diagnostics</span>
           </button>
         )}
+
+        <button
+          onClick={onOpenFeedback}
+          className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+          title="Share Beta Feedback or Request Features (Ctrl+Shift+F or :feedback)"
+          aria-label="Share Feedback"
+        >
+          <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="hidden sm:inline">Feedback</span>
+          <kbd className="kbd-cap hidden md:inline">Ctrl Shift F</kbd>
+        </button>
 
         <button
           onClick={onOpenActions}

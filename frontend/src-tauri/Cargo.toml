@@ -28,6 +28,11 @@ ed25519-dalek = { version = "2.1", default-features = false }
 base64 = "0.22"
 url = "2.5"
 sha2 = "0.10"
+altspace-win32 = { path = "../../crates/altspace-win32" }
+altspace-broker = { path = "../../crates/altspace-broker" }
+altspace-sentinel = { path = "../../crates/altspace-sentinel" }
+altspace-context = { path = "../../crates/altspace-context" }
+altspace-core = { path = "../../crates/altspace-core" }
 
 [dependencies.windows]
 version = "0.58"

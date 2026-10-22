@@ -40,6 +40,13 @@ import {
   DRIVE_SEARCH_PREFERENCE_KEY,
 } from "./lib/appStorage";
 import { refreshCurrencyRates } from "./lib/calc";
+import {
+  getLicenseStatus,
+  getProTrialState,
+  isUnlimitedTier,
+  type TrialState,
+  type LicenseStatus,
+} from "./lib/license";
 import type {
   Mode,
   Item,
@@ -197,6 +204,8 @@ export default function App() {
 
   // Input Modal State (replaces prompt/alert)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [trialState] = useState<TrialState>(() => getProTrialState());
+  const [licenseStatus] = useState<LicenseStatus>(() => getLicenseStatus());
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [isSafeMode, setIsSafeMode] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
@@ -208,6 +217,17 @@ export default function App() {
   } | null>(null);
 
   // Auto-Updater Check on Mount & Periodic Interval
+  useEffect(() => {
+    const q = query.trim().toLowerCase();
+    if (q === ":feedback") {
+      setShowFeedbackModal(true);
+      setQuery("");
+    } else if (q === ":pro" || q === ":founder" || q === ":license") {
+      setShowLicenseModal(true);
+      setQuery("");
+    }
+  }, [query, setQuery]);
+
   useEffect(() => {
     const isAutoCheckEnabled = localStorage.getItem("altspace_auto_check_updates") !== "false";
     if (!isAutoCheckEnabled) return;
@@ -796,6 +816,12 @@ export default function App() {
       return;
     }
 
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key?.toLowerCase() === "f" || e.code === "KeyF")) {
+      e.preventDefault();
+      setShowFeedbackModal((prev) => !prev);
+      return;
+    }
+
     if ((e.key?.toLowerCase() === "k" || e.code === "KeyK") && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       setShowActionsModal((prev) => !prev);
@@ -1035,6 +1061,9 @@ export default function App() {
         setCopiedNotification={setCopiedNotification}
         onOpenMenu={() => setShowActionsModal(true)}
         onOpenWebsite={() => handleOpenUrl("https://codecheesee.github.io/altspace/")}
+        onOpenLicense={() => setShowLicenseModal(true)}
+        trialState={trialState}
+        isProOrSupporter={isUnlimitedTier(licenseStatus)}
         onDismiss={handleDismissWindow}
       />
 

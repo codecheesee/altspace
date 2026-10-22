@@ -35,6 +35,11 @@ fn sanitize_key(key: &str) -> Result<String, String> {
 /// Protects plaintext bytes using Windows Data Protection API (DPAPI).
 /// Bound to the current Windows user and machine.
 pub fn protect_bytes(plaintext: &[u8]) -> Result<Vec<u8>, String> {
+    altspace_win32::dpapi::protect_bytes(plaintext)
+}
+
+#[allow(dead_code)]
+fn legacy_protect_bytes_unused(plaintext: &[u8]) -> Result<Vec<u8>, String> {
     if plaintext.is_empty() {
         return Ok(Vec::new());
     }
@@ -72,6 +77,11 @@ pub fn protect_bytes(plaintext: &[u8]) -> Result<Vec<u8>, String> {
 
 /// Unprotects DPAPI encrypted bytes back to plaintext.
 pub fn unprotect_bytes(ciphertext: &[u8]) -> Result<Vec<u8>, String> {
+    altspace_win32::dpapi::unprotect_bytes(ciphertext).map(|buf| buf.into_vec())
+}
+
+#[allow(dead_code)]
+fn legacy_unprotect_bytes_unused(ciphertext: &[u8]) -> Result<Vec<u8>, String> {
     if ciphertext.is_empty() {
         return Ok(Vec::new());
     }
