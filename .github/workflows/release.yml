@@ -63,10 +63,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Path dist_artifacts -Force | Out-Null
-          $binary = 'frontend/src-tauri/target/release/raycast-windows.exe'
-          $nsis = Get-ChildItem 'frontend/src-tauri/target/release/bundle/nsis/*-setup.exe' | Select-Object -First 1
-          $msi = Get-ChildItem 'frontend/src-tauri/target/release/bundle/msi/*.msi' | Select-Object -First 1
-          if (-not (Test-Path $binary)) { throw "Release binary not found: $binary" }
+          $candidateBinaries = @('target/release/raycast-windows.exe', 'frontend/src-tauri/target/release/raycast-windows.exe') | Where-Object { Test-Path $_ }
+          $binary = $candidateBinaries | Select-Object -First 1
+          $candidateNsis = @('target/release/bundle/nsis/*-setup.exe', 'frontend/src-tauri/target/release/bundle/nsis/*-setup.exe') | ForEach-Object { Get-ChildItem $_ -ErrorAction SilentlyContinue }
+          $nsis = $candidateNsis | Select-Object -First 1
+          $candidateMsi = @('target/release/bundle/msi/*.msi', 'frontend/src-tauri/target/release/bundle/msi/*.msi') | ForEach-Object { Get-ChildItem $_ -ErrorAction SilentlyContinue }
+          $msi = $candidateMsi | Select-Object -First 1
+          if (-not $binary) { throw "Release binary not found in candidate paths." }
           if (-not $nsis) { throw 'NSIS bundle was not produced.' }
           if (-not $msi) { throw 'MSI bundle was not produced.' }
           Copy-Item $binary 'dist_artifacts/altspace.exe'

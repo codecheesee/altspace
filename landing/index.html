@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AltSpace — Native Windows Command Palette & Launcher</title>
-  <meta name="description" content="Lightning-fast, extensible native command palette for Windows with sub-5ms multi-drive search, 1-click dev port killer, clipboard history, and local offline Ollama AI. Free and open source under Apache 2.0." />
+  <title>AltSpace — The Lightning-Fast Command Palette for Windows</title>
+  <meta name="description" content="Ultra-lightweight native Windows command palette engineered in Rust. Sub-3.5ms invocation, <18MB RAM, instant multi-drive search, 1-click port killer, and smart PC game hub. Apache 2.0 open source." />
   
   <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://codecheesee.github.io/altspace/" />
   <meta property="og:title" content="AltSpace — Native Windows Command Palette & Launcher" />
-  <meta property="og:description" content="Sub-5ms Rust core, 18MB RAM footprint, 1-click dev port killer, DPAPI vault, and multi-drive search. Apache 2.0 Open Source." />
+  <meta property="og:description" content="Sub-3.5ms Rust core, 18MB RAM footprint, 1-click dev port killer, smart PC game hub, and multi-drive search. Apache 2.0 Open Source." />
   <meta property="og:image" content="./og-preview.svg" />
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AltSpace — Native Windows Command Palette & Launcher" />
-  <meta name="twitter:description" content="Sub-5ms Rust core, 18MB RAM footprint, 1-click dev port killer, DPAPI vault, and multi-drive search." />
+  <meta name="twitter:description" content="Sub-3.5ms Rust core, 18MB RAM footprint, 1-click dev port killer, smart PC game hub, and multi-drive search." />
   <meta name="twitter:image" content="./og-preview.svg" />
   
   <link rel="icon" type="image/png" href="./logo.png" />
@@ -27,10 +27,10 @@
   
   <style>
     :root {
-      --bg: #09090b;
-      --card-bg: #111115;
+      --bg: #08080a;
+      --card-bg: #0f0f12;
       --border: rgba(255, 255, 255, 0.08);
-      --accent: #38bdf8;
+      --border-hover: rgba(255, 255, 255, 0.16);
     }
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -41,12 +41,13 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .specular-card {
-      background: #111114;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .specular-card:hover {
-      border-color: rgba(255, 255, 255, 0.16);
+      border-color: var(--border-hover);
     }
     .kbd-cap {
       display: inline-flex;
@@ -57,44 +58,53 @@
       font-weight: 500;
       padding: 2px 6px;
       border-radius: 4px;
-      background: #222226;
+      background: #18181b;
       color: #e4e4e7;
-      border: 1px solid #383842;
-      border-bottom: 2px solid #4a4a56;
+      border: 1px solid #27272a;
+      border-bottom: 2px solid #3f3f46;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    }
-    .gold-glow {
-      box-shadow: 0 0 35px -8px rgba(234, 179, 8, 0.25);
     }
     @keyframes pulse-green {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
+      50% { opacity: 0.35; transform: scale(0.85); }
     }
     .pulse-dot {
       animation: pulse-green 2s infinite ease-in-out;
     }
+    /* Custom Scrollbar for demo list */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
   </style>
 </head>
-<body class="min-h-screen relative overflow-x-hidden selection:bg-zinc-700 selection:text-white">
-  <!-- Top Specular Rim Line -->
+<body class="min-h-screen relative overflow-x-hidden selection:bg-zinc-800 selection:text-white">
+  <!-- Top Specular Border Line -->
   <div class="h-[1px] w-full bg-white/[0.08] pointer-events-none"></div>
 
-  <!-- Navigation -->
-  <header class="border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
-    <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+  <!-- Header Navigation -->
+  <header class="border-b border-white/[0.06] sticky top-0 z-50 backdrop-blur-xl bg-[#08080a]/80">
+    <nav class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between text-sm">
       <a href="#" class="flex items-center gap-3 cursor-pointer group">
-        <img src="./logo.png" alt="AltSpace Logo" class="w-8 h-8 rounded-lg shadow-sm transition group-hover:scale-105" />
-        <span class="text-lg font-bold tracking-tight text-white">AltSpace</span>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <img src="./logo.png" alt="AltSpace Logo" class="w-7 h-7 rounded-lg transition group-hover:scale-105" />
+        <span class="text-base font-bold tracking-tight text-white">AltSpace</span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
           v2.3.0
         </span>
       </a>
 
-      <div class="hidden md:flex items-center gap-6 text-xs font-medium text-zinc-400">
-        <a href="#demo" class="hover:text-white transition">Simulator</a>
+      <div class="hidden md:flex items-center gap-7 text-xs font-medium text-zinc-400">
+        <a href="#simulator" class="hover:text-white transition">Simulator</a>
         <a href="#features" class="hover:text-white transition">Features</a>
-        <a href="#benchmark" class="hover:text-white transition">Performance</a>
+        <a href="#community" class="hover:text-white transition">Community</a>
         <a href="#pricing" class="hover:text-white transition">Pricing</a>
+        <a href="https://github.com/codecheesee/altspace#readme" class="hover:text-white transition" target="_blank" rel="noreferrer">Docs</a>
       </div>
 
       <div class="flex items-center gap-3">
@@ -102,22 +112,16 @@
           href="https://github.com/codecheesee/altspace"
           target="_blank"
           rel="noreferrer"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium border border-white/[0.08] transition"
+          class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] text-xs font-medium transition"
         >
-          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span class="hidden sm:inline">Star</span>
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <span>Star</span>
         </a>
         <a
-          href="#pricing"
-          class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5"
-        >
-          <span>Get Pro</span>
-        </a>
-        <a
-          href="https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe"
+          href="https://github.com/codecheesee/altspace/releases/latest"
           class="px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition shadow-sm"
         >
-          Download
+          Download v2.3.0
         </a>
       </div>
     </nav>
@@ -125,523 +129,402 @@
 
   <!-- Hero Section -->
   <main>
-    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10 text-center">
-      <!-- Badge -->
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-white/[0.08] text-zinc-300 text-[11px] font-medium mb-6">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-        <span>Built for Windows 10 & 11</span>
+    <section class="max-w-5xl mx-auto px-6 pt-16 pb-12 text-center">
+      <!-- Release Announcement Pill -->
+      <a
+        href="https://github.com/codecheesee/altspace/releases/tag/v2.3.0"
+        target="_blank"
+        rel="noreferrer"
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-white/[0.08] text-zinc-300 text-[11px] font-medium mb-8 hover:border-white/[0.18] transition"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+        <span class="font-semibold text-white">AltSpace v2.3.0</span>
         <span class="text-zinc-600">•</span>
-        <span class="text-zinc-400 font-mono">18 MB RAM</span>
-        <span class="text-zinc-600">•</span>
-        <span class="text-sky-400">Sub-5ms Rust Core</span>
-      </div>
+        <span>Smart Game Hub & Noise Filtering</span>
+        <span class="text-zinc-500 font-mono text-[10px]">→</span>
+      </a>
 
-      <!-- Headline -->
+      <!-- Headline (Ultra-Clean Monochrome) -->
       <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.12]">
-        Your shortcut to everything on Windows.
+        The lightning-fast command palette for Windows.
       </h1>
 
       <p class="mt-4 text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-        The keyboard-driven command palette and developer spotlight. Instant multi-drive file search, single-click port killer, and private local AI.
+        Engineered in pure native Rust with sub-3.5ms invocation and &lt; 18MB RAM. Instant multi-drive file search, developer port killer, PC game hub, and local offline AI.
       </p>
 
-      <!-- Keycap Trigger Pill -->
-      <div class="mt-5 flex items-center justify-center gap-2 text-xs text-zinc-400">
-        <span>Invoke anywhere via</span>
+      <!-- Keycap Trigger -->
+      <div class="mt-6 flex items-center justify-center gap-2 text-xs text-zinc-400">
+        <span>Summon from anywhere with</span>
         <kbd class="kbd-cap">Alt</kbd>
-        <span class="text-zinc-500">+</span>
+        <span class="text-zinc-600">+</span>
         <kbd class="kbd-cap">Space</kbd>
       </div>
 
-      <!-- Action Buttons & Quick Install -->
-      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <!-- FUNNEL STEP 1: Instant PowerShell 1-Liner Copy Bar -->
+      <div class="mt-8 max-w-xl mx-auto">
+        <div class="flex items-center justify-between p-1.5 pl-3.5 rounded-xl bg-[#0f0f12] border border-white/[0.1] text-xs font-mono shadow-xl relative group">
+          <div class="flex items-center gap-2 truncate text-zinc-300">
+            <span class="text-emerald-400 font-bold select-none">&gt;</span>
+            <span id="cmd-snippet" class="truncate select-all text-zinc-200">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
+          </div>
+          <button
+            id="copy-btn"
+            onclick="copyInstallCommand()"
+            class="ml-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-sans text-xs font-medium transition shrink-0 flex items-center gap-1.5 cursor-pointer"
+          >
+            <svg id="copy-icon" class="w-3.5 h-3.5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            <span id="copy-text">Copy</span>
+          </button>
+        </div>
+        <p class="mt-2 text-[11px] text-zinc-500 font-mono text-center">
+          Downloads official portable release, verifies SHA-256 checksums, and launches instantly.
+        </p>
+      </div>
+
+      <!-- Secondary Direct Download Options -->
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
         <a
           href="https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe"
-          class="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+          class="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition shadow-md flex items-center gap-2 cursor-pointer"
         >
-          <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           <span>Download Installer (.exe)</span>
         </a>
         <a
           href="https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Portable-x64.zip"
-          class="w-full sm:w-auto px-5 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs border border-white/[0.1] transition flex items-center justify-center gap-2 cursor-pointer"
+          class="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-medium text-xs border border-white/[0.08] transition flex items-center gap-2 cursor-pointer"
         >
-          <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           <span>Portable ZIP (Zero-Install)</span>
         </a>
-      </div>
-
-      <!-- PowerShell 1-Click Snippet -->
-      <div class="mt-5 max-w-lg mx-auto">
-        <div class="flex items-center justify-between p-1.5 pl-3.5 rounded-xl bg-black/50 border border-white/[0.08] text-xs font-mono text-zinc-300">
-          <span class="truncate text-zinc-400 select-all">irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex</span>
-          <button
-            onclick="copyInstallCmd()"
-            class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-sans text-xs font-medium transition cursor-pointer flex items-center gap-1 shrink-0 ml-2"
-          >
-            <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            <span id="copy-text">Copy</span>
-          </button>
-        </div>
+        <a
+          href="https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-MSI-x64.msi"
+          class="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 font-medium text-xs border border-white/[0.08] transition flex items-center gap-2 cursor-pointer"
+        >
+          <span>Enterprise MSI</span>
+        </a>
       </div>
     </section>
 
-    <!-- Interactive Live Simulator Section (21st.dev Raycast Style) -->
-        <!-- Interactive Live Simulator Section (Windows 11 Fluent Design) -->
-        <!-- Interactive Live Simulator Section (Pixel-Perfect AltSpace Desktop App) -->
-    <section id="demo" class="max-w-4xl mx-auto px-4 sm:px-6 py-8 scroll-mt-20">
+    <!-- FUNNEL STEP 2: Interactive In-Browser Command Palette Simulator -->
+    <section id="simulator" class="max-w-4xl mx-auto px-4 sm:px-6 py-6 scroll-mt-20">
       <div class="text-center mb-6">
-        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Live Web Simulator</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5 tracking-tight">Experience AltSpace in your browser</h2>
-        <p class="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl mx-auto">
-          Pixel-for-pixel replica of the native Windows application. Test search, real-time math, port management, and press <kbd class="kbd-cap">Ctrl K</kbd> for the action menu.
-        </p>
+        <span class="text-xs font-mono uppercase tracking-wider text-zinc-500 font-medium">Live Simulator</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">Try AltSpace directly in your browser</h2>
+        <p class="text-xs text-zinc-400 mt-1">Interact with live queries below or click the quick action chips to test features.</p>
       </div>
 
-      <!-- Floating AltSpace Palette HUD Window (Matches Screenshot 1 & 2) -->
-      <div class="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_25px_60px_rgba(0,0,0,0.85)] bg-[#0e0e12] select-none">
-        <!-- Top Specular Highlight Rim -->
-        <div class="h-[1px] w-full bg-white/[0.08]"></div>
+      <!-- Quick Action Chips -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-4">
+        <button onclick="setQuery(':port 3000')" class="px-3 py-1 rounded-full text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition cursor-pointer">
+          :port 3000
+        </button>
+        <button onclick="setQuery('gta 5')" class="px-3 py-1 rounded-full text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition cursor-pointer">
+          gta 5 (Game Hub)
+        </button>
+        <button onclick="setQuery('package.json')" class="px-3 py-1 rounded-full text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition cursor-pointer">
+          package.json
+        </button>
+        <button onclick="setQuery('15% of 850')" class="px-3 py-1 rounded-full text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition cursor-pointer">
+          15% of 850
+        </button>
+        <button onclick="setQuery('? snap window left')" class="px-3 py-1 rounded-full text-xs font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition cursor-pointer">
+          ? local AI prompt
+        </button>
+      </div>
 
-        <!-- In-App Notification / Toast Banner -->
-        <div id="sim-toast" class="hidden px-4 py-2 bg-sky-500/10 border-b border-sky-500/20 text-xs text-sky-300 font-medium flex items-center justify-between transition-all">
-          <span id="sim-toast-msg" class="flex items-center gap-2">✓ Action executed successfully</span>
-          <button onclick="hideToast()" class="text-sky-400 hover:text-white cursor-pointer px-1">✕</button>
-        </div>
-
-        <!-- Header / Omnibar (HeaderBar.tsx) -->
-        <div class="px-4 py-3 bg-[#131317] border-b border-white/[0.08] flex items-center gap-3">
-          <!-- Logo Button -->
-          <a
-            href="https://github.com/codecheesee/altspace"
-            target="_blank"
-            rel="noreferrer"
-            title="AltSpace Repository"
-            class="flex items-center p-0.5 -ml-1 rounded hover:bg-white/[0.08] transition shrink-0 cursor-pointer"
-          >
-            <img src="./logo.png" alt="AltSpace Logo" class="w-5 h-5 rounded-md shadow-sm" />
-          </a>
-
-          <!-- Cyan Search Icon -->
-          <svg class="w-4 h-4 text-sky-400 shrink-0 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-
-          <!-- Search Input -->
+      <!-- Simulator Outer Container -->
+      <div class="rounded-2xl border border-white/[0.12] bg-[#0c0c0f] shadow-2xl overflow-hidden relative">
+        <!-- Palette Header Bar -->
+        <div class="px-4 py-3.5 border-b border-white/[0.06] bg-[#0e0e12] flex items-center gap-3">
+          <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input
             id="demo-search-input"
             type="text"
-            placeholder="Search apps, files, calculate, or type :store, :ports..."
-            oninput="handleDemoSearch(this.value)"
-            onkeydown="handleDemoKeydown(event)"
-            class="w-full bg-transparent text-[14px] font-normal text-zinc-100 placeholder-zinc-500 outline-none border-none tracking-tight font-sans"
             autocomplete="off"
             spellcheck="false"
+            placeholder="Search applications, files, ports (:port), games, or calculate..."
+            class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none font-medium"
+            oninput="handleDemoSearch(this.value)"
+            onkeydown="handleDemoKeydown(event)"
           />
-
-          <!-- Clear Query Button (Dynamic) -->
-          <button
-            id="demo-clear-btn"
-            onclick="clearDemoSearch()"
-            class="hidden p-1 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-200 transition shrink-0 cursor-pointer"
-            title="Clear query"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-
-          <!-- Menu Ctrl+K Button -->
-          <button
-            onclick="toggleActionDrawer()"
-            title="Command Palette Menu (Ctrl+K)"
-            class="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/[0.06] text-xs font-medium text-zinc-400 hover:text-zinc-100 transition cursor-pointer shrink-0"
-          >
-            <span>Menu</span>
-            <kbd class="kbd-cap">Ctrl K</kbd>
-          </button>
-
-          <!-- Dismiss Button -->
-          <button
-            onclick="clearDemoSearch()"
-            title="Dismiss (Esc)"
-            class="p-1 rounded hover:bg-white/[0.08] text-zinc-500 hover:text-zinc-200 transition shrink-0 cursor-pointer"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        </div>
-
-        <!-- Section Header (ResultSection.tsx) -->
-        <div class="px-4 pt-3.5 pb-1.5 flex items-center justify-between text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
-          <span id="demo-section-title">SUGGESTED APPLICATIONS (1)</span>
-          <span class="text-[11px] font-normal lowercase text-zinc-600">frequently used</span>
-        </div>
-
-        <!-- Results List Area (ResultRow.tsx) -->
-        <div id="demo-results-list" class="px-2 py-1 space-y-1 min-h-[220px] max-h-[360px] overflow-y-auto">
-          <!-- Populated by JavaScript -->
-        </div>
-
-        <!-- Footer Bar (FooterBar.tsx) -->
-        <div class="min-h-9 px-4 py-2 bg-[#0c0c0f] border-t border-white/[0.08] flex items-center justify-between text-xs text-zinc-400 font-medium">
-          <!-- Left: AltSpace / count / theme -->
-          <div class="flex items-center gap-2 text-[11.5px] text-zinc-400">
-            <span class="font-semibold text-zinc-200 tracking-tight">AltSpace</span>
-            <span class="text-zinc-600">/</span>
-            <span id="demo-result-count" class="font-mono text-[11px] text-zinc-400">1 result</span>
-            <span class="text-zinc-600">/</span>
-            <button
-              onclick="cycleThemeDemo()"
-              title="Cycle Theme (Ctrl+Shift+T)"
-              class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-            >
-              <span id="theme-dot" class="w-2 h-2 rounded-full bg-[#00d2ff]"></span>
-              <span id="theme-name" class="text-[11px]">Windows Graphite</span>
-            </button>
-          </div>
-
-          <!-- Right: Keyboard cues & Action buttons -->
-          <div class="flex items-center gap-2 sm:gap-3 text-[11px]">
-            <div class="hidden sm:flex items-center gap-1.5">
-              <span class="text-zinc-400">Open</span>
-              <kbd class="kbd-cap">↵</kbd>
-            </div>
-            <div class="hidden md:flex items-center gap-1.5">
-              <span class="text-zinc-400">Preview</span>
-              <kbd class="kbd-cap">Space</kbd>
-            </div>
-            <button
-              onclick="toggleActionDrawer()"
-              class="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-            >
-              <span>Actions</span>
-              <kbd class="kbd-cap">Ctrl K</kbd>
-            </button>
-            <button
-              onclick="toggleDetailsDemo()"
-              id="details-btn"
-              class="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-            >
-              <span>Details</span>
-              <kbd class="kbd-cap">Ctrl B</kbd>
-            </button>
+          <div class="flex items-center gap-1.5 shrink-0 text-[11px] text-zinc-500 font-mono">
+            <span class="px-1.5 py-0.5 rounded bg-zinc-800 border border-white/[0.06]">ESC</span>
           </div>
         </div>
 
-        <!-- Actions Drawer Modal (ActionDrawer.tsx - Matches Screenshot 2!) -->
-        <div
-          id="action-drawer"
-          class="hidden absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-end justify-end p-3 z-50 animate-in fade-in duration-100"
-          onclick="toggleActionDrawer()"
-        >
-          <div
-            class="w-[360px] max-h-[460px] border border-white/[0.08] bg-[#0c0c0e] rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] p-2.5 flex flex-col space-y-2"
-            onclick="event.stopPropagation()"
-          >
-            <!-- Drawer Header -->
-            <div class="px-3 py-1.5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <div class="min-w-0 pr-2">
-                <span id="drawer-item-title" class="text-[12px] font-semibold text-white truncate block">
-                  Actions for Developer PowerShell for VS 2022
-                </span>
-                <span id="drawer-item-type" class="text-[10px] text-zinc-400 truncate block font-mono">
-                  Application
-                </span>
-              </div>
-              <button
-                onclick="toggleActionDrawer()"
-                class="flex items-center gap-1 text-zinc-400 hover:text-white transition cursor-pointer"
-              >
-                <kbd class="kbd-cap hover:border-zinc-500">Esc</kbd>
-              </button>
-            </div>
+        <!-- Category & Filter Tabs -->
+        <div class="px-4 py-2 border-b border-white/[0.04] bg-[#0a0a0d] flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1 text-[11px] font-medium">
+            <button onclick="filterCategory('all')" id="tab-all" class="px-2.5 py-1 rounded-md bg-white/[0.1] text-white transition">All</button>
+            <button onclick="filterCategory('apps')" id="tab-apps" class="px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition">Apps</button>
+            <button onclick="filterCategory('files')" id="tab-files" class="px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition">Files</button>
+            <button onclick="filterCategory('ports')" id="tab-ports" class="px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition">Ports</button>
+            <button onclick="filterCategory('games')" id="tab-games" class="px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition">Games</button>
+          </div>
+          <span id="demo-result-count" class="text-zinc-500 font-mono text-[11px]">4 results</span>
+        </div>
 
-            <!-- Drawer Scrollable Actions -->
-            <div class="overflow-y-auto space-y-2.5 px-1 py-1 max-h-[380px] text-xs">
-              <!-- PRIMARY ACTION -->
-              <div class="space-y-1">
-                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
-                  PRIMARY ACTION
-                </div>
-                <div
-                  onclick="executePrimaryAction()"
-                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-white hover:bg-white/[0.08] transition"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-amber-400">⚡</span>
-                    <span class="font-medium">Launch Application</span>
-                  </div>
-                  <kbd class="kbd-cap">↵</kbd>
-                </div>
-              </div>
+        <!-- Results List Area -->
+        <div id="demo-results-list" class="max-h-[380px] min-h-[260px] overflow-y-auto p-2 space-y-1 custom-scroll">
+          <!-- Dynamically populated by JS -->
+        </div>
 
-              <!-- STANDARD ACTIONS -->
-              <div class="space-y-1">
-                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
-                  STANDARD ACTIONS
-                </div>
-                <div
-                  onclick="executeActionToast('Running as Administrator...')"
-                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-rose-400">🛡️</span>
-                    <span>Run as Administrator</span>
-                  </div>
-                  <kbd class="kbd-cap">Ctrl+Shift+↵</kbd>
-                </div>
-                <div
-                  onclick="executeActionToast('Copied path to clipboard')"
-                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-zinc-400">📋</span>
-                    <span>Copy Absolute Path</span>
-                  </div>
-                  <kbd class="kbd-cap">Ctrl+C</kbd>
-                </div>
-              </div>
+        <!-- Palette Footer Status Bar -->
+        <div class="px-4 py-2.5 border-t border-white/[0.06] bg-[#0a0a0d] flex flex-wrap items-center justify-between text-[11px] text-zinc-500 font-mono">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>Rust Engine Active</span>
+            </span>
+            <span class="hidden sm:inline text-zinc-600">•</span>
+            <span class="hidden sm:inline">18 MB RAM</span>
+          </div>
 
-              <!-- PREFERENCES -->
-              <div class="space-y-1">
-                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
-                  PREFERENCES
-                </div>
-                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
-                  <div class="flex items-center gap-2">
-                    <span class="text-emerald-400">⚡</span>
-                    <span>Launch on Windows Startup</span>
-                  </div>
-                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer">
-                    <span class="w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform"></span>
-                  </button>
-                </div>
-                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sky-400">💾</span>
-                    <span>Search All Hard Drives (C:, D:, External)</span>
-                  </div>
-                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-emerald-500 relative transition cursor-pointer">
-                    <span class="w-3 h-3 rounded-full bg-white absolute right-0.5 top-0.5 transition-transform"></span>
-                  </button>
-                </div>
-                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-zinc-300">
-                  <div class="flex items-center gap-2">
-                    <span class="text-rose-400">📐</span>
-                    <span>Context Preview Sidebar</span>
-                  </div>
-                  <button onclick="toggleSwitch(this)" class="w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer">
-                    <span class="w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform"></span>
-                  </button>
-                </div>
-                <div
-                  onclick="executeActionToast('Re-indexed 6,919 files across drives in 4.2ms')"
-                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-zinc-400">🔄</span>
-                    <span>Re-index All Hard Drives Now</span>
-                  </div>
-                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">6,919 files</span>
-                </div>
-              </div>
-
-              <!-- THEMES & APPEARANCE -->
-              <div class="space-y-1">
-                <div class="px-2 text-[9.5px] uppercase font-bold tracking-wider text-zinc-500">
-                  THEMES & APPEARANCE
-                </div>
-                <div
-                  onclick="cycleThemeDemo()"
-                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer text-xs text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-purple-400">🎨</span>
-                    <span>Cycle Theme</span>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-[10.5px] text-zinc-400">Windows Graphite</span>
-                    <kbd class="kbd-cap text-[9px]">Ctrl+Shift+T</kbd>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="flex items-center gap-3">
+            <span><kbd class="kbd-cap">↵</kbd> Execute</span>
+            <span><kbd class="kbd-cap">↑</kbd><kbd class="kbd-cap">↓</kbd> Navigate</span>
+            <span><kbd class="kbd-cap">Tab</kbd> Actions</span>
           </div>
         </div>
-      </div>
-
-      <!-- Quick-Suggestion Clickable Tags (Clean, Relatable Queries) -->
-      <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
-        <span class="text-zinc-500 font-mono text-[11px]">Quick Try:</span>
-        <button onclick="applyDemoQuery('Developer PowerShell')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/[0.06] transition cursor-pointer font-sans text-[11.5px]">Developer PowerShell</button>
-        <button onclick="applyDemoQuery('42 * 1337')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-sky-400 hover:text-sky-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">42 * 1337</button>
-        <button onclick="applyDemoQuery('15% of 850')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-sky-400 hover:text-sky-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">15% of 850</button>
-        <button onclick="applyDemoQuery(':3000')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 border border-white/[0.06] transition cursor-pointer font-mono text-[11.5px]">:3000 (Port Killer)</button>
-        <button onclick="applyDemoQuery('package.json')" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/[0.06] transition cursor-pointer font-sans text-[11.5px]">package.json</button>
-        <button onclick="toggleActionDrawer()" class="px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition cursor-pointer font-medium text-[11.5px] flex items-center gap-1">
-          <span>Actions Menu</span>
-          <kbd class="kbd-cap text-[9.5px]">Ctrl K</kbd>
-        </button>
       </div>
     </section>
 
-    <!-- Superpowers Bento Grid Section -->
-    <section id="features" class="max-w-6xl mx-auto px-6 py-16 scroll-mt-20">
+    <!-- FUNNEL STEP 3: Verified Performance Metrics Bar -->
+    <section class="max-w-5xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="specular-card rounded-2xl p-5 text-center">
+          <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">&lt; 18 MB</div>
+          <p class="text-xs text-zinc-400 mt-1 font-medium">Idle RAM Footprint</p>
+          <span class="text-[10px] text-zinc-500 mt-0.5 block font-mono">10x lighter than Electron</span>
+        </div>
+        <div class="specular-card rounded-2xl p-5 text-center">
+          <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">&lt; 3.5 ms</div>
+          <p class="text-xs text-zinc-400 mt-1 font-medium">Cold Invocation Latency</p>
+          <span class="text-[10px] text-zinc-500 mt-0.5 block font-mono">Native Win32 RegisterHotKey</span>
+        </div>
+        <div class="specular-card rounded-2xl p-5 text-center">
+          <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">100%</div>
+          <p class="text-xs text-zinc-400 mt-1 font-medium">Local-First Privacy</p>
+          <span class="text-[10px] text-zinc-500 mt-0.5 block font-mono">Zero background telemetry</span>
+        </div>
+        <div class="specular-card rounded-2xl p-5 text-center">
+          <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">Apache 2.0</div>
+          <p class="text-xs text-zinc-400 mt-1 font-medium">Open Source License</p>
+          <span class="text-[10px] text-zinc-500 mt-0.5 block font-mono">Free for personal &amp; enterprise</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNNEL STEP 4: 21st.dev Style Bento Grid (Core Capabilities) -->
+    <section id="features" class="max-w-6xl mx-auto px-6 py-12 scroll-mt-20">
       <div class="text-center mb-12">
-        <span class="text-xs font-mono uppercase tracking-wider text-sky-400 font-semibold">Engineered for Power Users</span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">Everything you need. Zero bloat.</h2>
-        <p class="text-sm text-zinc-400 mt-2 max-w-xl mx-auto">
-          Built from scratch in Rust 2021 + Tauri v2. No Electron baggage, no background telemetry, no 300MB memory leaks.
+        <span class="text-xs font-mono uppercase tracking-wider text-zinc-500 font-medium">Engineered for Windows</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1.5 tracking-tight">Everything you need. Zero bloat.</h2>
+        <p class="text-sm text-zinc-400 mt-2 max-w-lg mx-auto">
+          Built from scratch for power users, developers, and PC gamers who demand instant responsiveness.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Bento 1: Multi-Drive Everything Search -->
-        <div class="specular-card rounded-2xl p-6 md:col-span-2 flex flex-col justify-between">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Bento 1 (Large 2-col): Smart Game Hub & Multi-Store Launcher -->
+        <div class="md:col-span-2 specular-card rounded-2xl p-7 flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
+                v2.3.0 Feature
+              </span>
+              <span class="text-xs text-zinc-500 font-mono">:games</span>
             </div>
-            <h3 class="text-lg font-bold text-white">Multi-Drive Everything Indexer</h3>
-            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Find any file, folder, or executable across <span class="text-zinc-200 font-mono">C:</span>, <span class="text-zinc-200 font-mono">D:</span>, and external drives in less than 5 milliseconds. Direct integration with the Windows NTFS USN Journal with zero CPU indexing overhead.
+            <h3 class="text-xl font-bold text-white tracking-tight">Smart Game Hub &amp; Multi-Store Launcher</h3>
+            <p class="text-xs text-zinc-400 mt-2 max-w-lg leading-relaxed">
+              Auto-scans your local disks to discover installed titles across Steam, Epic Games Store, Xbox Game Pass, and standalone directories (<code class="text-zinc-300">C:\Games</code>, <code class="text-zinc-300">D:\Games</code>). Type a game title to summon an interactive Hero Card with store badges, install size, and single-click launch.
             </p>
-          </div>
-          <!-- Interactive Drive Micro-Demo -->
-          <div class="mt-6 p-3 rounded-xl bg-black/40 border border-white/[0.06] text-xs font-mono text-zinc-300">
-            <div class="flex items-center justify-between text-[11px] text-zinc-500 pb-2 mb-2 border-b border-white/[0.04]">
-              <div class="flex items-center gap-1.5">
-                <span>Drive:</span>
-                <button onclick="setBentoDrive('C')" id="drive-btn-C" class="px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer">C:</button>
-                <button onclick="setBentoDrive('D')" id="drive-btn-D" class="px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer">D:</button>
-                <button onclick="setBentoDrive('E')" id="drive-btn-E" class="px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer">E:</button>
+
+            <!-- Mini Visual Mockup of Game Hero Card -->
+            <div class="mt-6 p-4 rounded-xl bg-[#09090c] border border-white/[0.08] flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-lg bg-zinc-800 border border-white/[0.1] flex items-center justify-center font-bold text-base text-white shrink-0">
+                  GTA
+                </div>
+                <div>
+                  <div class="font-bold text-sm text-white flex items-center gap-2">
+                    <span>Grand Theft Auto V</span>
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Steam</span>
+                  </div>
+                  <div class="text-[11px] text-zinc-400 font-mono mt-0.5">
+                    Rockstar Games • 108.4 GB • Ready to Play
+                  </div>
+                </div>
               </div>
-              <span class="text-emerald-400 font-semibold" id="bento-drive-speed">1.2ms (NTFS)</span>
+              <button onclick="setQuery('gta 5')" class="px-3.5 py-1.5 rounded-lg bg-white text-black font-semibold text-xs shrink-0 hover:bg-zinc-200 transition cursor-pointer">
+                Launch ↵
+              </button>
             </div>
-            <div class="text-zinc-300 truncate" id="bento-drive-sample">C:\Program Files\Microsoft VS Code\Code.exe</div>
           </div>
         </div>
 
-        <!-- Bento 2: 1-Click Port Killer -->
-        <div class="specular-card rounded-2xl p-6 flex flex-col justify-between">
+        <!-- Bento 2: 1-Click Port Killer (:port) -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
+                Developer Essential
+              </span>
+              <span class="text-xs text-zinc-500 font-mono">:port</span>
             </div>
-            <h3 class="text-lg font-bold text-white">Dev Port Killer</h3>
+            <h3 class="text-xl font-bold text-white tracking-tight">1-Click Developer Port Killer</h3>
             <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Never hunt for orphan <code class="text-zinc-300">:3000</code> or <code class="text-zinc-300">:8080</code> processes in Task Manager again. Lists active listening ports and frees them with 1 click.
+              Never get stuck on <code class="text-zinc-300">EADDRINUSE: port 3000</code> again. Enumerate listening TCP sockets, process names, and PIDs. Press Enter to terminate blocking processes immediately.
+            </p>
+
+            <div class="mt-6 p-3 rounded-xl bg-[#09090c] border border-white/[0.08] flex items-center justify-between">
+              <div class="font-mono text-xs">
+                <span class="text-rose-400 font-semibold">:3000</span>
+                <span class="text-zinc-500 ml-2">node.exe (PID 18402)</span>
+              </div>
+              <button onclick="simulatePortKill()" id="bento-kill-btn" class="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-mono transition cursor-pointer">
+                Kill Process
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bento 3: Clean Noise Filter Engine -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
+                Zero Clutter
+              </span>
+              <span class="text-xs text-zinc-500 font-mono">v2.3.0</span>
+            </div>
+            <h3 class="text-xl font-bold text-white tracking-tight">Smart Noise Filter Engine</h3>
+            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
+              Blocks 34 low-relevance extensions (.ini, .log, .tmp, .ink, .dll, .sys) by default, eliminating internal Windows clutter from spotlight results while retaining instant power-user override.
             </p>
           </div>
-          <div class="mt-6 p-2.5 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between text-xs">
-            <span class="font-mono text-zinc-200" id="bento-port-status">:3000 node.exe (PID 18402)</span>
-            <button
-              id="bento-port-btn"
-              onclick="toggleBentoPort()"
-              class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer"
+          <div class="mt-6 flex flex-wrap gap-1.5 font-mono text-[10px]">
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-zinc-400 line-through">.log</span>
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-zinc-400 line-through">.ini</span>
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-zinc-400 line-through">.tmp</span>
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-zinc-400 line-through">.ink</span>
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-zinc-400 line-through">.dll</span>
+            <span class="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] text-emerald-400 font-semibold">+29 more</span>
+          </div>
+        </div>
+
+        <!-- Bento 4: Deep Multi-Drive Search -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
+                Everything SDK
+              </span>
+              <span class="text-xs text-zinc-500 font-mono">C: D: E:</span>
+            </div>
+            <h3 class="text-xl font-bold text-white tracking-tight">Instant Multi-Drive Search</h3>
+            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
+              Native Everything SDK integration scans millions of files across all physical drives in sub-5ms with zero background indexing CPU load.
+            </p>
+          </div>
+          <div class="mt-6 font-mono text-xs text-zinc-500">
+            <span>Query index speed: </span>
+            <span class="text-white font-semibold">&lt; 1.8ms</span>
+          </div>
+        </div>
+
+        <!-- Bento 5: Private Local AI (Ollama MCP) -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.1]">
+                Local-First
+              </span>
+              <span class="text-xs text-zinc-500 font-mono">? prompt</span>
+            </div>
+            <h3 class="text-xl font-bold text-white tracking-tight">Private Offline AI via MCP</h3>
+            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
+              Executes Model Context Protocol prompts against your local Ollama runtime. Snap windows, summarize clipboard selections, and execute desktop actions with zero cloud egress.
+            </p>
+          </div>
+          <div class="mt-6 flex items-center gap-2 text-xs text-zinc-400 font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>localhost:11434</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNNEL STEP 5: Community & Contributor Treasury -->
+    <section id="community" class="max-w-5xl mx-auto px-6 py-12 scroll-mt-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Community Discord Card -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+              <span class="text-xs font-mono uppercase text-indigo-400 font-semibold">Discord Community</span>
+            </div>
+            <h3 class="text-xl font-bold text-white tracking-tight">Join the AltSpace Community</h3>
+            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
+              Connect directly with maintainers and other power users. Share custom extensions, vote on the feature roadmap, report bugs, and claim developer bounties.
+            </p>
+          </div>
+          <div class="mt-6">
+            <a
+              href="https://discord.gg/EtVCN9m7JV"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-semibold transition"
             >
-              Kill
-            </button>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.893.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              <span>Join Discord Server</span>
+            </a>
           </div>
         </div>
 
-        <!-- Bento 3: Zero-Disk Clipboard Manager -->
-        <div class="specular-card rounded-2xl p-6 flex flex-col justify-between">
+        <!-- 20% Contributor Treasury Card -->
+        <div class="specular-card rounded-2xl p-7 flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span class="text-xs font-mono uppercase text-amber-400 font-semibold">Governance &amp; Rewards</span>
             </div>
-            <h3 class="text-lg font-bold text-white">In-Memory Clipboard Vault</h3>
+            <h3 class="text-xl font-bold text-white tracking-tight">20% Contributor Treasury</h3>
             <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Full clipboard history with instantaneous search. Encrypted in RAM with Windows DPAPI protection. Never writes secrets or passwords to unencrypted disk files.
+              We believe in sustainable open source. 20% of all GitHub sponsorships and Pro license revenues are transferred directly to the Contributor Treasury to fund bounties for community PRs.
             </p>
           </div>
-          <div class="mt-6 p-2 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-xs">
-            <span class="font-mono text-purple-200 truncate max-w-[150px]">git clone altspace...</span>
-            <button onclick="copySnippetBento(this)" class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-semibold cursor-pointer hover:bg-purple-500/30 transition">Copy</button>
-          </div>
-        </div>
-
-        <!-- Bento 4: Offline Ollama Local AI -->
-        <div class="specular-card rounded-2xl p-6 md:col-span-2 flex flex-col justify-between">
-          <div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-white">Local Offline AI (Ollama Native)</h3>
-            <p class="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Explain code snippets, reformat clipboard text, or draft responses using your local GPU. Direct connection to Ollama with 100% data privacy. No monthly AI fees or cloud telemetry.
-            </p>
-          </div>
-          <div class="mt-6 flex items-center gap-2 flex-wrap">
-            <button onclick="setBentoAi('llama3', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer">llama3:8b</button>
-            <button onclick="setBentoAi('deepseek', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer">deepseek-coder</button>
-            <button onclick="setBentoAi('mistral', this)" class="bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer">mistral:7b</button>
-            <span class="text-xs text-emerald-400 font-medium ml-auto" id="bento-ai-tag">100% Offline GPU</span>
+          <div class="mt-6 flex items-center gap-3">
+            <a
+              href="https://github.com/codecheesee/altspace/blob/main/TREASURY.md"
+              target="_blank"
+              rel="noreferrer"
+              class="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/[0.08] text-xs font-medium transition"
+            >
+              Read Treasury Policy
+            </a>
+            <a
+              href="https://github.com/codecheesee/altspace/issues?q=is%3Aissue+is%3Aopen+label%3Abounty"
+              target="_blank"
+              rel="noreferrer"
+              class="text-xs text-zinc-400 hover:text-white transition font-mono"
+            >
+              Browse Open Bounties →
+            </a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Performance Benchmark Section -->
-    <section id="benchmark" class="max-w-4xl mx-auto px-6 py-12 scroll-mt-20">
-      <div class="text-center mb-10">
-        <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">Zero-Overhead Architecture</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Benchmarked against industry standards</h2>
-        <p class="text-xs text-zinc-400 mt-1">Raw performance evaluated on Windows 11 Pro (x64 Intel i7 / 32GB RAM)</p>
-      </div>
-
-      <div class="specular-card rounded-2xl overflow-hidden border border-white/[0.1]">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr class="border-b border-white/[0.08] bg-white/[0.02] text-zinc-400 font-mono">
-              <th class="p-4">Benchmark Metric</th>
-              <th class="p-4 text-white">AltSpace (Rust)</th>
-              <th class="p-4">PowerToys Run (C#)</th>
-              <th class="p-4">Raycast (macOS)</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-white/[0.04] text-zinc-300">
-            <tr>
-              <td class="p-4 font-medium text-white">Cold Launch Speed</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 5 ms (Tokio)</td>
-              <td class="p-4 text-zinc-400 font-mono">450 - 900 ms</td>
-              <td class="p-4 text-zinc-400 font-mono">15 ms (Mac only)</td>
-            </tr>
-            <tr>
-              <td class="p-4 font-medium text-white">Search Query Latency</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 1.2 ms</td>
-              <td class="p-4 text-zinc-400 font-mono">80 - 250 ms</td>
-              <td class="p-4 text-zinc-400 font-mono">&lt; 10 ms</td>
-            </tr>
-            <tr>
-              <td class="p-4 font-medium text-white">Idle Memory Footprint</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">18 MB RAM</td>
-              <td class="p-4 text-zinc-400 font-mono">140 - 280 MB</td>
-              <td class="p-4 text-zinc-400 font-mono">60 - 120 MB</td>
-            </tr>
-            <tr>
-              <td class="p-4 font-medium text-white">Binary Install Size</td>
-              <td class="p-4 text-emerald-400 font-mono font-semibold">&lt; 15 MB</td>
-              <td class="p-4 text-zinc-400 font-mono">180 MB+</td>
-              <td class="p-4 text-zinc-400 font-mono">90 MB</td>
-            </tr>
-            <tr>
-              <td class="p-4 font-medium text-white">Core Architecture</td>
-              <td class="p-4 text-emerald-400 font-semibold">Native Rust + Tauri v2</td>
-              <td class="p-4 text-zinc-400">.NET Runtime</td>
-              <td class="p-4 text-zinc-500">Proprietary (Cocoa)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Pricing & Payment Section (Raycast & 21st.dev Style) -->
+    <!-- FUNNEL STEP 6: Transparent Pricing & Direct Download -->
     <section id="pricing" class="max-w-5xl mx-auto px-6 py-16 scroll-mt-20">
       <div class="text-center mb-10">
-        <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-semibold">Transparent Pricing</span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 tracking-tight">Free for everyone. Supercharged for Pro.</h2>
+        <span class="text-xs font-mono uppercase tracking-wider text-zinc-500 font-semibold">Transparent Pricing</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1.5 tracking-tight">Free for everyone. Supercharged for Pro.</h2>
         <p class="text-sm text-zinc-400 mt-2 max-w-lg mx-auto">
-          All core tools are 100% free forever under Apache 2.0. Support development to unlock cloud features and community perks.
+          All core tools are 100% free and open source forever under Apache 2.0. Support ongoing development on GitHub Sponsors to unlock supporter perks.
         </p>
 
         <!-- Frequency Toggle -->
@@ -652,9 +535,9 @@
       </div>
 
       <!-- Pricing Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         <!-- Card 1: Community Free -->
-        <div class="specular-card rounded-3xl p-8 flex flex-col justify-between border border-white/[0.08]">
+        <div class="specular-card rounded-2xl p-8 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold text-white">Community Free</span>
@@ -670,23 +553,27 @@
             <div class="mt-8 space-y-3 text-xs text-zinc-300">
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Sub-5ms multi-drive file search (C:, D:, External)</span>
+                <span>Sub-3.5ms native Windows hotkey invocation (<kbd class="kbd-cap">Alt</kbd> + <kbd class="kbd-cap">Space</kbd>)</span>
               </div>
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>1-Click Developer Port Inspector & Process Killer</span>
+                <span>Sub-5ms multi-drive file search across all physical disks</span>
               </div>
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>In-memory DPAPI clipboard history manager</span>
+                <span>Smart Game Hub auto-detecting Steam, Epic, and Xbox</span>
               </div>
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>100% Private Local Ollama AI integration</span>
+                <span>1-Click Developer Port Inspector &amp; Process Killer</span>
               </div>
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Zero telemetry, zero cloud tracking, zero bloat</span>
+                <span>34-extension search noise filtering with granular toggles</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>100% Private Local Ollama AI (zero cloud data tracking)</span>
               </div>
             </div>
           </div>
@@ -694,28 +581,27 @@
           <div class="mt-8">
             <a
               href="https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe"
-              class="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-semibold text-xs border border-white/[0.08] transition flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-3 px-4 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <span>Download Free (.exe Installer)</span>
             </a>
           </div>
         </div>
 
-        <!-- Card 2: Pro Supporter (GitHub Sponsors) -->
-        <div class="specular-card gold-glow rounded-3xl p-8 flex flex-col justify-between border border-amber-500/30 bg-[#121217] relative">
-          <div class="absolute -top-3 right-6 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-[10px] tracking-wide shadow-md">
-            POPULAR
+        <!-- Card 2: Pro Supporter -->
+        <div class="specular-card rounded-2xl p-8 flex flex-col justify-between border-white/[0.16] relative">
+          <div class="absolute -top-3 right-6 px-3 py-1 rounded-full bg-white text-black font-extrabold text-[10px] tracking-wide shadow-md">
+            SUPPORTER
           </div>
 
           <div>
             <div class="flex items-center justify-between">
               <span class="text-base font-bold text-white flex items-center gap-2">
                 <span>Pro Supporter</span>
-                <span class="text-amber-400">⚡</span>
               </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">GitHub Verified</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-zinc-300 border border-white/[0.1]">GitHub Sponsors</span>
             </div>
-            <p class="text-xs text-zinc-400 mt-2">Support ongoing development and unlock premium multi-machine cloud tools.</p>
+            <p class="text-xs text-zinc-400 mt-2">Support open-source development and unlock verified community status.</p>
 
             <div class="mt-6 flex items-baseline gap-1">
               <span id="pro-price" class="text-4xl font-extrabold text-white">$5</span>
@@ -724,24 +610,24 @@
 
             <div class="mt-8 space-y-3 text-xs text-zinc-300">
               <div class="flex items-center gap-2.5 font-medium text-white">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <svg class="w-4 h-4 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                 <span>Everything in Community Free</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Advanced Semantic Code Search & Deep Process Forensics</span>
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>Gold Supporter Badge in desktop application</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Encrypted Local DPAPI Credential Vault & Profile Export</span>
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>Automated license activation via GitHub Sign-In</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Gold Sponsor Badge in desktop app & GitHub repository</span>
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>Direct voting on roadmap feature priorities</span>
               </div>
               <div class="flex items-center gap-2.5">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span>Priority feature requests & early preview builds</span>
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span>20% of funds redirected to Contributor Treasury</span>
               </div>
             </div>
           </div>
@@ -752,49 +638,48 @@
               href="https://github.com/sponsors/codecheesee"
               target="_blank"
               rel="noreferrer"
-              class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-extrabold text-xs transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-3.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs transition border border-white/[0.1] flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
-              <svg class="w-4 h-4 fill-current text-rose-700" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-              <span>Upgrade to Pro on GitHub Sponsors</span>
+              <span>Support on GitHub Sponsors</span>
             </a>
-            <p class="text-[10.5px] text-zinc-400 text-center font-mono">
+            <p class="text-[10.5px] text-zinc-500 text-center font-mono">
               Auto-activates in desktop app upon GitHub Login
             </p>
           </div>
         </div>
       </div>
 
-      <!-- Collapsible FAQ Accordion (Clean & Lean) -->
+      <!-- FAQ Accordion -->
       <div class="max-w-2xl mx-auto mt-16 space-y-3">
         <h3 class="text-xl font-bold text-white text-center mb-6">Frequently Asked Questions</h3>
 
-        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+        <div class="specular-card rounded-xl overflow-hidden">
           <button onclick="toggleFaq('faq-1')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
-            <span>How does AltSpace recognize that I'm subscribed to Pro?</span>
-            <span id="faq-1-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+            <span>Do I need administrator privileges to install AltSpace?</span>
+            <span id="faq-1-icon" class="text-zinc-500 font-mono text-sm">▾</span>
           </button>
           <div id="faq-1" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
-            When you sponsor via GitHub Sponsors, our automated GitHub webhook logs your handle to the verified manifest. When you click <strong>"Sign in with GitHub"</strong> inside the AltSpace desktop app, it matches your authenticated handle and unlocks Pro in under 3 seconds.
+            No! AltSpace installs on a per-user basis into <code class="text-zinc-300">%LOCALAPPDATA%\Programs\AltSpace</code>. You do not need UAC administrator privileges to install or run the application.
           </div>
         </div>
 
-        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+        <div class="specular-card rounded-xl overflow-hidden">
           <button onclick="toggleFaq('faq-2')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
             <span>Can I use AltSpace completely free for commercial work?</span>
-            <span id="faq-2-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+            <span id="faq-2-icon" class="text-zinc-500 font-mono text-sm">▾</span>
           </button>
           <div id="faq-2" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
-            Yes! AltSpace is released under the permissive <strong>Apache 2.0 Open Source License</strong>. You can use it freely for personal, freelance, startup, and enterprise engineering workflows with zero cost.
+            Yes! AltSpace is released under the permissive <strong>Apache 2.0 Open Source License</strong>. You can freely use it for commercial, freelance, startup, and enterprise software engineering workflows with zero cost.
           </div>
         </div>
 
-        <div class="specular-card rounded-xl overflow-hidden border border-white/[0.06]">
+        <div class="specular-card rounded-xl overflow-hidden">
           <button onclick="toggleFaq('faq-3')" class="w-full p-4 text-left flex items-center justify-between text-xs font-semibold text-white hover:bg-white/[0.02] cursor-pointer">
             <span>Does AltSpace send my file names or keystrokes to the cloud?</span>
-            <span id="faq-3-icon" class="text-zinc-500 transition-transform font-mono text-sm">▾</span>
+            <span id="faq-3-icon" class="text-zinc-500 font-mono text-sm">▾</span>
           </button>
           <div id="faq-3" class="p-4 pt-0 text-xs text-zinc-400 leading-relaxed border-t border-white/[0.04]">
-            Never. AltSpace is strictly local-first. Searches run directly against your local NTFS Everything journal, clipboard history stays in DPAPI-encrypted RAM, and local AI uses your own Ollama engine. We operate zero telemetry servers.
+            Never. AltSpace is strictly local-first. Searches query your local disks, clipboard history is stored exclusively in DPAPI-encrypted RAM, and local AI operates via your own Ollama engine. We run zero tracking or telemetry servers.
           </div>
         </div>
       </div>
@@ -806,41 +691,44 @@
     <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-3">
         <img src="./logo.png" alt="AltSpace Logo" class="w-6 h-6 rounded-md opacity-80" />
-        <span>AltSpace is maintained by <a href="https://github.com/codecheesee" class="text-zinc-300 hover:underline">@codecheesee</a> and the community.</span>
+        <span>AltSpace is maintained by <a href="https://github.com/codecheesee" class="text-zinc-300 hover:underline">@codecheesee</a> &amp; the community.</span>
       </div>
 
       <div class="flex items-center gap-6">
         <a href="https://github.com/codecheesee/altspace" class="hover:text-white transition">GitHub</a>
         <a href="https://github.com/codecheesee/altspace/releases" class="hover:text-white transition">Releases</a>
         <a href="#pricing" class="hover:text-white transition">Pricing</a>
-        <a href="https://github.com/codecheesee/altspace/blob/main/LICENSE" class="hover:text-white transition">Apache 2.0 License</a>
-        <a href="https://github.com/sponsors/codecheesee" class="text-pink-400 hover:text-pink-300 transition">Sponsor</a>
+        <a href="https://github.com/codecheesee/altspace/blob/main/LICENSE" class="hover:text-white transition">Apache 2.0</a>
+        <a href="https://github.com/sponsors/codecheesee" class="hover:text-white transition">Sponsor</a>
       </div>
     </div>
   </footer>
 
-      <!-- Interactive Demo, Bento & Pricing Scripts -->
+  <!-- Toast Notification -->
+  <div id="copy-toast" class="fixed bottom-6 right-6 px-4 py-2.5 rounded-xl bg-zinc-900 border border-white/[0.15] text-xs font-medium text-white shadow-2xl transition-all duration-300 transform translate-y-16 opacity-0 flex items-center gap-2 pointer-events-none z-50">
+    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span id="toast-msg">Copied command to clipboard!</span>
+  </div>
+
+  <!-- Interactive Demo Script -->
   <script>
-    // Real desktop items reflecting the exact structure of AltSpace
     const DEFAULT_APP_ITEMS = [
       {
-        id: 'vs-powershell',
-        title: 'Developer PowerShell for VS 2022',
-        subtitle: 'Start Menu > Visual S ... PowerShell for VS 2022',
-        category: 'SUGGESTED APPLICATIONS',
-        categoryHint: 'frequently used',
+        id: 'gta-game',
+        title: 'Grand Theft Auto V',
+        subtitle: 'Steam Library • C:\\Steam\\steamapps\\common\\Grand Theft Auto V',
+        category: 'INSTALLED GAMES',
         drive: 'C:',
-        badge: 'Frequently used',
-        iconType: 'app-ps',
-        actionLabel: 'Launch Application',
-        type: 'Application'
+        badge: 'Steam Game',
+        iconType: 'game',
+        actionLabel: 'Launch Game',
+        type: 'Game'
       },
       {
         id: 'port-3000',
         title: 'node.exe (Port :3000)',
         subtitle: 'PID 18402 • Next.js Dev Server • localhost:3000',
         category: 'ACTIVE PORTS',
-        categoryHint: 'listening',
         drive: 'NET',
         badge: 'Port :3000',
         iconType: 'port',
@@ -852,7 +740,6 @@
         title: 'package.json',
         subtitle: 'C:\\Users\\rohan\\Projects\\altspace\\frontend\\package.json',
         category: 'RECENT FILES',
-        categoryHint: 'everything sdk',
         drive: 'C:',
         badge: '3.4 KB',
         iconType: 'file',
@@ -860,97 +747,47 @@
         type: 'File'
       },
       {
-        id: 'clip-git',
-        title: 'gh repo clone codecheesee/altspace',
-        subtitle: 'Clipboard History • Copied 2 mins ago',
-        category: 'CLIPBOARD HISTORY',
-        categoryHint: 'dpapi encrypted',
-        drive: 'RAM',
-        badge: 'Copied',
-        iconType: 'clip',
-        actionLabel: 'Paste to Active Window',
-        type: 'Clipboard'
+        id: 'vs-powershell',
+        title: 'Developer PowerShell for VS 2022',
+        subtitle: 'Start Menu > Visual Studio > Developer PowerShell',
+        category: 'SUGGESTED APPLICATIONS',
+        drive: 'C:',
+        badge: 'Frequently used',
+        iconType: 'app-ps',
+        actionLabel: 'Launch Application',
+        type: 'Application'
       }
     ];
 
     let currentItems = [...DEFAULT_APP_ITEMS];
     let selectedIndex = 0;
-    let isDrawerOpen = false;
     const killedPorts = new Set();
 
-    const THEMES = [
-      { name: 'Windows Graphite', hex: '#00d2ff' },
-      { name: 'Raycast Obsidian', hex: '#ff6363' },
-      { name: 'Linear Dark', hex: '#5e6ad2' },
-      { name: 'Emerald Forest', hex: '#10b981' }
-    ];
-    let themeIndex = 0;
-
-    // Real-Time Math Calculator
-    function evaluateMath(raw) {
-      if (!raw) return null;
-      const expr = raw.trim();
-
-      // Percentage: 15% of 850
-      const pctMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s*\$?([\d,]+(?:\.\d+)?)$/i);
-      if (pctMatch) {
-        const pct = parseFloat(pctMatch[1]);
-        const base = parseFloat(pctMatch[2].replace(/,/g, ''));
-        const res = (pct / 100) * base;
-        return { result: res, formatted: res.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: raw };
-      }
-
-      // Percentage off: 20% off 200
-      const offMatch = expr.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s*\$?([\d,]+(?:\.\d+)?)$/i);
-      if (offMatch) {
-        const pct = parseFloat(offMatch[1]);
-        const base = parseFloat(offMatch[2].replace(/,/g, ''));
-        const res = base - (pct / 100) * base;
-        return { result: res, formatted: res.toLocaleString('en-US', { maximumFractionDigits: 4 }), expr: raw };
-      }
-
-      // Hex 0xff or Binary 0b1010
-      if (/^0x[0-9a-f]+$/i.test(expr)) {
-        const val = parseInt(expr, 16);
-        return { result: val, formatted: val.toLocaleString(), expr: raw };
-      }
-      if (/^0b[01]+$/i.test(expr)) {
-        const val = parseInt(expr.slice(2), 2);
-        return { result: val, formatted: val.toLocaleString(), expr: raw };
-      }
-
-      const sanitized = expr
-        .replace(/\^/g, '**')
-        .replace(/sqrt\(/gi, 'Math.sqrt(')
-        .replace(/abs\(/gi, 'Math.abs(')
-        .replace(/round\(/gi, 'Math.round(')
-        .replace(/floor\(/gi, 'Math.floor(')
-        .replace(/ceil\(/gi, 'Math.ceil(')
-        .replace(/\bpi\b/gi, 'Math.PI')
-        .replace(/\be\b/gi, 'Math.E');
-
-      if (!/^[0-9+\-*\/().\s%*,MathsqrtabPIE]+$/.test(sanitized)) return null;
-      if (!/[+\-*\/\^%()]|Math\./.test(sanitized) && isNaN(Number(expr))) return null;
-
-      try {
-        const val = new Function('return ' + sanitized)();
-        if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
-          return {
-            result: val,
-            formatted: val.toLocaleString('en-US', { maximumFractionDigits: 6 }),
-            expr: raw
-          };
-        }
-      } catch (e) {
-        return null;
-      }
-      return null;
-    }
-
     function renderItemIcon(item) {
+      if (item.iconType === 'game') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-white/[0.1] flex items-center justify-center shrink-0">
+            <span class="text-xs">🎮</span>
+          </div>
+        `;
+      }
+      if (item.iconType === 'port') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+            <span class="text-xs text-rose-400">⚡</span>
+          </div>
+        `;
+      }
+      if (item.iconType === 'calc') {
+        return `
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 font-mono font-bold text-emerald-400 text-sm">
+            =
+          </div>
+        `;
+      }
       if (item.iconType === 'app-ps') {
         return `
-          <div class="w-8 h-8 rounded-lg bg-[#002447] border border-sky-500/30 flex items-center justify-center p-1 shrink-0 shadow-inner">
+          <div class="w-8 h-8 rounded-lg bg-[#002447] border border-sky-500/20 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-sky-400 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <polyline points="4 17 10 11 4 5"></polyline>
               <line x1="12" y1="19" x2="20" y2="19"></line>
@@ -958,29 +795,8 @@
           </div>
         `;
       }
-      if (item.iconType === 'calc') {
-        return `
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <span class="text-sm font-mono text-emerald-400 font-bold">=</span>
-          </div>
-        `;
-      }
-      if (item.iconType === 'port') {
-        return `
-          <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0">
-            <span class="text-xs text-rose-400">⚡</span>
-          </div>
-        `;
-      }
-      if (item.iconType === 'clip') {
-        return `
-          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
-            <span class="text-xs text-amber-400">📋</span>
-          </div>
-        `;
-      }
       return `
-        <div class="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-white/[0.08] flex items-center justify-center shrink-0">
           <span class="text-xs text-zinc-300">📄</span>
         </div>
       `;
@@ -989,29 +805,20 @@
     function renderDemoResults() {
       const container = document.getElementById('demo-results-list');
       const countEl = document.getElementById('demo-result-count');
-      const sectionTitle = document.getElementById('demo-section-title');
-
       if (!container) return;
 
       if (!currentItems.length) {
         container.innerHTML = `
-          <div class="py-12 text-center text-xs text-zinc-500 font-sans">
-            No matching items found. Press Backspace to reset search.
+          <div class="py-12 text-center text-xs text-zinc-500 font-mono">
+            No matching results found.
           </div>
         `;
         if (countEl) countEl.innerText = '0 results';
-        if (sectionTitle) sectionTitle.innerText = 'SEARCH RESULTS (0)';
         return;
       }
 
       if (selectedIndex >= currentItems.length) selectedIndex = 0;
-
-      if (countEl) {
-        countEl.innerText = `${currentItems.length} ${currentItems.length === 1 ? 'result' : 'results'}`;
-      }
-      if (sectionTitle) {
-        sectionTitle.innerText = `${currentItems[0].category || 'SEARCH RESULTS'} (${currentItems.length})`;
-      }
+      if (countEl) countEl.innerText = `${currentItems.length} results`;
 
       container.innerHTML = currentItems.map((item, idx) => {
         const isSelected = idx === selectedIndex;
@@ -1022,20 +829,17 @@
             role="option"
             aria-selected="${isSelected}"
             onclick="selectAndExecute(${idx})"
-            onmouseenter="setHoverIndex(${idx})"
-            class="min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 ${
+            class="min-h-[52px] flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm select-none transition-colors duration-100 ${
               isSelected
-                ? 'bg-white/[0.08] text-white shadow-sm border border-sky-400/25 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sky-400'
-                : 'text-zinc-300 hover:bg-white/[0.03] hover:text-zinc-100 border border-transparent'
+                ? 'bg-white/[0.08] text-white border border-white/[0.15]'
+                : 'text-zinc-300 hover:bg-white/[0.03] hover:text-white border border-transparent'
             }"
           >
-            <!-- Left: Icon + Title + Subtitle -->
             <div class="flex items-center gap-3 min-w-0 pr-3">
               ${renderItemIcon(item)}
-
               <div class="min-w-0">
-                <div class="font-medium text-[13.5px] truncate tracking-tight text-zinc-100 group-hover:text-white">
-                  ${isKilled ? `<span class="line-through text-zinc-500">${item.title}</span> <span class="text-emerald-400 font-normal text-xs ml-1.5">✓ Port Released</span>` : item.title}
+                <div class="font-medium text-[13.5px] truncate text-zinc-100">
+                  ${isKilled ? `<span class="line-through text-zinc-500">${item.title}</span> <span class="text-emerald-400 font-normal text-xs ml-1.5 font-mono">✓ Port Released</span>` : item.title}
                 </div>
                 <div class="text-[11.5px] text-zinc-400 truncate font-mono">
                   ${item.subtitle}
@@ -1043,176 +847,65 @@
               </div>
             </div>
 
-            <!-- Right: Drive badge & Category pill -->
             <div class="shrink-0 flex items-center gap-2">
               ${item.drive ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-400 bg-white/[0.05] border border-white/[0.08]">${item.drive}</span>` : ''}
-              <span class="px-2 py-0.5 rounded text-[10.5px] font-medium ${
-                item.badge === 'Frequently used'
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                  : 'bg-zinc-800 text-zinc-300 border border-white/[0.06]'
-              }">
+              <span class="px-2 py-0.5 rounded text-[10.5px] font-medium bg-zinc-800 text-zinc-300 border border-white/[0.06]">
                 ${isKilled ? 'Freed' : item.badge}
               </span>
             </div>
           </div>
         `;
       }).join('');
-
-      updateDrawerHeader();
     }
 
-    function setHoverIndex(idx) {
-      selectedIndex = idx;
-      updateHighlightOnly();
-    }
+    function handleDemoSearch(raw) {
+      const q = (raw || '').trim().toLowerCase();
 
-    function updateHighlightOnly() {
-      const rows = document.querySelectorAll('#demo-results-list > div');
-      rows.forEach((r, i) => {
-        if (i === selectedIndex) {
-          r.className = 'min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 bg-white/[0.08] text-white shadow-sm border border-sky-400/25 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sky-400';
-        } else {
-          r.className = 'min-h-[56px] flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm select-none relative transition-colors duration-100 text-zinc-300 hover:bg-white/[0.03] hover:text-zinc-100 border border-transparent';
-        }
-      });
-      updateDrawerHeader();
-    }
-
-    function updateDrawerHeader() {
-      const item = currentItems[selectedIndex];
-      if (!item) return;
-      const titleEl = document.getElementById('drawer-item-title');
-      const typeEl = document.getElementById('drawer-item-type');
-      if (titleEl) titleEl.innerText = `Actions for ${item.title}`;
-      if (typeEl) typeEl.innerText = item.type || 'Application';
-    }
-
-    function handleDemoKeydown(e) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (currentItems.length) {
-          selectedIndex = (selectedIndex + 1) % currentItems.length;
-          updateHighlightOnly();
-        }
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (currentItems.length) {
-          selectedIndex = (selectedIndex - 1 + currentItems.length) % currentItems.length;
-          updateHighlightOnly();
-        }
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        selectAndExecute(selectedIndex);
-      } else if (e.key === 'Escape') {
-        if (isDrawerOpen) {
-          toggleActionDrawer();
-        } else {
-          clearDemoSearch();
-        }
-      } else if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        toggleActionDrawer();
-      }
-    }
-
-    function selectAndExecute(idx) {
-      const item = currentItems[idx];
-      if (!item) return;
-
-      if (item.type === 'Port') {
-        if (killedPorts.has(item.id)) {
-          killedPorts.delete(item.id);
-          showToast(`✓ Reset ${item.title} to Listening state`);
-        } else {
-          killedPorts.add(item.id);
-          showToast(`✓ Terminated PID 18402 • Port :3000 freed`);
-        }
+      // Math expression
+      const pctMatch = q.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s*\$?([\d,]+(?:\.\d+)?)$/i);
+      if (pctMatch) {
+        const pct = parseFloat(pctMatch[1]);
+        const base = parseFloat(pctMatch[2].replace(/,/g, ''));
+        const res = (pct / 100) * base;
+        currentItems = [{
+          id: 'calc-res',
+          title: `${res.toLocaleString('en-US', { maximumFractionDigits: 4 })}`,
+          subtitle: `Calculation: ${pct}% of ${base}`,
+          category: 'CALCULATOR',
+          drive: 'CALC',
+          badge: 'Result',
+          iconType: 'calc',
+          actionLabel: 'Copy Calculation',
+          type: 'Calculation'
+        }];
+        selectedIndex = 0;
         renderDemoResults();
         return;
       }
 
-      if (item.isCalc || item.type === 'Clipboard') {
-        const val = item.copyVal || item.title.replace(/^=\s*/, '');
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(val).catch(() => {});
+      // Filter based on query
+      if (!q) {
+        currentItems = [...DEFAULT_APP_ITEMS];
+      } else {
+        currentItems = DEFAULT_APP_ITEMS.filter(it => 
+          it.title.toLowerCase().includes(q) || 
+          it.subtitle.toLowerCase().includes(q) ||
+          it.category.toLowerCase().includes(q)
+        );
+
+        // Special handling for game search queries
+        if (q.includes('gta') || q.includes('game') || q === ':games') {
+          if (!currentItems.some(i => i.id === 'gta-game')) {
+            currentItems.unshift(DEFAULT_APP_ITEMS[0]);
+          }
         }
-        showToast(`✓ Copied "${val}" to clipboard`);
-        return;
       }
 
-      showToast(`✓ Launched "${item.title}" in 0.9ms`);
+      selectedIndex = 0;
+      renderDemoResults();
     }
 
-    function executePrimaryAction() {
-      toggleActionDrawer();
-      selectAndExecute(selectedIndex);
-    }
-
-    function executeActionToast(msg) {
-      toggleActionDrawer();
-      showToast(`✓ ${msg}`);
-    }
-
-    function toggleActionDrawer() {
-      const drawer = document.getElementById('action-drawer');
-      if (!drawer) return;
-      isDrawerOpen = !isDrawerOpen;
-      if (isDrawerOpen) {
-        drawer.classList.remove('hidden');
-        updateDrawerHeader();
-      } else {
-        drawer.classList.add('hidden');
-      }
-    }
-
-    function toggleSwitch(btn) {
-      const isOn = btn.classList.contains('bg-emerald-500');
-      const knob = btn.querySelector('span');
-      if (isOn) {
-        btn.className = 'w-8 h-4 rounded-full bg-zinc-800 relative transition cursor-pointer';
-        if (knob) knob.className = 'w-3 h-3 rounded-full bg-zinc-500 absolute left-0.5 top-0.5 transition-transform';
-        showToast('Preference updated: Disabled');
-      } else {
-        btn.className = 'w-8 h-4 rounded-full bg-emerald-500 relative transition cursor-pointer';
-        if (knob) knob.className = 'w-3 h-3 rounded-full bg-white absolute right-0.5 top-0.5 transition-transform';
-        showToast('Preference updated: Enabled');
-      }
-    }
-
-    function cycleThemeDemo() {
-      themeIndex = (themeIndex + 1) % THEMES.length;
-      const t = THEMES[themeIndex];
-      const dot = document.getElementById('theme-dot');
-      const name = document.getElementById('theme-name');
-      if (dot) dot.style.backgroundColor = t.hex;
-      if (name) name.innerText = t.name;
-      showToast(`Switched active theme to ${t.name}`);
-    }
-
-    function toggleDetailsDemo() {
-      const btn = document.getElementById('details-btn');
-      showToast('Toggled details inspector (Ctrl+B)');
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('sim-toast');
-      const toastMsg = document.getElementById('sim-toast-msg');
-      if (toast && toastMsg) {
-        toastMsg.innerText = msg;
-        toast.classList.remove('hidden');
-        clearTimeout(window._toastTimeout);
-        window._toastTimeout = setTimeout(() => {
-          toast.classList.add('hidden');
-        }, 3000);
-      }
-    }
-
-    function hideToast() {
-      const toast = document.getElementById('sim-toast');
-      if (toast) toast.classList.add('hidden');
-    }
-
-    function applyDemoQuery(text) {
+    function setQuery(text) {
       const input = document.getElementById('demo-search-input');
       if (input) {
         input.value = text;
@@ -1221,183 +914,141 @@
       }
     }
 
-    function clearDemoSearch() {
-      const input = document.getElementById('demo-search-input');
-      if (input) {
-        input.value = '';
-        handleDemoSearch('');
-        input.focus();
-      }
-    }
+    function filterCategory(cat) {
+      ['all', 'apps', 'files', 'ports', 'games'].forEach(c => {
+        const el = document.getElementById(`tab-${c}`);
+        if (el) {
+          if (c === cat) {
+            el.className = 'px-2.5 py-1 rounded-md bg-white/[0.1] text-white transition';
+          } else {
+            el.className = 'px-2.5 py-1 rounded-md text-zinc-400 hover:text-white transition';
+          }
+        }
+      });
 
-    function handleDemoSearch(query) {
-      const q = query.trim();
-      const lower = q.toLowerCase();
-      const clearBtn = document.getElementById('demo-clear-btn');
-
-      if (clearBtn) {
-        if (q) clearBtn.classList.remove('hidden');
-        else clearBtn.classList.add('hidden');
-      }
-
-      // Check math evaluation
-      const math = evaluateMath(q);
-      if (math) {
-        currentItems = [{
-          id: 'calc-dynamic',
-          title: '= ' + math.formatted,
-          subtitle: `${math.expr} • Press ↵ to copy to clipboard`,
-          category: 'CALCULATOR',
-          categoryHint: 'instant math',
-          drive: 'CALC',
-          badge: 'Math',
-          iconType: 'calc',
-          actionLabel: 'Copy Calculation',
-          isCalc: true,
-          copyVal: math.formatted,
-          type: 'Calculation'
-        }];
-        selectedIndex = 0;
-        renderDemoResults();
-        return;
-      }
-
-      if (!q) {
-        currentItems = [...DEFAULT_APP_ITEMS];
-      } else {
-        currentItems = DEFAULT_APP_ITEMS.filter(item =>
-          item.title.toLowerCase().includes(lower) ||
-          item.subtitle.toLowerCase().includes(lower) ||
-          item.badge.toLowerCase().includes(lower)
-        );
-      }
+      if (cat === 'all') currentItems = [...DEFAULT_APP_ITEMS];
+      else if (cat === 'apps') currentItems = DEFAULT_APP_ITEMS.filter(i => i.type === 'Application');
+      else if (cat === 'files') currentItems = DEFAULT_APP_ITEMS.filter(i => i.type === 'File');
+      else if (cat === 'ports') currentItems = DEFAULT_APP_ITEMS.filter(i => i.type === 'Port');
+      else if (cat === 'games') currentItems = DEFAULT_APP_ITEMS.filter(i => i.type === 'Game');
 
       selectedIndex = 0;
       renderDemoResults();
     }
 
-    // Bento Grid Interactive Scripts
-    function setBentoDrive(letter) {
-      ['C', 'D', 'E'].forEach(l => {
-        const b = document.getElementById(`drive-btn-${l}`);
-        if (b) {
-          b.className = (l === letter)
-            ? 'px-1.5 py-0.5 rounded bg-white/[0.1] text-white font-bold cursor-pointer'
-            : 'px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer';
-        }
-      });
-      const samples = {
-        C: 'C:\\Program Files\\Microsoft VS Code\\Code.exe',
-        D: 'D:\\Work\\Projects\\Client_Audit_2026.docx',
-        E: 'E:\\Backups\\Database_Archive_March.tar.gz'
-      };
-      const sampleEl = document.getElementById('bento-drive-sample');
-      const speedEl = document.getElementById('bento-drive-speed');
-      if (sampleEl) sampleEl.innerText = samples[letter];
-      if (speedEl) speedEl.innerText = (letter === 'E' ? '2.1ms (USB 3.2)' : '1.2ms (NTFS)');
-    }
+    function selectAndExecute(idx) {
+      const item = currentItems[idx];
+      if (!item) return;
 
-    let isPortKilled = false;
-    function toggleBentoPort() {
-      const btn = document.getElementById('bento-port-btn');
-      const status = document.getElementById('bento-port-status');
-      isPortKilled = !isPortKilled;
-      if (isPortKilled) {
-        if (status) status.innerHTML = '<span class="text-emerald-400">✓ Port :3000 free (PID freed)</span>';
-        if (btn) {
-          btn.innerText = 'Reset';
-          btn.className = 'px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] transition cursor-pointer';
-        }
+      if (item.type === 'Port') {
+        killedPorts.add(item.id);
+        renderDemoResults();
+        showToast('Terminated node.exe • Port :3000 released');
+      } else if (item.type === 'Game') {
+        showToast(`Launching ${item.title} via Steam...`);
       } else {
-        if (status) status.innerText = ':3000 node.exe (PID 18402)';
-        if (btn) {
-          btn.innerText = 'Kill';
-          btn.className = 'px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] border border-rose-500/30 transition cursor-pointer';
-        }
+        showToast(`Executed: ${item.title}`);
       }
     }
 
-    function copySnippetBento(btn) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText('git clone https://github.com/codecheesee/altspace').then(() => {
-          btn.innerText = 'Copied!';
-          setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
-        });
-      }
-    }
-
-    function setBentoAi(model, btn) {
-      document.querySelectorAll('.bento-ai-btn').forEach(b => {
-        b.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-white/[0.06] cursor-pointer';
-      });
+    function simulatePortKill() {
+      killedPorts.add('port-3000');
+      renderDemoResults();
+      const btn = document.getElementById('bento-kill-btn');
       if (btn) {
-        btn.className = 'bento-ai-btn text-[10px] font-mono px-2 py-1 rounded bg-white/[0.1] text-white border border-white/[0.15] cursor-pointer';
+        btn.innerText = '✓ Port Freed';
+        btn.className = 'px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono transition';
       }
-      const tags = {
-        llama3: 'Llama 3 • 42 tok/sec',
-        deepseek: 'DeepSeek • Code Gen Active',
-        mistral: 'Mistral 7B • Low RAM'
-      };
-      const tagEl = document.getElementById('bento-ai-tag');
-      if (tagEl) tagEl.innerText = tags[model];
+      showToast('Terminated node.exe • Port :3000 released');
+    }
+
+    function handleDemoKeydown(e) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentItems.length) {
+          selectedIndex = (selectedIndex + 1) % currentItems.length;
+          renderDemoResults();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentItems.length) {
+          selectedIndex = (selectedIndex - 1 + currentItems.length) % currentItems.length;
+          renderDemoResults();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        selectAndExecute(selectedIndex);
+      } else if (e.key === 'Escape') {
+        setQuery('');
+      }
+    }
+
+    function copyInstallCommand() {
+      const text = document.getElementById('cmd-snippet').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btnText = document.getElementById('copy-text');
+        if (btnText) btnText.innerText = 'Copied!';
+        showToast('PowerShell command copied to clipboard!');
+        setTimeout(() => {
+          if (btnText) btnText.innerText = 'Copy';
+        }, 2000);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('copy-toast');
+      const msgEl = document.getElementById('toast-msg');
+      if (!toast || !msgEl) return;
+      msgEl.innerText = msg;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2500);
+    }
+
+    function setBilling(freq) {
+      const mBtn = document.getElementById('btn-monthly');
+      const lBtn = document.getElementById('btn-lifetime');
+      const price = document.getElementById('pro-price');
+      const period = document.getElementById('pro-period');
+      if (!mBtn || !lBtn || !price || !period) return;
+
+      if (freq === 'monthly') {
+        mBtn.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
+        lBtn.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
+        price.innerText = '$5';
+        period.innerText = '/ month';
+      } else {
+        lBtn.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
+        mBtn.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
+        price.innerText = '$49';
+        period.innerText = '/ lifetime';
+      }
     }
 
     function toggleFaq(id) {
       const el = document.getElementById(id);
       const icon = document.getElementById(`${id}-icon`);
-      if (el) {
-        if (el.classList.contains('hidden')) {
-          el.classList.remove('hidden');
-          if (icon) icon.innerText = '▾';
-        } else {
-          el.classList.add('hidden');
-          if (icon) icon.innerText = '▸';
-        }
-      }
-    }
-
-    function copyInstallCmd() {
-      const cmd = "irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex";
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(cmd).then(() => {
-          const text = document.getElementById('copy-text');
-          if (text) {
-            text.innerText = "Copied!";
-            setTimeout(() => { text.innerText = "Copy"; }, 2500);
-          }
-        });
-      }
-    }
-
-    function setBilling(freq) {
-      const price = document.getElementById('pro-price');
-      const period = document.getElementById('pro-period');
-      const btnM = document.getElementById('btn-monthly');
-      const btnL = document.getElementById('btn-lifetime');
-      const sponsorBtn = document.getElementById('sponsor-btn');
-
-      if (freq === 'lifetime') {
-        if (price) price.innerText = '$29';
-        if (period) period.innerText = '/ one-time';
-        if (btnL) btnL.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
-        if (btnM) btnM.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
-        if (sponsorBtn) sponsorBtn.href = 'https://github.com/sponsors/codecheesee?frequency=one-time';
+      if (!el) return;
+      const isOpen = !el.classList.contains('hidden');
+      if (isOpen) {
+        el.classList.add('hidden');
+        if (icon) icon.innerText = '▾';
       } else {
-        if (price) price.innerText = '$5';
-        if (period) period.innerText = '/ month';
-        if (btnM) btnM.className = 'px-3.5 py-1.5 rounded-lg bg-white/[0.12] text-white font-semibold transition cursor-pointer';
-        if (btnL) btnL.className = 'px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition cursor-pointer';
-        if (sponsorBtn) sponsorBtn.href = 'https://github.com/sponsors/codecheesee';
+        el.classList.remove('hidden');
+        if (icon) icon.innerText = '▴';
       }
     }
 
-    // Initialize Simulator on Load
+    // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       renderDemoResults();
+      toggleFaq('faq-1');
+      toggleFaq('faq-2');
+      toggleFaq('faq-3');
     });
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      renderDemoResults();
-    }
   </script>
 </body>
 </html>
