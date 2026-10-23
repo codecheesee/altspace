@@ -206,7 +206,9 @@ try {
         # Status summary card
         Write-Host " Target Action:      " -NoNewline -ForegroundColor DarkGray
         if ($isUpdate) {
-            Write-Host "Upgrade ($($existingVersion ? 'v' + $existingVersion : 'Existing') -> $resolvedTag)" -ForegroundColor Cyan
+            $fromVer = "Existing"
+            if ($existingVersion) { $fromVer = "v$existingVersion" }
+            Write-Host "Upgrade ($fromVer -> $resolvedTag)" -ForegroundColor Cyan
         } else {
             Write-Host "Fresh Installation ($resolvedTag)" -ForegroundColor Green
         }
