@@ -454,19 +454,65 @@ fn get_suggested_projects() -> Vec<SearchItem> {
 #[tauri::command]
 fn launch_item(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
     let _ = window.hide();
+
+    let target = std::path::Path::new(&path);
+
+    // Determine the ideal working directory:
+    // 1. If target is a directory itself -> open with that directory as working dir.
+    // 2. If target is an app, shell (PowerShell, cmd, wt), shortcut (.lnk), or system binary:
+    //    default strictly to the User Profile (%USERPROFILE%, e.g. C:\Users\rohan).
+    // 3. If target is a document or project file -> use its parent directory.
+    // NEVER allow child processes to inherit AltSpace's internal installation directory!
+    let working_dir: std::path::PathBuf = if target.is_dir() {
+        target.to_path_buf()
+    } else {
+        let is_app_or_system = {
+            let lower = path.to_lowercase();
+            lower.ends_with(".exe")
+                || lower.ends_with(".lnk")
+                || lower.ends_with(".msc")
+                || lower.contains(r"\system32\\")
+                || lower.contains(r"\syswow64\\")
+                || lower.contains(r"\program files")
+                || lower.contains(r"\start menu\\")
+        };
+
+        if is_app_or_system {
+            std::env::var_os("USERPROFILE").map(std::path::PathBuf::from)
+                .unwrap_or_else(|| std::path::PathBuf::from("C:\\Users\\Default"))
+        } else if let Some(parent) = target.parent() {
+            if parent.exists() && parent.is_dir() && !parent.as_os_str().is_empty() {
+                parent.to_path_buf()
+            } else {
+                std::env::var_os("USERPROFILE").map(std::path::PathBuf::from)
+                    .unwrap_or_else(|| std::path::PathBuf::from("C:\\Users\\Default"))
+            }
+        } else {
+            std::env::var_os("USERPROFILE").map(std::path::PathBuf::from)
+                .unwrap_or_else(|| std::path::PathBuf::from("C:\\Users\\Default"))
+        }
+    };
+
     let wide_path: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
+    let wide_dir: Vec<u16> = working_dir
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+
     unsafe {
         let res = ShellExecuteW(
             HWND::default(),
             w!("open"),
             windows::core::PCWSTR(wide_path.as_ptr()),
             None,
-            None,
+            windows::core::PCWSTR(wide_dir.as_ptr()),
             SW_SHOWNORMAL,
         );
         if res.0 as usize <= 32 {
             let _ = Command::new("explorer")
                 .arg(&path)
+                .current_dir(&working_dir)
                 .creation_flags(CREATE_NO_WINDOW)
                 .spawn();
         }

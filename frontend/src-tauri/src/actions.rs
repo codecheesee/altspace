@@ -86,13 +86,20 @@ pub fn run_as_admin(target_path: &str) -> Result<(), String> {
         .chain(std::iter::once(0))
         .collect();
 
+    let working_dir = get_target_directory(trimmed);
+    let wide_dir: Vec<u16> = working_dir
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
     unsafe {
         let res = ShellExecuteW(
             HWND::default(),
             w!("runas"),
             windows::core::PCWSTR(wide_path.as_ptr()),
             None,
-            None,
+            windows::core::PCWSTR(wide_dir.as_ptr()),
             SW_SHOWNORMAL,
         );
 
@@ -115,12 +122,15 @@ pub fn reveal_in_explorer(target_path: &str) -> Result<(), String> {
     if p.is_dir() {
         Command::new("explorer")
             .arg(&clean_path)
+            .current_dir(&p)
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Failed to open folder in File Explorer: {}", e))?;
     } else {
+        let parent = p.parent().unwrap_or(Path::new("C:\\"));
         Command::new("explorer")
             .arg(format!("/select,\"{}\"", clean_path))
+            .current_dir(parent)
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Failed to reveal file in File Explorer: {}", e))?;
