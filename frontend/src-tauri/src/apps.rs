@@ -116,12 +116,12 @@ impl AppIndex {
             let name_lower = app.name.to_lowercase();
             // Fast-path 1: Exact match -> highest priority
             if name_lower == q_lower {
-                matches.push((app.clone(), 10000));
+                matches.push((app.clone(), 60000));
                 continue;
             }
             // Fast-path 2: Name starts with query prefix -> ultra fast & highly relevant
             if name_lower.starts_with(&q_lower) {
-                matches.push((app.clone(), 5000 + (100 - name_lower.len().min(100) as i64)));
+                matches.push((app.clone(), 50000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
             // Fast-path 3: Any word inside app name starts with query (e.g. "code" matches "Visual Studio Code")
@@ -129,7 +129,7 @@ impl AppIndex {
                 .split_whitespace()
                 .any(|w| w.starts_with(&q_lower));
             if word_match {
-                matches.push((app.clone(), 3000 + (100 - name_lower.len().min(100) as i64)));
+                matches.push((app.clone(), 45000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
             // Fast-path 4: Acronym matching (e.g. "gta" -> "Grand Theft Auto", "vsc" -> "Visual Studio Code")
@@ -138,12 +138,12 @@ impl AppIndex {
                 .filter_map(|w| w.chars().next())
                 .collect();
             if acronym == q_lower || acronym.starts_with(&q_lower) {
-                matches.push((app.clone(), 4500 + (100 - name_lower.len().min(100) as i64)));
+                matches.push((app.clone(), 40000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
             // Fast-path 5: Substring containment
             if name_lower.contains(&q_lower) {
-                matches.push((app.clone(), 2000 + (100 - name_lower.len().min(100) as i64)));
+                matches.push((app.clone(), 35000 + (100 - name_lower.len().min(100) as i64)));
                 continue;
             }
             // Fallback: full fuzzy match ONLY if query length >= 4

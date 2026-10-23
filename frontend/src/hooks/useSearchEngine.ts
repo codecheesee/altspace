@@ -632,12 +632,13 @@ export function useSearchEngine({
         return;
       }
 
-      // Instant optimistic fallback
+      // Instant optimistic fallback with Context-Aware Hybrid Priority
       const fallbackList = getCachedOrInitialApps();
       if (!qTrim) {
         setItems(sortByFrequency(fallbackList));
       } else {
         const q = qTrim.toLowerCase();
+        const isFileIntent = q.includes("/") || q.includes("\\") || /\.[a-z0-9]{1,6}$/i.test(q);
         const utilityMatches = q.startsWith(":")
           ? UTILITY_ITEMS.filter((item) =>
               item.title.toLowerCase().includes(q.slice(1)) ||
@@ -650,16 +651,46 @@ export function useSearchEngine({
             item.subtitle.toLowerCase().includes(q)) &&
             (item.category !== "File" || !isExtensionBlocked(item.path, q))
         );
-        setItems([
-          ...utilityMatches,
-          ...pluginItems,
-          ...themeItems,
-          ...gameItems,
-          ...snapItems,
-          ...settingItems,
-          ...snippetItems,
-          ...filtered,
-        ]);
+        const rankedFiltered = [...filtered].sort((a, b) => {
+          const aTitle = a.title.toLowerCase();
+          const bTitle = b.title.toLowerCase();
+          const aIsApp = a.category === "Application" ? 1 : 0;
+          const bIsApp = b.category === "Application" ? 1 : 0;
+          if (!isFileIntent && aIsApp !== bIsApp) return bIsApp - aIsApp;
+          if (isFileIntent && aIsApp !== bIsApp) return aIsApp - bIsApp;
+          const aScore = aTitle === q ? 60000 : aTitle.startsWith(q) ? 50000 : aTitle.split(/\s+/).some((w) => w.startsWith(q)) ? 45000 : aTitle.includes(q) ? 35000 : 10000;
+          const bScore = bTitle === q ? 60000 : bTitle.startsWith(q) ? 50000 : bTitle.split(/\s+/).some((w) => w.startsWith(q)) ? 45000 : bTitle.includes(q) ? 35000 : 10000;
+          return bScore - aScore;
+        });
+
+        const appItems = rankedFiltered.filter((i) => i.category === "Application");
+        const otherFiltered = rankedFiltered.filter((i) => i.category !== "Application");
+
+        if (!isFileIntent) {
+          setItems([
+            ...utilityMatches,
+            ...appItems,
+            ...pluginItems,
+            ...themeItems,
+            ...gameItems,
+            ...snapItems,
+            ...settingItems,
+            ...snippetItems,
+            ...otherFiltered,
+          ]);
+        } else {
+          setItems([
+            ...utilityMatches,
+            ...otherFiltered,
+            ...appItems,
+            ...pluginItems,
+            ...themeItems,
+            ...gameItems,
+            ...snapItems,
+            ...settingItems,
+            ...snippetItems,
+          ]);
+        }
       }
       setSelectedIndex(0);
     }
@@ -726,6 +757,7 @@ export function useSearchEngine({
               return true;
             });
 
+          const isFileIntent = debouncedQuery.includes("/") || debouncedQuery.includes("\\") || /\.[a-z0-9]{1,6}$/i.test(debouncedQuery.trim());
           setItems((prev) => {
             const nonL2 = prev.filter(
               (i) =>
@@ -738,8 +770,16 @@ export function useSearchEngine({
                 i.id.endsWith("-exe")
             );
             const appsOnly = mapped.filter((i) => i.category === "Application");
+            const filesOnly = mapped.filter((i) => i.category !== "Application");
             if (appsOnly.length > 0) saveCachedApps(appsOnly);
-            return [...nonL2, ...mapped];
+
+            if (!isFileIntent) {
+              // Default: Applications first, then Settings/Widgets, then Files & Folders
+              return [...appsOnly, ...nonL2, ...filesOnly];
+            } else {
+              // File Intent: Files & Folders first, then Applications, then Settings
+              return [...filesOnly, ...appsOnly, ...nonL2];
+            }
           });
         })
         .catch(() => {});

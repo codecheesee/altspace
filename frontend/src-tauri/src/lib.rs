@@ -231,12 +231,33 @@ fn search(query: String) -> Vec<SearchItem> {
     let query_trimmed = query.trim();
     let q_lower = query_trimmed.to_lowercase();
 
+    // Context-Aware Hybrid Intent:
+    // If the query contains file path separators (/ or \), or an explicit file extension (e.g. .ps1, .rs, .json),
+    // or file: prefix, the user is explicitly searching for files.
+    // Otherwise, default application prioritization is enforced.
+    let has_file_intent = {
+        let has_path_separator = q_lower.contains('/') || q_lower.contains('\\');
+        let has_extension = if let Some(dot_idx) = q_lower.rfind('.') {
+            let ext = &q_lower[dot_idx + 1..];
+            !ext.is_empty() && ext.len() <= 6 && ext.chars().all(|c| c.is_alphanumeric())
+        } else {
+            false
+        };
+        has_path_separator || has_extension || q_lower.starts_with("file:") || q_lower.starts_with("f:")
+    };
+
     // 1. Search installed applications
     if let Ok(index) = APP_INDEX.lock() {
         let app_matches = index.search(query_trimmed);
-        for (app, score) in app_matches {
+        for (app, mut score) in app_matches {
             let path_str = app.path.to_string_lossy().to_string();
             let icon_data = icons::get_app_icon_base64(&path_str);
+
+            // In explicit file-intent mode, reduce app score so matching files take precedence
+            if has_file_intent {
+                score = (score / 4).max(1000);
+            }
+
             scored_results.push((
                 SearchItem {
                     id: format!("app-{}", app.name),
@@ -323,21 +344,41 @@ fn search(query: String) -> Vec<SearchItem> {
                     None
                 };
 
-                // Score files/folders dynamically against query
+                // Score files/folders dynamically based on intent
                 let name_lower = file.name.to_lowercase();
-                let file_score = if name_lower == q_lower {
-                    10000
-                } else if name_lower.starts_with(&q_lower) {
-                    5200 + (100 - name_lower.len().min(100) as i64)
-                } else if name_lower
-                    .split(|c: char| !c.is_alphanumeric())
-                    .any(|w| w.starts_with(&q_lower))
-                {
-                    3500 + (100 - name_lower.len().min(100) as i64)
-                } else if name_lower.contains(&q_lower) {
-                    2200 + (100 - name_lower.len().min(100) as i64)
+                let file_score = if has_file_intent {
+                    // Explicit File Intent Mode: Files outrank general apps
+                    if name_lower == q_lower {
+                        60000
+                    } else if name_lower.starts_with(&q_lower) {
+                        50000 + (100 - name_lower.len().min(100) as i64)
+                    } else if name_lower
+                        .split(|c: char| !c.is_alphanumeric())
+                        .any(|w| w.starts_with(&q_lower))
+                    {
+                        40000 + (100 - name_lower.len().min(100) as i64)
+                    } else if name_lower.contains(&q_lower) {
+                        30000 + (100 - name_lower.len().min(100) as i64)
+                    } else {
+                        5000
+                    }
                 } else {
-                    500
+                    // Default Mode: Installed applications take top priority;
+                    // Files and folders stay in secondary tier below applications
+                    if name_lower == q_lower {
+                        8000
+                    } else if name_lower.starts_with(&q_lower) {
+                        5000 + (100 - name_lower.len().min(100) as i64)
+                    } else if name_lower
+                        .split(|c: char| !c.is_alphanumeric())
+                        .any(|w| w.starts_with(&q_lower))
+                    {
+                        3000 + (100 - name_lower.len().min(100) as i64)
+                    } else if name_lower.contains(&q_lower) {
+                        1000 + (100 - name_lower.len().min(100) as i64)
+                    } else {
+                        200
+                    }
                 };
 
                 scored_results.push((
