@@ -329,23 +329,7 @@ export default function App() {
     }
   }, [handleExecuteRecipe, notify]);
 
-  // Auto-Updater Check on Mount & Periodic Interval
-  useEffect(() => {
-    const q = query.trim().toLowerCase();
-    if (q === ":feedback") {
-      setShowFeedbackModal(true);
-      setQuery("");
-    } else if (q === ":pro" || q === ":founder" || q === ":license") {
-      setShowLicenseModal(true);
-      setQuery("");
-    } else if (q === ":fix" || q === ":healing") {
-      handleScanAndReportFailures();
-      setQuery("");
-    } else if (q.startsWith(":fix ")) {
-      handleParseFixCommand(q.replace(":fix ", "").trim());
-      setQuery("");
-    }
-  }, [query, setQuery]);
+  // (Keystroke command trigger removed; commands now execute cleanly on Enter keypress)
 
   useEffect(() => {
     const isAutoCheckEnabled = localStorage.getItem("altspace_auto_check_updates") !== "false";
@@ -426,6 +410,7 @@ export default function App() {
       listen("window-summoned", () => {
         inputRef.current?.focus();
         inputRef.current?.select();
+        fetchPorts();
       }).then((fn) => {
         unlisten = fn;
       });
@@ -993,6 +978,37 @@ export default function App() {
       setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
+      const qCommand = query.trim().toLowerCase();
+      if (qCommand === ":feedback") {
+        setShowFeedbackModal(true);
+        setQuery("");
+        return;
+      }
+      if (qCommand === ":pro" || qCommand === ":founder" || qCommand === ":license") {
+        setShowLicenseModal(true);
+        setQuery("");
+        return;
+      }
+      if (qCommand === ":update" || qCommand === ":updates") {
+        setIsUpdateModalOpen(true);
+        setQuery("");
+        return;
+      }
+      if (qCommand === ":diagnostics") {
+        setShowDiagnosticsModal(true);
+        setQuery("");
+        return;
+      }
+      if (qCommand === ":fix" || qCommand === ":fix scan" || qCommand === ":healing") {
+        handleScanAndReportFailures();
+        setQuery("");
+        return;
+      }
+      if (qCommand.startsWith(":fix ")) {
+        handleParseFixCommand(qCommand.replace(":fix ", "").trim());
+        setQuery("");
+        return;
+      }
       if (resolvedMode === "all") {
         if (selectedSpecial) {
           if (selectedSpecial.kind === "calc") {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { tauriInvoke } from "../lib/appStorage";
 import type { PortItem, PortProcessForensics, KillVerifyResult } from "../types";
 
@@ -12,6 +12,14 @@ export function usePortInspector(query: string) {
       if (res && Array.isArray(res)) setPorts(res);
     } catch (_) {}
   }, []);
+
+  // Instant refresh when user enters a port query (eliminates 1.5s stale port lag)
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.startsWith(":") || /port|\d{2,5}/i.test(trimmed)) {
+      fetchPorts();
+    }
+  }, [query, fetchPorts]);
 
   const fetchForensics = useCallback(async (port: number, pid: number): Promise<PortProcessForensics | null> => {
     if (!tauriInvoke) return null;
