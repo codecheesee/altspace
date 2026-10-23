@@ -1,0 +1,31 @@
+{
+  "featuresTested": [
+    "Initial Omnibar Load",
+    "Action Drawer (Ctrl + K)",
+    "Developer Port Inspector (:3000)",
+    "Smart Game Hub (gta 5)",
+    "Smart Math Calculation (15% of 850)",
+    "Offline Developer Transform (JWT)",
+    "Windows Settings Search (sound)"
+  ],
+  "buttonsTested": [
+    "Header Try Pro button",
+    "License Modal Features Tab",
+    "License Modal About Tab",
+    "File Noise Filters Submenu",
+    "Keyboard ArrowDown (x8)",
+    "Keyboard ArrowUp (x4)"
+  ],
+  "scrollingTested": [
+    "Action Drawer Scrollable Body",
+    "Search Results List Mouse Scroll"
+  ],
+  "modalsTested": [
+    "Pro Entitlement & License Modal",
+    "Update Modal (:update command)"
+  ],
+  "uiBugsFound": [],
+  "featureBugsFound": [],
+  "categorizationBugs": [],
+  "consoleErrors": []
+}

@@ -94,15 +94,17 @@ function getInitialState(): FeatureMatrixMap {
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      for (const key of Object.keys(FEATURE_REGISTRY) as FeatureId[]) {
-        if (parsed[key] && typeof parsed[key].enabled === "boolean") {
-          initial[key] = {
-            enabled: parsed[key].enabled,
-            health: parsed[key].health || { status: "healthy", errorCount: 0 },
-          };
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        for (const key of Object.keys(FEATURE_REGISTRY) as FeatureId[]) {
+          if (parsed[key] && typeof parsed[key].enabled === "boolean") {
+            initial[key] = {
+              enabled: parsed[key].enabled,
+              health: parsed[key].health || { status: "healthy", errorCount: 0 },
+            };
+          }
         }
       }
     }
@@ -119,7 +121,9 @@ const listeners = new Set<(state: FeatureMatrixMap) => void>();
 
 function persistAndBroadcast() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentState));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentState));
+    }
   } catch (e) {
     console.error("Failed to persist feature matrix:", e);
   }

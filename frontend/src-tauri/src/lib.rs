@@ -41,11 +41,12 @@ use windows::Win32::System::Registry::{
     HKEY_CURRENT_USER, KEY_READ, KEY_WRITE, REG_SZ,
 };
 use windows::Win32::System::Threading::{
-    CreateEventW, CreateMutexW, OpenEventW, OpenProcess, SetEvent, TerminateProcess,
+    CreateEventW, CreateMutexW, GetCurrentThreadId, OpenEventW, OpenProcess, SetEvent, TerminateProcess,
     WaitForSingleObject, EVENT_MODIFY_STATE, INFINITE, PROCESS_TERMINATE,
 };
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    RegisterHotKey, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, VK_SPACE,
+    keybd_event, RegisterHotKey, KEYEVENTF_KEYUP, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT,
+    VK_MENU, VK_SPACE,
 };
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -93,20 +94,38 @@ pub fn force_foreground_window(hwnd: HWND) {
         let fg_hwnd = GetForegroundWindow();
         let fg_thread = GetWindowThreadProcessId(fg_hwnd, None);
         let target_thread = GetWindowThreadProcessId(hwnd, None);
+        let current_thread = GetCurrentThreadId();
 
-        // Explicitly allow foreground activation from any process
+        // 1. Explicitly allow foreground activation from any process
         let _ = AllowSetForegroundWindow(0xFFFFFFFF);
 
-        let mut attached = false;
-        if fg_thread != 0 && fg_thread != target_thread && target_thread != 0 {
-            attached = AttachThreadInput(
-                target_thread,
-                fg_thread,
-                windows::Win32::Foundation::BOOL(1),
-            )
-            .as_bool();
+        // 2. Attach input queues if threads differ to bypass Windows foreground lock
+        let mut attached_current = false;
+        let mut attached_target = false;
+        if fg_thread != 0 {
+            if current_thread != 0 && current_thread != fg_thread {
+                attached_current = AttachThreadInput(
+                    current_thread,
+                    fg_thread,
+                    windows::Win32::Foundation::BOOL(1),
+                )
+                .as_bool();
+            }
+            if target_thread != 0 && target_thread != fg_thread && target_thread != current_thread {
+                attached_target = AttachThreadInput(
+                    target_thread,
+                    fg_thread,
+                    windows::Win32::Foundation::BOOL(1),
+                )
+                .as_bool();
+            }
         }
 
+        // 3. Synthesize an Alt key pulse to trick Windows into granting foreground-setting rights
+        keybd_event(VK_MENU.0 as u8, 0, Default::default(), 0);
+        keybd_event(VK_MENU.0 as u8, 0, KEYEVENTF_KEYUP, 0);
+
+        // 4. Force Show, Restore, Topmost, and Foreground
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = ShowWindow(hwnd, SW_RESTORE);
 
@@ -123,7 +142,15 @@ pub fn force_foreground_window(hwnd: HWND) {
         let _ = BringWindowToTop(hwnd);
         let _ = SetForegroundWindow(hwnd);
 
-        if attached {
+        // 5. Detach input queues
+        if attached_current {
+            let _ = AttachThreadInput(
+                current_thread,
+                fg_thread,
+                windows::Win32::Foundation::BOOL(0),
+            );
+        }
+        if attached_target {
             let _ = AttachThreadInput(
                 target_thread,
                 fg_thread,
@@ -1021,25 +1048,27 @@ fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
 
             while GetMessageW(&mut msg, HWND::default(), 0, 0).as_bool() {
                 if msg.message == WM_HOTKEY && (msg.wParam.0 >= 1 && msg.wParam.0 <= 3) {
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let is_visible = window.is_visible().unwrap_or(false);
-                        let is_focused = window.is_focused().unwrap_or(false);
-                        if is_visible && is_focused {
-                            let _ = window.hide();
-                        } else {
-                            if let Ok(hwnd) = window.hwnd() {
-                                windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
+                    let handle = app_handle.clone();
+                    let handle_inner = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        if let Some(window) = handle_inner.get_webview_window("main") {
+                            let is_visible = window.is_visible().unwrap_or(false);
+                            let is_focused = window.is_focused().unwrap_or(false);
+                            if is_visible && is_focused {
+                                let _ = window.hide();
+                            } else {
+                                if let Ok(hwnd) = window.hwnd() {
+                                    windows_mgmt::record_previous_foreground(HWND(hwnd.0 as _));
+                                    force_foreground_window(HWND(hwnd.0 as _));
+                                }
+                                mark_window_shown();
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                                let _ = window.emit("window-summoned", ());
                             }
-                            mark_window_shown();
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
-                            if let Ok(hwnd) = window.hwnd() {
-                                force_foreground_window(HWND(hwnd.0 as _));
-                            }
-                            let _ = window.emit("window-summoned", ());
                         }
-                    }
+                    });
                 }
             }
         }
@@ -1600,8 +1629,9 @@ pub fn run() {
     unsafe {
         let _mutex = CreateMutexW(None, true, w!("AltSpace_SingleInstance_Mutex_2026"));
         if GetLastError() == ERROR_ALREADY_EXISTS {
-            // 1. Authorize foreground activation: This newly launched instance has user focus rights
-            // from Windows Explorer / desktop double-click. We grant rights to the running instance!
+            let mut previous_was_hung_and_killed = false;
+
+            // 1. Authorize foreground activation from explorer / desktop double-click
             let _ = AllowSetForegroundWindow(0xFFFFFFFF);
 
             // 2. Direct Window Summoning:
@@ -1616,22 +1646,11 @@ pub fn run() {
                             if let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, hung_pid) {
                                 let _ = TerminateProcess(process, 1);
                                 let _ = CloseHandle(process);
+                                previous_was_hung_and_killed = true;
                             }
                         }
                     } else {
-                        let _ = ShowWindow(existing_hwnd, SW_SHOW);
-                        let _ = ShowWindow(existing_hwnd, SW_RESTORE);
-                        let _ = SetWindowPos(
-                            existing_hwnd,
-                            HWND_TOPMOST,
-                            0,
-                            0,
-                            0,
-                            0,
-                            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
-                        );
-                        let _ = BringWindowToTop(existing_hwnd);
-                        let _ = SetForegroundWindow(existing_hwnd);
+                        force_foreground_window(existing_hwnd);
                     }
                 }
             }
@@ -1643,7 +1662,12 @@ pub fn run() {
                 let _ = SetEvent(event);
                 let _ = CloseHandle(event);
             }
-            return;
+
+            // If the previous instance was hung and terminated, don't exit!
+            // Continue execution so THIS instance starts up cleanly as the active instance!
+            if !previous_was_hung_and_killed {
+                return;
+            }
         }
     }
 
