@@ -1656,6 +1656,8 @@ fn find_existing_altspace_hwnd() -> Option<HWND> {
 }
 
 pub fn run() {
+    updater::clean_stale_update_artifacts();
+
     // Safe-Mode Flag Detection:
     if std::env::args().any(|arg| arg == "--safe-mode")
         || std::env::var("ALTSPACE_SAFE_MODE")

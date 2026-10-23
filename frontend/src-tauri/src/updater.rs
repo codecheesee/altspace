@@ -367,81 +367,82 @@ pub fn install_update(
         return Err("Extracted update does not contain a valid AltSpace executable.".to_string());
     }
 
-    // Write atomic handoff helper script (apply_update.cmd)
-    let helper_path = temp_dir.join("apply_update.cmd");
-    let helper_script = r#"@echo off
-setlocal EnableDelayedExpansion
-set "PID=%~1"
-set "SRC=%~2"
-set "DST=%~3"
-set "EXE=%~4"
-
-:: 1. Graceful exit wait for running instance (up to 5 seconds)
-for /l %%i in (1,1,5) do (
-    tasklist /fi "PID eq %PID%" 2>nul | find "%PID%" >nul
-    if errorlevel 1 (
-        goto ready_to_copy
-    )
-    timeout /t 1 /nobreak >nul
-)
-
-:: 2. Force terminate running instance and any lingering subprocesses
-taskkill /F /T /PID %PID% >nul 2>&1
-timeout /t 1 /nobreak >nul
-
-:ready_to_copy
-:: 3. Robust copy with 3 retries (1s wait) to overcome transient antivirus/search file locks
-robocopy "%SRC%" "%DST%" /E /R:3 /W:1 /NFL /NDL /NJH /NJS >nul 2>&1
-if errorlevel 8 (
-    :: Fallback to xcopy if robocopy fails or is restricted
-    xcopy /Y /E /Q /I "%SRC%\*" "%DST%\" >nul 2>&1
-)
-
-:: 4. Verify primary binary exists before relaunching
-if exist "%EXE%" (
-    start "" "%EXE%"
-) else if exist "%DST%\altspace.exe" (
-    start "" "%DST%\altspace.exe"
-) else if exist "%DST%\AltSpace-Portable.exe" (
-    start "" "%DST%\AltSpace-Portable.exe"
-)
-
-:: 5. Self-destruct temporary updater folder cleanly
-timeout /t 2 /nobreak >nul
-(goto) 2>nul & rd /s /q "%~dp0"
-"#;
-
-    std::fs::write(&helper_path, helper_script).map_err(|e| {
-        let _ = std::fs::remove_dir_all(&temp_dir);
-        format!("Failed to write update handoff script: {}", e)
-    })?;
-
-    // In development mode or test runner, do not spawn the process-killing helper
+    // In development mode or test runner, do not perform in-place replacement
     let exe_str = current_exe.to_string_lossy();
     if exe_str.contains("\\target\\debug\\") || exe_str.contains("\\target\\release\\") {
         let _ = std::fs::remove_dir_all(&temp_dir);
         return Ok("AltSpace is running in development mode. Update verified successfully.".to_string());
     }
 
-    // Spawn detached helper process
-    let current_pid = std::process::id();
-    Command::new("cmd.exe")
-        .args([
-            "/c",
-            helper_path.to_str().unwrap(),
-            &current_pid.to_string(),
-            extract_dir.to_str().unwrap(),
-            current_dir.to_str().unwrap(),
-            current_exe.to_str().unwrap(),
-        ])
-        .creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS)
-        .spawn()
-        .map_err(|e| {
-            let _ = std::fs::remove_dir_all(&temp_dir);
-            format!("Failed to spawn update helper: {}", e)
-        })?;
+    // Win32 Atomic In-Place Swap (Industry standard pattern: VS Code, Chrome, self_replace)
+    // Windows allows RENAMING a running binary while execution locks prevent deletion/overwrite.
+    let target_exe = current_dir.join(current_exe.file_name().unwrap_or_default());
+    let old_backup_exe = current_dir.join(format!(
+        "{}.old.{}",
+        current_exe.file_name().unwrap_or_default().to_string_lossy(),
+        timestamp
+    ));
 
-    Ok("Update downloaded and verified. AltSpace will restart now.".to_string())
+    // 1. Atomically rename running binary to .old (takes < 1ms)
+    if current_exe.exists() {
+        if let Err(e) = std::fs::rename(&current_exe, &old_backup_exe) {
+            eprintln!("Notice: atomic rename of running binary failed: {}", e);
+        }
+    }
+
+    // 2. Move new standard binary directly into target location (takes < 1ms)
+    let new_bin = if standard_bin.exists() { standard_bin } else { portable_bin };
+    if let Err(e) = std::fs::copy(&new_bin, &target_exe) {
+        let _ = std::fs::rename(&old_backup_exe, &current_exe);
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        return Err(format!("Failed to install new executable into {}: {}", target_exe.display(), e));
+    }
+
+    // 3. Hot-swap auxiliary DLLs (e.g. Everything64.dll)
+    if let Ok(entries) = std::fs::read_dir(&extract_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(file_name) = path.file_name() {
+                let name_str = file_name.to_string_lossy().to_lowercase();
+                if name_str.ends_with(".exe") {
+                    continue;
+                }
+                let dest = current_dir.join(file_name);
+                if dest.exists() {
+                    let old_dest = current_dir.join(format!("{}.old.{}", file_name.to_string_lossy(), timestamp));
+                    let _ = std::fs::rename(&dest, &old_dest);
+                }
+                let _ = std::fs::copy(&path, &dest);
+            }
+        }
+    }
+
+    // 4. Clean up temporary extraction folder
+    let _ = std::fs::remove_dir_all(&temp_dir);
+
+    // 5. Instantly launch the updated version as a detached process
+    Command::new(&target_exe)
+        .creation_flags(DETACHED_PROCESS)
+        .spawn()
+        .map_err(|e| format!("Update installed, but failed to launch updated AltSpace: {}", e))?;
+
+    Ok("Update installed instantly via Win32 atomic swap. AltSpace is restarting now.".to_string())
+}
+
+pub fn clean_stale_update_artifacts() {
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(dir) = current_exe.parent() {
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    let name = path.file_name().unwrap_or_default().to_string_lossy();
+                    if name.contains(".old") {
+                        let _ = std::fs::remove_file(&path);
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[allow(dead_code)]

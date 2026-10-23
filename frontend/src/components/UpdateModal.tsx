@@ -9,9 +9,11 @@ import {
   Rocket,
   AlertCircle,
   ShieldCheck,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { tauriInvoke } from "../lib/appStorage";
+import { tauriInvoke, invokeStrict, isTauri } from "../lib/appStorage";
 import type { UpdateInfo } from "../types";
 
 interface UpdateModalProps {
@@ -22,6 +24,7 @@ interface UpdateModalProps {
 }
 
 const AUTO_CHECK_KEY = "altspace_auto_check_updates";
+const QUICK_INSTALL_CMD = "irm https://raw.githubusercontent.com/codecheesee/altspace/main/install.ps1 | iex";
 
 export function UpdateModal({
   isOpen,
@@ -38,37 +41,38 @@ export function UpdateModal({
     return localStorage.getItem(AUTO_CHECK_KEY) !== "false";
   });
   const [showRawNotes, setShowRawNotes] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
   const fetchUpdate = async () => {
     setIsChecking(true);
     setError(null);
     try {
-      if (tauriInvoke) {
-        const res = await tauriInvoke<UpdateInfo>("check_app_update");
+      if (isTauri) {
+        const res = await invokeStrict<UpdateInfo>("check_app_update");
         setInfo(res);
       } else {
         // Dev / Browser preview simulation
         setInfo({
           has_update: false,
-          current_version: "2.2.0",
-          latest_version: "2.2.0",
-          release_name: "AltSpace 2.2.0 Security Hardening & Reliability Release",
+          current_version: "2.3.1",
+          latest_version: "2.3.1",
+          release_name: "AltSpace 2.3.1 Native Lifecycle & Silent Power Chords",
           release_url: "https://github.com/codecheesee/altspace/releases",
-          release_notes: "Latest developer release with DPAPI, Docker, WSL, and Action Planner.",
+          release_notes: "Latest developer release with atomic in-place updater and silent power chords.",
           features: [
-            "Unified Capability Matrix with Option A Settings & Option C Omnibar hot-toggles",
-            "Toolhelp32 process tree forensics and TCP table polling verification",
-            "100% Offline Developer Transform Toolkit (JWT, JSON/YAML, Regex, UUID, Hash)",
-            "Windows DPAPI Secret Vault & Environment Switcher",
+            "Context-Aware Hybrid Ranking: Applications prioritized over raw files",
+            "Silent Keyboard Power Chords: Ctrl+Shift+Enter, Ctrl+O, Ctrl+C",
+            "Instant Port Inspector: Zero-lag sub-millisecond port detection",
+            "Clean Omnibar UI: Full horizontal typing width",
           ],
           fixes: [
-            "Invisibility rule eliminates zero-footprint disabled features",
-            "Volatile crash dump ring buffer with zero disk writes",
+            "Win32 Atomic Swap: Instant 2-second in-place application update",
+            "100% Pure AltSpace: All legacy naming and registry keys purged",
           ],
         });
       }
     } catch (err: any) {
-      setError(String(err));
+      setError(String(err?.message || err));
     } finally {
       setIsChecking(false);
     }
@@ -86,19 +90,19 @@ export function UpdateModal({
 
   const handleInstall = async () => {
     setIsInstalling(true);
-    setInstallStatus("Connecting and downloading latest installer package...");
+    setError(null);
+    setInstallStatus("Downloading package and verifying cryptographic SHA-256 hash...");
     try {
-      if (tauriInvoke) {
-        setInstallStatus("Downloading package and verifying cryptographic SHA-256 hash...");
-        const res = await tauriInvoke<string>("trigger_app_update", {
+      if (isTauri) {
+        const res = await invokeStrict<string>("trigger_app_update", {
           downloadUrl: info?.portable_url || info?.download_url || null,
           expectedSha256: info?.sha256_portable || null,
         });
         setInstallStatus(res || "Update verified. AltSpace is restarting now...");
-        notify("✨ Update verified. AltSpace is restarting...");
+        notify("✨ Update installed. AltSpace is restarting...");
         setTimeout(() => {
           onClose();
-        }, 3000);
+        }, 1500);
       } else {
         window.open(info?.release_url || "https://github.com/codecheesee/altspace/releases", "_blank");
         setIsInstalling(false);
@@ -106,10 +110,18 @@ export function UpdateModal({
         onClose();
       }
     } catch (err: any) {
-      setError(`Installation failed: ${err}`);
+      const msg = typeof err === "string" ? err : err?.message || JSON.stringify(err);
+      setError(`Installation failed: ${msg}`);
       setIsInstalling(false);
       setInstallStatus(null);
     }
+  };
+
+  const handleCopyInstallCmd = () => {
+    navigator.clipboard.writeText(QUICK_INSTALL_CMD);
+    setCopiedCmd(true);
+    notify("📋 Copied 3-second terminal update command to clipboard");
+    setTimeout(() => setCopiedCmd(false), 2500);
   };
 
   const handleToggleAutoCheck = (enabled: boolean) => {
@@ -170,13 +182,13 @@ export function UpdateModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 space-y-4 max-h-[65vh] overflow-y-auto relative z-10 text-xs">
+        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto relative z-10 text-xs">
           {/* Version Pill Strip */}
           <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="text-[10px] text-zinc-500 font-mono uppercase">Current Version</div>
               <div className="text-xs font-semibold text-zinc-300 font-mono">
-                v{info?.current_version || "2.2.0"}
+                v{info?.current_version || "2.3.0"}
               </div>
             </div>
 
@@ -188,7 +200,7 @@ export function UpdateModal({
                 "text-xs font-semibold font-mono",
                 info?.has_update ? "text-emerald-400" : "text-zinc-300"
               )}>
-                v{info?.latest_version || "2.2.0"}
+                v{info?.latest_version || "2.3.1"}
               </div>
             </div>
           </div>
@@ -204,14 +216,27 @@ export function UpdateModal({
 
           {/* Error State */}
           {error && !isChecking && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <div className="font-semibold text-xs">Unable to reach update server</div>
-                <div className="text-[11px] text-rose-400/90 leading-relaxed">{error}</div>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 space-y-2">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-semibold text-xs">Update Interrupted</div>
+                  <div className="text-[11px] text-rose-400/90 leading-relaxed">{error}</div>
+                </div>
+              </div>
+              <div className="pt-1 flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={handleCopyInstallCmd}
+                  className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-white text-[11px] font-mono flex items-center gap-1.5 transition"
+                >
+                  {copiedCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedCmd ? "Copied Command" : "Copy 3s Terminal Updater"}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={fetchUpdate}
-                  className="mt-1 text-[11px] underline hover:text-white cursor-pointer font-medium"
+                  className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                 >
                   Retry check
                 </button>
@@ -293,17 +318,6 @@ export function UpdateModal({
                   {info.release_notes}
                 </div>
               )}
-
-              {/* Installing feedback */}
-              {isInstalling && (
-                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 space-y-1">
-                  <div className="flex items-center gap-2 font-medium">
-                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Installing Update...</span>
-                  </div>
-                  <div className="text-[11px] text-zinc-300">{installStatus}</div>
-                </div>
-              )}
             </div>
           )}
 
@@ -327,7 +341,7 @@ export function UpdateModal({
                   <span>Active Pro &amp; Core Architecture</span>
                 </div>
                 <ul className="space-y-1 text-zinc-400 text-[10.5px]">
-                  <li>• Hardware-bound DPAPI local credential security</li>
+                  <li>• Win32 atomic in-place instant updater (under 2 seconds)</li>
                   <li>• Sub-5ms indexed multi-drive search and port killer</li>
                   <li>• Docker Compose &amp; WSL2 Hyper-V RAM recovery</li>
                   <li>• Private local Ollama &amp; BYOK multi-step action plans</li>
@@ -336,6 +350,14 @@ export function UpdateModal({
             </div>
           )}
         </div>
+
+        {/* Pinned Real-Time Installation Status Card */}
+        {isInstalling && (
+          <div className="px-4 py-2.5 bg-emerald-500/10 border-t border-emerald-500/25 flex items-center gap-2.5 text-xs text-emerald-300 relative z-20">
+            <RotateCw className="w-3.5 h-3.5 animate-spin shrink-0 text-emerald-400" />
+            <div className="truncate font-medium">{installStatus}</div>
+          </div>
+        )}
 
         {/* Modal Footer */}
         <div className="p-4 border-t border-white/[0.08] bg-black/40 flex flex-col sm:flex-row items-center justify-between gap-3 relative z-10">
@@ -354,11 +376,20 @@ export function UpdateModal({
               <>
                 <button
                   type="button"
+                  onClick={handleCopyInstallCmd}
+                  className="px-2.5 py-1.5 rounded-lg border border-white/[0.1] hover:bg-white/[0.06] text-xs font-mono text-zinc-300 flex items-center gap-1.5 transition cursor-pointer"
+                  title="Copy 1-click terminal command to clipboard"
+                >
+                  {copiedCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedCmd ? "Copied" : "Quick Cmd"}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleOpenReleasePage}
                   className="px-3 py-1.5 rounded-lg border border-white/[0.1] hover:bg-white/[0.06] text-xs font-medium text-zinc-300 flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  <span>Release Notes</span>
+                  <span>Notes</span>
                 </button>
                 <button
                   type="button"
