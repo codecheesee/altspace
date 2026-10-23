@@ -106,7 +106,7 @@ Record a clean 7-second screen recording:
 ### Phase 4: Professional & Engineering Leadership on LinkedIn
 
 **Why LinkedIn?**
-Engineering managers, tech leads, and developers on Windows face massive developer experience friction compared to macOS users who enjoy Raycast. Framing AltSpace as a modern solution to Windows developer friction and highlighting open-source sustainability resonates strongly with professional audiences.
+Engineering managers, tech leads, and developers on Windows face massive developer experience friction compared to macOS users who enjoy modern command palettes. Framing AltSpace as a modern solution to Windows developer friction and highlighting open-source sustainability resonates strongly with professional audiences.
 
 ---
 
@@ -122,7 +122,7 @@ Engineering managers, tech leads, and developers on Windows face massive develop
 ```markdown
 Hey r/windows,
 
-If you use Windows for daily development and multitasking, you've probably noticed that the built-in Windows Search is often slow, cluttered with web results, and heavy on resources. Meanwhile, popular launchers on macOS like Raycast haven't had a true native, lightweight equivalent on Windows.
+If you use Windows for daily development and multitasking, you've probably noticed that the built-in Windows Search is often slow, cluttered with web results, and heavy on resources. Meanwhile, popular keyboard command palettes haven't had a true native, lightweight equivalent on Windows.
 
 We built **AltSpace** to fix this. It is a 100% free and open-source desktop command center built with **Rust and Tauri v2**.
 
@@ -231,7 +231,7 @@ AltSpace operates on a 70/20/10 model:
 ```markdown
 If you develop software on Windows, you've likely experienced the "developer experience gap" compared to macOS. 
 
-While macOS developers have enjoyed keyboard-first command centers like Raycast and Alfred for years, Windows developers have been stuck navigating between Task Manager, fragmented search bars, and electron-based launchers consuming 400MB+ of background RAM.
+While macOS developers have enjoyed keyboard-first command centers like Alfred for years, Windows developers have been stuck navigating between Task Manager, fragmented search bars, and electron-based launchers consuming 400MB+ of background RAM.
 
 To close this gap, we engineered **AltSpace** — a high-performance, native command palette built in Rust and Tauri v2.
 

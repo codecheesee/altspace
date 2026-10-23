@@ -818,7 +818,7 @@ export default function App() {
     setInputModalConfig({
       title: "Import AltSpace Config",
       description: "Paste your non-sensitive .altconfig JSON bundle below",
-      placeholder: '{"config_version": 2, "theme_id": "raycast-dark", ...}',
+      placeholder: '{"config_version": 2, "theme_id": "altspace-obsidian", ...}',
       onConfirm: (input) => {
         setInputModalConfig(null);
         if (!input?.trim()) return;

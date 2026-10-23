@@ -297,7 +297,7 @@ mod tests {
 
         assert_eq!(mgr.detect_type("#3B82F6"), "color");
         assert_eq!(mgr.detect_type("https://google.com"), "url");
-        assert_eq!(mgr.detect_type("{\"name\": \"raycast\"}"), "json");
+        assert_eq!(mgr.detect_type("{\"name\": \"altspace\"}"), "json");
         assert_eq!(mgr.detect_type("const x = () => 42;"), "code");
         assert_eq!(mgr.detect_type("This is plain text"), "text");
     }

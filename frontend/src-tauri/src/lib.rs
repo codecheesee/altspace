@@ -645,7 +645,7 @@ fn launch_in_terminal_window(command: String) -> Result<(), String> {
 fn get_autostart_status() -> bool {
     unsafe {
         let subkey = w!(r"Software\Microsoft\Windows\CurrentVersion\Run");
-        let value_name = w!("RaycastWindows");
+        let value_name = w!("AltSpace");
         let mut hkey = windows::Win32::System::Registry::HKEY::default();
         if RegOpenKeyExW(HKEY_CURRENT_USER, subkey, 0, KEY_READ, &mut hkey).is_ok() {
             let mut data_len = 0u32;
@@ -662,7 +662,7 @@ fn get_autostart_status() -> bool {
 fn set_autostart(enable: bool) -> Result<(), String> {
     unsafe {
         let subkey = w!(r"Software\Microsoft\Windows\CurrentVersion\Run");
-        let value_name = w!("RaycastWindows");
+        let value_name = w!("AltSpace");
         let mut hkey = windows::Win32::System::Registry::HKEY::default();
         if enable {
             let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
@@ -688,7 +688,7 @@ fn set_autostart(enable: bool) -> Result<(), String> {
         } else {
             if RegOpenKeyExW(HKEY_CURRENT_USER, subkey, 0, KEY_WRITE, &mut hkey).is_ok() {
                 let _ = RegDeleteValueW(hkey, value_name);
-                let _ = RegCloseKey(hkey);
+                                let _ = RegCloseKey(hkey);
             }
             Ok(())
         }
@@ -1065,7 +1065,7 @@ fn start_global_hotkey_listener(app_handle: tauri::AppHandle) {
             let _ = PeekMessageW(&mut msg, HWND::default(), 0, 0, PM_NOREMOVE);
 
             // Register hotkeys with MOD_NOREPEAT to prevent stutter:
-            // ID 1: Alt + Space (Default Raycast shortcut)
+            // ID 1: Alt + Space (Default AltSpace shortcut)
             let _ = RegisterHotKey(
                 HWND::default(),
                 1,

@@ -3,8 +3,8 @@ $dist = Join-Path $PSScriptRoot '..\dist_artifacts'
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
 $candidateBinaries = @(
-    (Join-Path $PSScriptRoot '..\target\release\raycast-windows.exe'),
-    (Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\raycast-windows.exe')
+    (Join-Path $PSScriptRoot '..\target\release\altspace.exe'),
+    (Join-Path $PSScriptRoot '..\frontend\src-tauri\target\release\altspace.exe')
 ) | Where-Object { Test-Path $_ } | Sort-Object { (Get-Item $_).LastWriteTime }
 $releaseBinary = $candidateBinaries | Select-Object -Last 1
 

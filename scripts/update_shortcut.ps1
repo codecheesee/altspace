@@ -4,7 +4,7 @@ $lnk = $sh.CreateShortcut("$desktop\AltSpace.lnk")
 $binDir = (Resolve-Path "$PSScriptRoot\..\bin").Path
 $exe = Join-Path $binDir "altspace.exe"
 if (-not (Test-Path $exe)) {
-    $exe = Join-Path $binDir "raycast-windows.exe"
+    $exe = Join-Path $binDir "altspace.exe"
 }
 $ico = (Resolve-Path "$PSScriptRoot\..\frontend\src-tauri\icons\icon.ico").Path
 

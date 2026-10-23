@@ -175,7 +175,7 @@ export function generateDiagnosticSnapshot(
       quarantinedCount: overrides?.extensions?.quarantinedCount ?? 0,
     },
     theme: {
-      currentThemeId: overrides?.theme?.currentThemeId ?? 'raycast-dark',
+      currentThemeId: overrides?.theme?.currentThemeId ?? 'altspace-obsidian',
       hasCustomAccent: overrides?.theme?.hasCustomAccent ?? false,
     },
     quota: {

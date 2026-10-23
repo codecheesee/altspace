@@ -53,7 +53,7 @@ This report records empirical verification of the AltSpace codebase as committed
 | **Launch Kit Tests** | `node --test scripts/verify_launch_kit.test.mjs` | **PASSED** (4/4) | 4 distribution asset checks passed in 180 ms. |
 | **Frontend Linter** | `npm run lint --prefix frontend` (`oxlint`) | **PASSED with 104 Warnings** | 0 errors, 104 warnings across 76 files (empty catch blocks, cascading renders). |
 | **Frontend Production Build** | `npm run build --prefix frontend` | **PASSED** | Compiled client bundle via Rolldown in 7.22s. |
-| **Rust Unit Tests** | `cargo test --manifest-path frontend/src-tauri/Cargo.toml` | **PASSED** (52/52) | 52 unit tests passed in 3.13s across `raycast_windows_lib`. |
+| **Rust Unit Tests** | `cargo test --manifest-path frontend/src-tauri/Cargo.toml` | **PASSED** (52/52) | 52 unit tests passed in 3.13s across `altspace_lib`. |
 | **Rust Release Check** | `cargo check --manifest-path frontend/src-tauri/Cargo.toml --release` | **PASSED** | Zero compilation errors in release profile. |
 | **Rust Clippy (`-D warnings`)** | `cargo clippy --manifest-path frontend/src-tauri/Cargo.toml --all-targets -- -D warnings` | **FAILED (6 errors)** | Failed with 6 warnings promoted to errors (`unnecessary_sort_by`, `collapsible_if`, `unnecessary_map_or`, `needless_borrows_for_generic_args` (x2), `chunks_exact_to_as_chunks`). |
 | **Frontend Audit** | `npm audit --prefix frontend` | **PASSED** | 0 vulnerabilities found. |

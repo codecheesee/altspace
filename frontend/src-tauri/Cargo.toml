@@ -1,5 +1,5 @@
 [package]
-name = "raycast-windows"
+name = "altspace"
 version = "2.3.0"
 description = "AltSpace — High-performance desktop command palette and launcher for Windows"
 authors = ["AltSpace Core Team <maintainers@altspace.dev>"]
@@ -7,7 +7,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [lib]
-name = "raycast_windows_lib"
+name = "altspace_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]

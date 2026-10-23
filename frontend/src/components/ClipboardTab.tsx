@@ -47,7 +47,7 @@ export function ClipboardTab({
     <ErrorBoundary label="Clipboard Panel">
       {/* Left Pane: Clipboard Items List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {/* Sleek Raycast-style Type Filter Pills Bar */}
+        {/* Sleek Type Filter Pills Bar */}
         <div className="flex items-center gap-1 px-1 pb-2 border-b border-white/[0.06] overflow-x-auto shrink-0 mb-1">
           {(
             [

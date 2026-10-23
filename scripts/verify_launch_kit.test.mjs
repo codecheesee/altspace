@@ -48,6 +48,6 @@ test('landing/index.html includes complete OpenGraph and Twitter card meta tags'
 });
 
 test('Product Hunt tagline conforms to character limits', () => {
-  const tagline = 'The modern extensible Raycast alternative for Windows';
+  const tagline = 'The modern extensible developer command palette for Windows';
   assert.ok(tagline.length <= 60, `Tagline length ${tagline.length} exceeds Product Hunt 60 character limit`);
 });

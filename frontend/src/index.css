@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-raycast-bg: #111114;
-  --color-raycast-card: #18181c;
-  --color-raycast-hover: #22222a;
-  --color-raycast-border: rgba(255, 255, 255, 0.08);
-  --color-raycast-accent: #38bdf8;
-  --color-raycast-text: #f4f4f6;
-  --color-raycast-subtext: #a1a1aa;
+  --color-altspace-bg: #111114;
+  --color-altspace-card: #18181c;
+  --color-altspace-hover: #22222a;
+  --color-altspace-border: rgba(255, 255, 255, 0.08);
+  --color-altspace-accent: #38bdf8;
+  --color-altspace-text: #f4f4f6;
+  --color-altspace-subtext: #a1a1aa;
 
   /* Windows 11 graphite command palette design tokens */
   --color-cmd-canvas: #111114;
@@ -22,7 +22,7 @@
   --color-cmd-border-subtle: rgba(255, 255, 255, 0.07);
   --color-cmd-border-strong: rgba(255, 255, 255, 0.14);
 
-  --shadow-raycast: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  --shadow-altspace: 0 24px 48px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
   --shadow-cmd-window: 0 32px 64px -16px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
 
   --font-sans: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;

@@ -109,13 +109,13 @@ try {
         } catch {}
     }
 
-    $processNames = @("altspace", "AltSpace-Portable", "raycast-windows")
+    $processNames = @("altspace", "AltSpace-Portable")
     $runningProcesses = Get-Process -Name $processNames -ErrorAction SilentlyContinue
     if ($runningProcesses) {
         $isUpdate = $true
         Write-Host "[*] Active AltSpace instance detected. Stopping process for update..." -ForegroundColor Yellow
         $runningProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-        & taskkill.exe /F /IM altspace.exe /IM AltSpace-Portable.exe /IM raycast-windows.exe 2>$null | Out-Null
+        & taskkill.exe /F /IM altspace.exe /IM AltSpace-Portable.exe 2>$null | Out-Null
 
         # Grace period for OS handle release
         $timeout = [DateTime]::UtcNow.AddSeconds(4)

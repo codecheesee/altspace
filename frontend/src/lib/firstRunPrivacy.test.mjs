@@ -64,7 +64,7 @@ test('7. .altconfig exports exclude secrets, clipboard, history, entitlement dat
     config_version: 2,
     version: '2.0.0',
     exported_at: new Date().toISOString(),
-    theme_id: 'raycast-dark',
+    theme_id: 'altspace-obsidian',
     custom_accent: '#ff6363',
     autostart: false,
     sidebar_visible: false,

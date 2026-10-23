@@ -26,7 +26,7 @@ test('1. Accepts valid non-sensitive .altconfig bundle', () => {
 test('2. Rejects configs containing forbidden secret or credential keys', () => {
   const hostile = {
     config_version: 2,
-    theme_id: 'raycast-dark',
+    theme_id: 'altspace-obsidian',
     api_key: 'sk-1234567890abcdef',
   };
 
@@ -46,7 +46,7 @@ test('3. Rejects prototype pollution attempts in .altconfig JSON', () => {
 test('4. Rejects invalid data types or malformed color accents', () => {
   const invalidAccent = {
     config_version: 2,
-    theme_id: 'raycast-dark',
+    theme_id: 'altspace-obsidian',
     custom_accent: 'invalid-css-color',
   };
   assert.equal(validateAltConfig(invalidAccent).valid, false);
@@ -60,7 +60,7 @@ test('4. Rejects invalid data types or malformed color accents', () => {
 
 test('5. Computes accurate dry-run diff between existing and incoming configs', () => {
   const current = {
-    theme_id: 'raycast-dark',
+    theme_id: 'altspace-obsidian',
     custom_accent: '#ff6363',
     sidebar_visible: true,
     search_all_drives: false,
@@ -79,7 +79,7 @@ test('5. Computes accurate dry-run diff between existing and incoming configs', 
 
   const themeDiff = diff.find((d) => d.key === 'theme_id');
   assert.equal(themeDiff?.status, 'changed');
-  assert.equal(themeDiff?.currentValue, 'raycast-dark');
+  assert.equal(themeDiff?.currentValue, 'altspace-obsidian');
   assert.equal(themeDiff?.incomingValue, 'graphite-pro');
 
   const accentDiff = diff.find((d) => d.key === 'custom_accent');

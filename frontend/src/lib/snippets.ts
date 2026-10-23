@@ -7,7 +7,7 @@ export interface Snippet {
   description: string;
 }
 
-const STORAGE_KEY = "raycast_user_snippets_v1";
+const STORAGE_KEY = "altspace_user_snippets_v1";
 
 export const DEFAULT_SNIPPETS: Snippet[] = [
   {

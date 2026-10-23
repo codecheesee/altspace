@@ -1,11 +1,11 @@
 $exe = Join-Path $PSScriptRoot "..\bin\altspace.exe"
 if (-not (Test-Path $exe)) {
-    $exe = Join-Path $PSScriptRoot "..\bin\raycast-windows.exe"
+    $exe = Join-Path $PSScriptRoot "..\target\debug\altspace.exe"
 }
 $results = @()
 
 for ($i = 1; $i -le 4; $i++) {
-    Stop-Process -Name "altspace","raycast-windows" -Force -ErrorAction SilentlyContinue
+    Stop-Process -Name "altspace" -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
 
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -32,4 +32,4 @@ $dup.WaitForExit(3000)
 $sw.Stop()
 Write-Host "Duplicate instance exited in: $([math]::Round($sw.Elapsed.TotalMilliseconds, 2)) ms (Code: $($dup.ExitCode))"
 
-Stop-Process -Name "altspace","raycast-windows" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "altspace" -Force -ErrorAction SilentlyContinue

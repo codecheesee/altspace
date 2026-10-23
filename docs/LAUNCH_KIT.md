@@ -134,7 +134,7 @@ Focus on Windows 11 Fluent aesthetic consistency, dark mode integration, rapid a
 
 ## 3. Hacker News (Show HN)
 
-* **Submission Title**: `Show HN: AltSpace – Open-source Raycast alternative for Windows with Local AI and Port Killer`
+* **Submission Title**: `Show HN: AltSpace – Open-source developer command palette for Windows with Local AI and Port Killer`
 * **Target URL**: `https://github.com/codecheesee/altspace`
 * **Author Comment**:
 ```text
@@ -162,7 +162,7 @@ We welcome discussion regarding our plugin security architecture and system inte
 | Specification | Content |
 | :--- | :--- |
 | **Product Name** | AltSpace |
-| **Tagline** (<= 60 chars) | The modern extensible Raycast alternative for Windows |
+| **Tagline** (<= 60 chars) | The modern extensible developer command palette for Windows |
 | **License & Pricing** | Free (Apache 2.0) with optional Supporter License |
 | **Categories** | Developer Tools, Open Source, Productivity, Windows |
 | **Summary** | High-performance keyboard launcher for Windows. Sub-5ms search, developer port inspector, clipboard history, local MCP AI, and a 20% contributor treasury. |

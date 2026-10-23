@@ -7,7 +7,7 @@ export interface CustomQuicklink {
   iconType: "github" | "npm" | "so" | "youtube" | "google" | "wiki" | "web";
 }
 
-const STORAGE_KEY = "raycast_custom_quicklinks_v1";
+const STORAGE_KEY = "altspace_custom_quicklinks_v1";
 
 export const DEFAULT_QUICKLINKS: CustomQuicklink[] = [
   {

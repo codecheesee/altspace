@@ -148,7 +148,7 @@ export function evaluateSmartQuery(query: string): CalcResult | null {
     };
   }
 
-  // 2. Natural Language Date Calculations (Raycast Soulver feature)
+  // 2. Natural Language Date Calculations (Soulver-style date calculator)
   const now = new Date();
   const dateOptions: Intl.DateTimeFormatOptions = {
     weekday: "long",

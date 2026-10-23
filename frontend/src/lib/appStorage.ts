@@ -16,8 +16,8 @@ export async function invokeStrict<T = unknown>(cmd: string, args?: Record<strin
   return await invoke<T>(cmd, args);
 }
 
-export const APP_CACHE_KEY = "raycast_app_cache_v2";
-export const FREQ_CACHE_KEY = "raycast_item_frequency_v1";
+export const APP_CACHE_KEY = "altspace_app_cache_v2";
+export const FREQ_CACHE_KEY = "altspace_item_frequency_v1";
 
 export function saveCachedApps(apps: Item[]): void {
   try {
@@ -265,7 +265,7 @@ export const UTILITY_ITEMS: Item[] = [
     subtitle: "Search, preview, and restore copied items and snippets",
     category: "Command",
     iconType: "cmd",
-    path: "raycast://clipboard",
+    path: "altspace://clipboard",
   },
   {
     id: "util-ports",
@@ -273,7 +273,7 @@ export const UTILITY_ITEMS: Item[] = [
     subtitle: "Inspect localhost processes (:3000, :5173, :8080) and free ports",
     category: "Command",
     iconType: "cmd",
-    path: "raycast://ports",
+    path: "altspace://ports",
   },
   {
     id: "util-drives",
@@ -281,7 +281,7 @@ export const UTILITY_ITEMS: Item[] = [
     subtitle: "Manage index across drives C:, D:, E:, F: and external volumes",
     category: "Command",
     iconType: "cmd",
-    path: "raycast://drives",
+    path: "altspace://drives",
   },
   {
     id: "util-feedback",

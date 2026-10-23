@@ -40,7 +40,7 @@ This document serves as the **uncompromising single source of truth** for human 
 | Attribute | Specification | Source Citation |
 | :--- | :--- | :--- |
 | **Product Name** | AltSpace | `frontend/src-tauri/tauri.conf.json:3` |
-| **Internal Cargo Package** | `raycast-windows` | `frontend/src-tauri/Cargo.toml:2` |
+| **Internal Cargo Package** | `altspace` | `frontend/src-tauri/Cargo.toml:2` |
 | **Frontend Package** | `frontend` | `frontend/package.json:2` |
 | **Bundle Identifier** | `com.altspace.launcher` | `frontend/src-tauri/tauri.conf.json:5` |
 | **Current Frontend Version** | `2.2.0` | `frontend/package.json:4` |

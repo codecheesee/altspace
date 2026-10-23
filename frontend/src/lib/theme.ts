@@ -19,7 +19,7 @@ export interface Theme {
 
 export const PRESET_THEMES: Theme[] = [
   {
-    id: "raycast-obsidian",
+    id: "altspace-obsidian",
     name: "Windows Graphite",
     description: "Premium Windows 11 graphite acrylic with cool azure accent and linear precision",
     bg: "#111114",
@@ -111,9 +111,9 @@ const CUSTOM_ACCENT_KEY = "altspace_custom_accent_hex_v1";
 
 export function getSavedThemeId(): string {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) || "raycast-obsidian";
+    return localStorage.getItem(THEME_STORAGE_KEY) || "altspace-obsidian";
   } catch (_) {
-    return "raycast-obsidian";
+    return "altspace-obsidian";
   }
 }
 

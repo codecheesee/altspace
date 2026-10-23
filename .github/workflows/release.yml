@@ -68,7 +68,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Path dist_artifacts -Force | Out-Null
-          $candidateBinaries = @('target/release/raycast-windows.exe', 'frontend/src-tauri/target/release/raycast-windows.exe') | Where-Object { Test-Path $_ }
+          $candidateBinaries = @('target/release/altspace.exe', 'frontend/src-tauri/target/release/altspace.exe') | Where-Object { Test-Path $_ }
           $binary = $candidateBinaries | Select-Object -First 1
           $candidateNsis = @('target/release/bundle/nsis/*-setup.exe', 'frontend/src-tauri/target/release/bundle/nsis/*-setup.exe') | ForEach-Object { Get-ChildItem $_ -ErrorAction SilentlyContinue }
           $nsis = $candidateNsis | Select-Object -First 1
