@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $TargetDir = $TargetDir.Trim()
 $Repo = 'codecheesee/altspace'
-$FallbackTag = 'v2.3.0'
+$FallbackTag = 'v2.3.1'
 $BinaryPath = Join-Path $TargetDir 'altspace.exe'
 $DllPath = Join-Path $TargetDir 'Everything64.dll'
 $TempRoot = Join-Path ([IO.Path]::GetTempPath()) ("AltSpaceInstaller-" + [Guid]::NewGuid().ToString('N'))

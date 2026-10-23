@@ -1,6 +1,6 @@
 [package]
 name = "altspace"
-version = "2.3.0"
+version = "2.3.1"
 description = "AltSpace — High-performance desktop command palette and launcher for Windows"
 authors = ["AltSpace Core Team <maintainers@altspace.dev>"]
 edition = "2021"
