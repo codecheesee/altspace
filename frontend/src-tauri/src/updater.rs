@@ -279,7 +279,8 @@ pub fn install_update(
             "-s",
             "-f",
             "-L",
-            "-m", "120",
+            "--connect-timeout", "10",
+            "-m", "60",
             "-H", "User-Agent: AltSpace-Updater",
             "-o",
             zip_path.to_str().unwrap(),
@@ -369,13 +370,14 @@ pub fn install_update(
     // Write atomic handoff helper script (apply_update.cmd)
     let helper_path = temp_dir.join("apply_update.cmd");
     let helper_script = r#"@echo off
+setlocal EnableDelayedExpansion
 set "PID=%~1"
 set "SRC=%~2"
 set "DST=%~3"
 set "EXE=%~4"
 
-:: Wait for running instance to exit and release file handles
-for /l %%i in (1,1,10) do (
+:: 1. Graceful exit wait for running instance (up to 5 seconds)
+for /l %%i in (1,1,5) do (
     tasklist /fi "PID eq %PID%" 2>nul | find "%PID%" >nul
     if errorlevel 1 (
         goto ready_to_copy
@@ -383,18 +385,28 @@ for /l %%i in (1,1,10) do (
     timeout /t 1 /nobreak >nul
 )
 
-:: Force terminate if still lingering
-taskkill /F /PID %PID% >nul 2>&1
+:: 2. Force terminate running instance and any lingering subprocesses
+taskkill /F /T /PID %PID% >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 :ready_to_copy
-:: Copy all updated files into target directory
-xcopy /Y /E /Q /I "%SRC%\*" "%DST%\" >nul 2>&1
+:: 3. Robust copy with 3 retries (1s wait) to overcome transient antivirus/search file locks
+robocopy "%SRC%" "%DST%" /E /R:3 /W:1 /NFL /NDL /NJH /NJS >nul 2>&1
+if errorlevel 8 (
+    :: Fallback to xcopy if robocopy fails or is restricted
+    xcopy /Y /E /Q /I "%SRC%\*" "%DST%\" >nul 2>&1
+)
 
-:: Relaunch updated AltSpace
-start "" "%EXE%"
+:: 4. Verify primary binary exists before relaunching
+if exist "%EXE%" (
+    start "" "%EXE%"
+) else if exist "%DST%\altspace.exe" (
+    start "" "%DST%\altspace.exe"
+) else if exist "%DST%\AltSpace-Portable.exe" (
+    start "" "%DST%\AltSpace-Portable.exe"
+)
 
-:: Self-destruct temporary updater folder
+:: 5. Self-destruct temporary updater folder cleanly
 timeout /t 2 /nobreak >nul
 (goto) 2>nul & rd /s /q "%~dp0"
 "#;
