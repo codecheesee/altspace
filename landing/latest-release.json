@@ -1,22 +1,21 @@
 {
-  "version": "2.3.0",
-  "name": "AltSpace v2.3.0 — Smart Game Hub, Noise Filter & Modern Monochrome Control Plane",
-  "published_at": "2026-10-22T20:42:04Z",
-  "download_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Setup-x64.exe",
-  "portable_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.0/AltSpace-Portable-x64.zip",
-  "sha256_portable": "c6904edaf97177d7ceaaeb1d80e1e44fa452ae7c9aad769572505fef90fc936a",
-  "sha256_setup": "5384cd132c4f683418be416c600775c833539eff07e6b553c146f96b69474f3f",
-  "release_url": "https://github.com/codecheesee/altspace/releases/tag/v2.3.0",
+  "version": "2.3.1",
+  "name": "AltSpace v2.3.1 — Native Lifecycle Hardening, Pure Rebrand & Silent Power Chords",
+  "published_at": "2026-10-23T09:36:12Z",
+  "download_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.1/AltSpace-Setup-x64.exe",
+  "portable_url": "https://github.com/codecheesee/altspace/releases/download/v2.3.1/AltSpace-Portable-x64.zip",
+  "sha256_portable": "aa5a0012c9367ffe68c0d61bc2641f77c4d5c6e4c34273b6b8d32e006e726ecb",
+  "sha256_setup": "a0cfedb1a049f7c09b83ace82240647e2816fc13a1c106356ae1072b272d0242",
+  "release_url": "https://github.com/codecheesee/altspace/releases/tag/v2.3.1",
   "features": [
-    "Smart Game Hub: Auto-discovery and 1-stroke launcher for Steam, Epic, Xbox Game Pass, and standalone titles",
-    "Intelligent Noise Filter: Excludes internal caches, logs, temp files, and extensions (.ink, .log, .tmp, etc.)",
-    "Developer Port Inspector: Terminate blocking developer ports (:3000, :8080) with a single keystroke",
-    "Everything SDK / MFT Integration: Sub-millisecond whole-drive indexing and search across all drives",
-    "Offline Developer Tools: Base64, UUID v4, SHA-256, JSON/YAML converter, and JWT debugger"
+    "Context-Aware Hybrid Ranking: Applications (PowerShell, Chrome) strictly prioritized over raw filesystem files",
+    "Silent Keyboard Power Chords: Ctrl+Shift+Enter (Run as Admin), Ctrl+O (Reveal in Explorer), Ctrl+C (Copy Path)",
+    "Instant Port Inspector: Zero-lag sub-millisecond port detection on typing and window summon",
+    "Clean Omnibar UI: Removed duplicate top menu button giving full horizontal typing width"
   ],
   "fixes": [
-    "Pro Trial banner simplified to trending 'Pro'/'Try Pro' indicator, hidden for licensed users and maintainers",
-    "Eliminated obsolete and clutter file extensions by default with granular settings toggles",
-    "Detached sidecar auto-updater engine eliminating file-lock stalls and API rate limits"
+    "Native Windows Lifecycle: Win32 Alt-key pulse and AttachThreadInput eliminating ghost processes in Task Manager",
+    "Hardened Multi-Device Updater: Windows native robocopy retry loop and fast connect timeouts",
+    "100% Pure AltSpace: All legacy naming and registry keys purged across entire codebase"
   ]
 }
