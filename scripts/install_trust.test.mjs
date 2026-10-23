@@ -51,7 +51,8 @@ test('Installer Trust - install.ps1 parses and defines Assert-Authenticode', () 
   assert.ok(content.includes('function Assert-Authenticode'), 'Must declare Assert-Authenticode function');
   assert.ok(content.includes('Get-AuthenticodeSignature'), 'Must use Get-AuthenticodeSignature');
   assert.ok(content.includes('NotSigned'), 'Must check NotSigned status');
-  assert.ok(content.includes("$FallbackTag = 'v2.3.0'"), 'Fallback tag must be aligned to v2.3.0');
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'frontend', 'package.json'), 'utf-8'));
+  assert.ok(content.includes(`$FallbackTag = 'v${pkg.version}'`), `Fallback tag must be aligned to v${pkg.version}`);
 });
 
 test('Installer Trust - Assert-Authenticode emits notice on unsigned binary and succeeds with SHA-256', () => {
