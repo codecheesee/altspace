@@ -29,6 +29,7 @@ export function FooterBar({
   portsCount,
   activeTheme,
   onOpenWebsite,
+  onOpenActions,
 }: FooterBarProps) {
   const resultLabel =
     currentMode === "all"
@@ -73,12 +74,24 @@ export function FooterBar({
         </span>
       </div>
 
-      {/* Right: Minimalist, clean 2026 status line */}
+      {/* Right: Minimalist, clean 2026 status line with single Actions pill */}
       <div className="flex items-center gap-3 text-[11px] text-zinc-400 whitespace-nowrap shrink-0">
         <div className="flex items-center gap-1.5">
           <span>Open</span>
           <kbd className="kbd-cap">↵</kbd>
         </div>
+
+        <span className="text-zinc-700">•</span>
+
+        <button
+          type="button"
+          onClick={onOpenActions}
+          className="flex items-center gap-1.5 hover:text-white transition cursor-pointer"
+          title="Open Action Drawer (Tab or Ctrl+K)"
+        >
+          <span>Actions</span>
+          <kbd className="kbd-cap">⌃K</kbd>
+        </button>
 
         <span className="text-zinc-700">•</span>
 

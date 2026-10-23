@@ -963,6 +963,43 @@ export default function App() {
       return;
     }
 
+    if (e.key === "Tab") {
+      e.preventDefault();
+      setShowActionsModal((prev) => !prev);
+      setActionSelectedIndex(0);
+      return;
+    }
+
+    // Silent Quick Chord: Ctrl+O to reveal in File Explorer
+    if ((e.key?.toLowerCase() === "o" || e.code === "KeyO") && (e.ctrlKey || e.metaKey)) {
+      if (resolvedMode === "all" && selectedItem) {
+        e.preventDefault();
+        if (tauriInvoke) {
+          tauriInvoke("reveal_in_explorer", { path: selectedItem.path })
+            .then(() => {
+              notify(`✓ Revealed in File Explorer`);
+            })
+            .catch(() => {
+              handleOpenFolder(selectedItem.path);
+            });
+        }
+        handleDismissWindow();
+        return;
+      }
+    }
+
+    // Silent Quick Chord: Ctrl+C to copy path (only when no text is selected in omnibar)
+    if ((e.key?.toLowerCase() === "c" || e.code === "KeyC") && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+      const inputEl = inputRef.current;
+      const hasTextSelection = window.getSelection()?.toString() || (inputEl && inputEl.selectionStart !== inputEl.selectionEnd);
+      if (!hasTextSelection && resolvedMode === "all" && selectedItem) {
+        e.preventDefault();
+        handleCopyClipboard(selectedItem.path);
+        notify(`✓ Copied ${selectedItem.title} path`);
+        return;
+      }
+    }
+
     if ((e.key?.toLowerCase() === "h" || e.code === "KeyH") && e.altKey) {
       e.preventDefault();
       setShowTimelineDrawer((prev) => !prev);
@@ -1043,8 +1080,24 @@ export default function App() {
             }
           }
         } else if (selectedItem) {
-          if (e.ctrlKey) handleOpenFolder(selectedItem.path);
-          else handleItemAction(selectedItem);
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+            e.preventDefault();
+            if (tauriInvoke) {
+              tauriInvoke("run_as_admin", { path: selectedItem.path })
+                .then(() => {
+                  notify(`⚡ Running ${selectedItem.title} as Administrator...`);
+                })
+                .catch((err) => {
+                  notify(`Admin launch: ${err}`);
+                });
+            }
+            handleDismissWindow();
+            return;
+          } else if (e.ctrlKey) {
+            handleOpenFolder(selectedItem.path);
+          } else {
+            handleItemAction(selectedItem);
+          }
         }
       } else if (resolvedMode === "ports" && selectedPort) {
         handleKillPort(selectedPort.pid, selectedPort.port);

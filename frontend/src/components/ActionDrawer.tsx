@@ -89,6 +89,27 @@ const DEFAULT_SHORTCUTS: ShortcutDef[] = [
     description: "Launch application, open folder, or run selected action",
   },
   {
+    id: "admin",
+    category: "Navigation",
+    label: "Run as Administrator",
+    keys: ["Ctrl", "Shift", "↵"],
+    description: "Launch selected application or script with elevated UAC privileges",
+  },
+  {
+    id: "reveal",
+    category: "Navigation",
+    label: "Reveal in File Explorer",
+    keys: ["Ctrl", "O"],
+    description: "Open containing directory and highlight item in Windows Explorer",
+  },
+  {
+    id: "copy-path",
+    category: "Navigation",
+    label: "Copy Path to Clipboard",
+    keys: ["Ctrl", "C"],
+    description: "Copy absolute path of selected item to clipboard",
+  },
+  {
     id: "preview",
     category: "Navigation",
     label: "QuickLook File Preview",
@@ -98,9 +119,9 @@ const DEFAULT_SHORTCUTS: ShortcutDef[] = [
   {
     id: "actions",
     category: "Navigation",
-    label: "Open Contextual Menu",
-    keys: ["Ctrl", "K"],
-    description: "Browse curated submenus and developer commands",
+    label: "Open Contextual Action Drawer",
+    keys: ["Tab", "Ctrl+K"],
+    description: "Browse curated submenus, secondary actions, and developer tools",
   },
   {
     id: "sidebar",
