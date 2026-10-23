@@ -1283,7 +1283,6 @@ export default function App() {
         setPortStatusMsg={setPortStatusMsg}
         copiedNotification={copiedNotification}
         setCopiedNotification={setCopiedNotification}
-        onOpenMenu={() => setShowActionsModal(true)}
         onOpenWebsite={() => handleOpenUrl("https://codecheesee.github.io/altspace/")}
         onOpenLicense={() => setShowLicenseModal(true)}
         trialState={trialState}

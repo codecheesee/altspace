@@ -32,7 +32,6 @@ interface HeaderBarProps {
   setPortStatusMsg: (msg: string | null) => void;
   copiedNotification: string | null;
   setCopiedNotification: (msg: string | null) => void;
-  onOpenMenu: () => void;
   onOpenWebsite?: () => void;
   onOpenLicense?: () => void;
   trialState?: TrialState;
@@ -53,7 +52,6 @@ export function HeaderBar({
   setPortStatusMsg,
   copiedNotification,
   setCopiedNotification,
-  onOpenMenu,
   onOpenWebsite,
   onOpenLicense,
   isProOrSupporter,
@@ -224,16 +222,7 @@ export function HeaderBar({
           </button>
         )}
 
-        {/* Command Menu Action Button */}
-        <button
-          onClick={onOpenMenu}
-          title="Command Palette Menu (Ctrl+K)"
-          aria-label="Command Palette Menu"
-          className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/[0.06] text-xs font-medium text-zinc-400 hover:text-zinc-100 transition cursor-pointer shrink-0"
-        >
-          <span>Menu</span>
-          <kbd className="kbd-cap">Ctrl K</kbd>
-        </button>
+
 
         {/* Dismiss Button */}
         <button
