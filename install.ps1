@@ -171,34 +171,27 @@ try {
         $resolvedTag = $Tag
         $manifest = $null
 
-        # 1. Query high-speed CDN manifest first (instant, 0 rate limit)
-        $manifestUrls = @(
-            "https://codecheesee.github.io/altspace/latest-release.json",
-            "https://raw.githubusercontent.com/codecheesee/altspace/main/distribution/latest-release.json"
-        )
-        if (-not $resolvedTag) {
-            foreach ($mUrl in $manifestUrls) {
-                try {
-                    $manifest = Invoke-RestMethod -Uri $mUrl -Headers $headers -TimeoutSec 4 -ErrorAction Stop
-                    if ($manifest -and $manifest.version) {
-                        $resolvedTag = if ($manifest.version.StartsWith("v")) { $manifest.version } else { "v$($manifest.version)" }
-                        break
-                    }
-                } catch {}
-            }
-        }
-
-        # 2. Query GitHub Releases API with short timeout if CDN unavailable
+        # 1. Query distribution manifest directly from repository (live, zero CDN cache lag)
         if (-not $resolvedTag) {
             try {
-                $ghRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers -TimeoutSec 4 -ErrorAction Stop
+                $manifest = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$Repo/main/distribution/latest-release.json" -Headers $headers -TimeoutSec 5 -ErrorAction Stop
+                if ($manifest -and $manifest.version) {
+                    $resolvedTag = if ($manifest.version.StartsWith("v")) { $manifest.version } else { "v$($manifest.version)" }
+                }
+            } catch {}
+        }
+
+        # 2. Query GitHub Releases API if manifest was not reached
+        if (-not $resolvedTag) {
+            try {
+                $ghRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers -TimeoutSec 5 -ErrorAction Stop
                 if ($ghRelease -and $ghRelease.tag_name) {
                     $resolvedTag = $ghRelease.tag_name
                 }
             } catch {}
         }
 
-        # 3. Fallback to pinned verified tag
+        # 3. Fallback to pinned verified release tag
         if (-not $resolvedTag) {
             $resolvedTag = $FallbackTag
         }
@@ -217,34 +210,6 @@ try {
         Write-Host " Release Channel:    " -NoNewline -ForegroundColor DarkGray
         Write-Host "Official GitHub Releases ($Repo)" -ForegroundColor DarkCyan
         Write-Host "-----------------------------------------------------------" -ForegroundColor DarkGray
-
-        # Interactive countdown (allows user to cancel or auto-proceeds in 4s)
-        $canPrompt = -not $NonInteractive -and -not $Force -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected
-        if ($canPrompt) {
-            Write-Host "Press [Enter] to proceed, or [N] to cancel: " -NoNewline -ForegroundColor Yellow
-            $abort = $false
-            $timeoutSeconds = 4
-            $startTime = [DateTime]::UtcNow
-
-            while ([DateTime]::UtcNow -lt $startTime.AddSeconds($timeoutSeconds)) {
-                if ([Console]::KeyAvailable) {
-                    $key = [Console]::ReadKey($true)
-                    if ($key.Key -eq 'N' -or $key.KeyChar -eq 'n') {
-                        $abort = $true
-                        break
-                    }
-                    if ($key.Key -eq 'Enter' -or $key.KeyChar -eq 'y' -or $key.KeyChar -eq 'Y') {
-                        break
-                    }
-                }
-                Start-Sleep -Milliseconds 100
-            }
-            Write-Host ""
-            if ($abort) {
-                Write-Host "[*] Installation cancelled by user." -ForegroundColor DarkYellow
-                exit 0
-            }
-        }
 
         $zipUrl = "https://github.com/$Repo/releases/download/$resolvedTag/AltSpace-Portable-x64.zip"
         $checksumUrl = "https://github.com/$Repo/releases/download/$resolvedTag/SHA256SUMS.txt"
